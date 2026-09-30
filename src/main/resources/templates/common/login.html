@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{},
+          content = ~{::#page-content},
+          actorCss = ~{},
+          actorJs = ~{}
+      )}">
+<head>
+    <title>Đăng nhập | CineFlow</title>
+</head>
+<body>
+
+<div id="page-content" class="container py-5">
+    <div class="card shadow-sm border-0 mx-auto auth-card">
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <i class="fa-solid fa-clapperboard fs-2 text-cine-primary mb-2"></i>
+                <h4 class="fw-bold mb-0">ĐĂNG NHẬP CINEFLOW</h4>
+                <p class="small text-muted">Hệ thống rạp chiếu phim đa chi nhánh</p>
+            </div>
+            <form th:action="@{/login}" method="post">
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Tài khoản / Email</label>
+                    <input type="text" name="username" class="form-control" placeholder="Nhập email..." required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Mật khẩu</label>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-cine w-100 mt-2 py-2">
+                    <i class="fa-solid fa-right-to-bracket me-1"></i>Đăng Nhập
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

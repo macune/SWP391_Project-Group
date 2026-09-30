@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: manager-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{::script}
+      )}">
+<head>
+    <title>Quản lý lịch chiếu | CineFlow Manager</title>
+    <link rel="stylesheet" th:href="@{/css/manager.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">Lịch chiếu rạp - Chi nhánh CineFlow Hà Nội</h4>
+        <button class="btn btn-cine btn-sm px-3 py-2">
+            <i class="fa-solid fa-plus me-1"></i>Tạo suất chiếu mới
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover table-cine align-middle mb-0">
+                <thead>
+                <tr>
+                    <th class="ps-3">Phòng chiếu</th>
+                    <th>Tên phim</th>
+                    <th>Giờ chiếu</th>
+                    <th>Ghế đã đặt</th>
+                    <th>Trạng thái</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td class="ps-3">Phòng 01 (IMAX)</td>
+                    <td class="fw-semibold text-cine-primary">Dune: Hành Tinh Cát 2</td>
+                    <td>19:30 - 22:15</td>
+                    <td>85 / 120</td>
+                    <td><span class="badge bg-cine-soft">Đang mở bán</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/manager.js}"></script>
+</body>
+</html>

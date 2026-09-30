@@ -1,0 +1,8 @@
+/* =========================================================
+   FILE CSS DÀNH RIÊNG CHO PHÂN HỆ: CUSTOMER (Khách hàng)
+   ========================================================= */
+
+.movie-poster-card {
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+}

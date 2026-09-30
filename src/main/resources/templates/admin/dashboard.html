@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: admin-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{::script}
+      )}">
+<head>
+    <title>Quản trị chuỗi rạp | CineFlow Admin</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+    <h4 class="fw-bold mb-4">Tổng quan hệ thống CineFlow</h4>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card bg-cine-dark text-white border-0 shadow-sm p-3">
+                <span class="small text-cine-pastel">Tổng chi nhánh đang hoạt động</span>
+                <h2 class="fw-bold mb-0 mt-1">12 Cụm rạp</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-cine-primary border-0 shadow-sm p-3">
+                <span class="small">Doanh thu vé hôm nay</span>
+                <h2 class="fw-bold mb-0 mt-1">145.000.000 ₫</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-cine-hot border-0 shadow-sm p-3">
+                <span class="small">Doanh thu Bắp nước (Concessions)</span>
+                <h2 class="fw-bold mb-0 mt-1">42.500.000 ₫</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+</body>
+</html>

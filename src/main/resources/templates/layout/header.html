@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<header th:fragment="header" class="navbar navbar-expand-lg bg-cine-dark sticky-top shadow-sm border-bottom border-cine">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold text-cine-primary fs-4" th:href="@{/}">
+            <i class="fa-solid fa-clapperboard me-2"></i>Cine<span class="text-cine-pastel">Flow</span>
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link active text-cine-primary fw-bold" th:href="@{/}">Phim Đang Chiếu</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/admin/dashboard}">Trang Admin (Test)</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/manager/showtimes}">Trang Manager (Test)</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/staff/pos}">Trang Staff (Test)</a>
+                </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+                <select class="form-select form-select-sm branch-select-box">
+                    <option value="ALL" selected>Tất cả chi nhánh</option>
+                    <option value="HN">CineFlow Hà Nội</option>
+                    <option value="DN">CineFlow Đà Nẵng</option>
+                    <option value="HCM">CineFlow TP.HCM</option>
+                </select>
+
+                <a th:href="@{/login}" class="btn btn-cine btn-sm text-nowrap px-3">
+                    <i class="fa-regular fa-user me-1"></i>Đăng nhập
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+
+</body>
+</html>

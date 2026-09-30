@@ -1,0 +1,1 @@
+// Logic JS riêng cho Actor: SYSTEM ADMIN (Biểu đồ doanh thu, quản lý chuỗi rạp...)

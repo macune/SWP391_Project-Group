@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: staff-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{::script}
+      )}">
+<head>
+    <title>Bán vé tại quầy POS | CineFlow Staff</title>
+    <link rel="stylesheet" th:href="@{/css/staff.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+    <h4 class="fw-bold mb-4">Quầy bán vé & Bắp nước trực tiếp (CineFlow POS)</h4>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <img th:src="@{/images/concessions/combo-couple.png}" class="card-img-top p-3" alt="Combo">
+                <div class="card-body">
+                    <h6 class="fw-bold">Combo Pink Couple (1 Bắp lớn + 2 Nước)</h6>
+                    <p class="text-cine-primary fw-bold fs-5 mb-2">115.000 ₫</p>
+                    <button class="btn btn-cine btn-sm w-100">
+                        <i class="fa-solid fa-cart-plus me-1"></i>Thêm vào hóa đơn
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/staff.js}"></script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --font-primary: 'Inter', sans-serif;
+    --sidebar-width: 250px;
+
+    /* BẢNG MÀU CHẮT LỌC TỪ GIAO DIỆN IDE CỦA BẠN */
+    --cine-bg-main: #fdf7f5;        /* Nền chính: Trắng kem ửng hồng đào */
+    --cine-bg-frame: #f8e2dc;       /* Nền khung/hộp thoại: Hồng cam sữa nhạt */
+    --cine-bg-highlight: #f3cfc6;   /* Màu dòng highlight (dòng số 7 trên IDE) */
+
+    --cine-primary: #df7873;        /* Hồng đất ấm (Tag @SpringBootApplication) */
+    --cine-primary-hover: #c95f5a;  /* Hồng đất đậm hơn khi di chuột */
+    --cine-hot: #d13b56;            /* Đỏ hồng trầm (Tiêu đề thông báo góc phải) */
+
+    --cine-text-main: #6e3531;      /* Chữ chính: Nâu đỏ trầm ấm */
+    --cine-text-muted: #9d534d;     /* Chữ phụ / Tên thư mục trên cây Project */
+    --cine-border: #edd5ce;         /* Đường viền mảnh giữa các khung */
+
+    /* Màu bổ trợ lấy từ Syntax Highlighting & Icon thư mục */
+    --cine-purple: #9854cb;         /* Tím pastel (từ khóa public static void) */
+    --cine-teal: #2a9d8f;           /* Xanh ngọc (icon thư mục controller/config) */
+}
+
+body {
+    font-family: var(--font-primary);
+    background-color: var(--cine-bg-main);
+    color: var(--cine-text-main);
+}
+
+/* ==========================================
+   1. CÁC CLASS MÀU SẮC & NÚT BẤM CINEFLOW
+   ========================================== */
+/* Khung Header & Footer dùng tông kem đào sáng dịu mắt như IDE */
+.bg-cine-dark {
+    background-color: var(--cine-bg-frame) !important;
+    color: var(--cine-text-main) !important;
+}
+
+.bg-cine-primary {
+    background-color: var(--cine-primary) !important;
+    color: #ffffff !important;
+}
+
+.bg-cine-hot {
+    background-color: var(--cine-hot) !important;
+    color: #ffffff !important;
+}
+
+.bg-cine-soft {
+    background-color: var(--cine-bg-frame) !important;
+    color: var(--cine-hot) !important;
+    border: 1px solid var(--cine-bg-highlight);
+}
+
+.text-cine-primary {
+    color: var(--cine-hot) !important;
+}
+
+.text-cine-pastel {
+    color: var(--cine-text-muted) !important;
+}
+
+.border-cine {
+    border-color: var(--cine-border) !important;
+}
+
+/* Nút bấm chính (Màu Hồng Đất #DF7873) */
+.btn-cine {
+    background-color: var(--cine-primary);
+    border-color: var(--cine-primary);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-cine:hover, .btn-cine:focus {
+    background-color: var(--cine-hot);
+    border-color: var(--cine-hot);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(223, 120, 115, 0.35);
+}
+
+/* Nút bấm viền hồng đất */
+.btn-outline-cine {
+    color: var(--cine-hot);
+    border-color: var(--cine-primary);
+    background-color: #ffffff;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.btn-outline-cine:hover {
+    background-color: var(--cine-primary);
+    border-color: var(--cine-primary);
+    color: #ffffff;
+}
+
+/* ==========================================
+   2. ĐỊNH DẠNG HEADER & SIDEBAR GIỐNG HỆT IDE
+   ========================================== */
+.branch-select-box {
+    width: 210px;
+    background-color: #ffffff;
+    color: var(--cine-text-main);
+    border: 1px solid var(--cine-bg-highlight);
+    font-weight: 500;
+}
+
+.branch-select-box:focus {
+    border-color: var(--cine-primary);
+    box-shadow: 0 0 0 0.2rem rgba(223, 120, 115, 0.2);
+}
+
+/* Sidebar sáng màu giống cột cây thư mục bên trái của bạn */
+.app-sidebar {
+    width: var(--sidebar-width);
+    min-height: calc(100vh - 56px);
+    background-color: var(--cine-bg-main);
+    border-right: 1px solid var(--cine-border);
+}
+
+.app-sidebar .nav-link {
+    color: var(--cine-text-muted) !important;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+/* Khi di chuột vào menu: Nền hồng đào nhạt giống dòng code số 7 */
+.app-sidebar .nav-link:hover {
+    background-color: var(--cine-bg-frame);
+    color: var(--cine-hot) !important;
+}
+
+/* Khi đang chọn menu: Giống hệt thanh chọn 'cinema-project' trên ảnh */
+.app-sidebar .nav-link.active {
+    background-color: var(--cine-bg-highlight) !important;
+    color: var(--cine-text-main) !important;
+    font-weight: 700;
+    border-left: 4px solid var(--cine-hot);
+}
+
+/* ==========================================
+   3. CARD, TABLE & FORM
+   ========================================== */
+.card {
+    background-color: #ffffff;
+    border: 1px solid var(--cine-border) !important;
+    border-radius: 12px;
+}
+
+.auth-card {
+    max-width: 420px;
+    border-top: 4px solid var(--cine-primary) !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--cine-primary);
+    box-shadow: 0 0 0 0.2rem rgba(223, 120, 115, 0.2);
+}
+
+/* Bảng dữ liệu mang màu hồng kem của hộp thông báo góc phải */
+.table-cine thead th {
+    background-color: var(--cine-bg-frame);
+    color: var(--cine-text-main);
+    border-bottom: 2px solid var(--cine-bg-highlight);
+    font-weight: 600;
+}
+
+.table-cine tbody tr:hover {
+    background-color: var(--cine-bg-main);
+}

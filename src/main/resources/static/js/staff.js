@@ -1,0 +1,1 @@
+// Logic JS riêng cho Actor: STAFF (Tính tổng tiền vé + bắp nước tại quầy POS, soát vé...)

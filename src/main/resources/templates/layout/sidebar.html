@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- 1. SIDEBAR DÀNH CHO ACTOR: SYSTEM ADMIN -->
+<aside th:fragment="admin-sidebar" class="app-sidebar text-white p-3 flex-shrink-0">
+    <div class="mb-3 pb-2 border-bottom border-cine">
+        <span class="badge bg-cine-hot w-100 py-2">CINEFLOW - SYSTEM ADMIN</span>
+    </div>
+    <ul class="nav nav-pills flex-column gap-1">
+        <li class="nav-item">
+            <a th:href="@{/admin/dashboard}" class="nav-link active">
+                <i class="fa-solid fa-chart-line me-2"></i>Doanh thu toàn chuỗi
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="fa-solid fa-building me-2"></i>Quản lý Chi nhánh
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="fa-solid fa-film me-2"></i>Kho Phim Hệ thống
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="fa-solid fa-burger me-2"></i>Danh mục Bắp nước
+            </a>
+        </li>
+    </ul>
+</aside>
+
+<!-- 2. SIDEBAR DÀNH CHO ACTOR: BRANCH MANAGER -->
+<aside th:fragment="manager-sidebar" class="app-sidebar text-white p-3 flex-shrink-0">
+    <div class="mb-3 pb-2 border-bottom border-cine">
+        <span class="badge bg-cine-primary w-100 py-2">CINEFLOW - MANAGER</span>
+    </div>
+    <ul class="nav nav-pills flex-column gap-1">
+        <li class="nav-item">
+            <a th:href="@{/manager/showtimes}" class="nav-link active">
+                <i class="fa-regular fa-calendar-days me-2"></i>Xếp lịch chiếu rạp
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="fa-solid fa-couch me-2"></i>Phòng chiếu & Sơ đồ ghế
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="fa-solid fa-user-group me-2"></i>Nhân viên chi nhánh
+            </a>
+        </li>
+    </ul>
+</aside>
+
+<!-- 3. SIDEBAR DÀNH CHO ACTOR: STAFF -->
+<aside th:fragment="staff-sidebar" class="app-sidebar text-white p-3 flex-shrink-0">
+    <div class="mb-3 pb-2 border-bottom border-cine">
+        <span class="badge bg-cine-soft w-100 py-2 fw-bold">CINEFLOW - POS STAFF</span>
+    </div>
+    <ul class="nav nav-pills flex-column gap-1">
+        <li class="nav-item">
+            <a th:href="@{/staff/pos}" class="nav-link active">
+                <i class="fa-solid fa-cash-register me-2"></i>Bán vé & Bắp nước
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link">
+                <i class="fa-solid fa-qrcode me-2"></i>Soát vé vào phòng
+            </a>
+        </li>
+    </ul>
+</aside>
+
+</body>
+</html>

@@ -1,0 +1,1 @@
+// Logic JS riêng cho Actor: BRANCH MANAGER (Cấu hình sơ đồ ghế, xếp lịch chiếu...)
