@@ -1,6 +1,7 @@
 package fu.cinema.entity;
 
 import fu.cinema.enums.DiscountType;
+import fu.cinema.enums.PromotionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,27 +24,29 @@ public class Promotion {
     @Column(name = "promotion_id")
     private Long promotionId;
 
-    @Column(name = "code", nullable = false, unique = true, length = 50)
+    @Column(name = "code", length = 50) // Nullable theo SDS cho auto-applied campaigns
     private String code;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "discount_type", length = 50)
+    @Column(name = "discount_type", nullable = false, length = 50)
     private DiscountType discountType;
 
-    @Column(name = "discount_percent", precision = 5, scale = 2)
-    private BigDecimal discountPercent;
+    @Column(name = "discount_percent", nullable = false)
+    private Integer discountPercent;
 
-    @Column(name = "max_discount_amount", precision = 18, scale = 2)
-    private BigDecimal maxDiscountAmount;
+    @Column(name = "max_discount", nullable = false, precision = 18, scale = 2)
+    private BigDecimal maxDiscount;
 
-    @Column(name = "valid_from")
+    @Column(name = "valid_from", nullable = false)
     private LocalDateTime validFrom;
 
-    @Column(name = "valid_to")
+    @Column(name = "valid_to", nullable = false)
     private LocalDateTime validTo;
 
-    @Column(name = "status", length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private PromotionStatus status = PromotionStatus.ACTIVE;
 
     @OneToMany(mappedBy = "promotion", fetch = FetchType.LAZY)
     @Builder.Default

@@ -1,6 +1,6 @@
 package fu.cinema.enums;
 
 public enum DiscountType {
-    PERCENTAGE,
+    PERCENT,
     FIXED_AMOUNT
 }

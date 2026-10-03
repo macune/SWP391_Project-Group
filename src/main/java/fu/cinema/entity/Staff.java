@@ -1,10 +1,11 @@
 package fu.cinema.entity;
 
+import fu.cinema.enums.StaffStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "staff")
+@Table(name = "staff_manager")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -13,27 +14,29 @@ import lombok.*;
 public class Staff {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "staff_id")
     private Long staffId;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", unique = true)
+    @MapsId
+    @JoinColumn(name = "staff_id")
     private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branch_id")
+    @JoinColumn(name = "branch_id") // Nullable cho Admin
     private Branch branch;
 
-    @Column(name = "full_name", nullable = false, length = 255)
+    @Column(name = "full_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String fullName;
 
-    @Column(name = "email", length = 255)
+    @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(name = "phone", length = 20)
+    @Column(name = "phone", nullable = false, length = 20)
     private String phone;
 
-    @Column(name = "status", length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private StaffStatus status = StaffStatus.ACTIVE;
 }

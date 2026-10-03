@@ -28,11 +28,12 @@ public class BookingFnB {
     private FnBItem fnbItem;
 
     @Column(name = "quantity", nullable = false)
-    private Integer quantity;
+    @Builder.Default
+    private Integer quantity = 1;
 
-    @Column(name = "price_per_item", precision = 18, scale = 2)
+    @Column(name = "price_per_item", nullable = false, precision = 18, scale = 2)
     private BigDecimal pricePerItem;
 
-    @Column(name = "subtotal", precision = 18, scale = 2)
+    @Column(name = "subtotal", nullable = false, precision = 18, scale = 2)
     private BigDecimal subtotal;
 }

@@ -1,7 +1,8 @@
 package fu.cinema.enums;
 
 public enum TicketStatus {
-    ISSUED,
+    LOCKED,
+    BOOKED,
     CHECKED_IN,
     CANCELLED
 }

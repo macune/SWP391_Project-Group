@@ -1,7 +1,8 @@
 package fu.cinema.enums;
 
 public enum ShowtimeStatus {
-    OPEN,
-    CLOSED,
+    SCHEDULED,
+    SHOWING,
+    COMPLETED,
     CANCELLED
 }

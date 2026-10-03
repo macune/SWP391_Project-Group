@@ -22,25 +22,25 @@ public class Movie {
     @Column(name = "movie_id")
     private Long movieId;
 
-    @Column(name = "title", nullable = false, length = 255)
+    @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
-    @Column(name = "duration")
-    private Integer duration; // thời lượng tính theo phút
+    @Column(name = "duration", nullable = false)
+    private Integer duration;
 
-    @Column(name = "release_date")
+    @Column(name = "release_date", nullable = false)
     private LocalDate releaseDate;
 
-    @Column(name = "language", length = 100)
+    @Column(name = "language", nullable = false, columnDefinition = "NVARCHAR(100)")
     private String language;
 
-    @Column(name = "genre", length = 100)
+    @Column(name = "genre", nullable = false, columnDefinition = "NVARCHAR(100)")
     private String genre;
 
-    @Column(name = "age_rating", length = 20)
+    @Column(name = "age_rating", nullable = false, length = 20)
     private String ageRating;
 
     @Column(name = "poster_url", length = 500)
@@ -50,10 +50,11 @@ public class Movie {
     private String trailerUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 50)
-    private MovieStatus status;
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private MovieStatus status = MovieStatus.COMING_SOON;
 
-    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "movie", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Showtime> showtimes = new ArrayList<>();
 }

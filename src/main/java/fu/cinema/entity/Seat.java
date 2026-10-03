@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "seats")
+@Table(name = "seats", uniqueConstraints = {
+        @UniqueConstraint(name = "UQ_Seat_Hall_Position", columnNames = {"hall_id", "row_code", "number"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -33,14 +35,16 @@ public class Seat {
     private Integer number;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", length = 50)
-    private SeatType type;
+    @Column(name = "type", nullable = false, length = 50)
+    @Builder.Default
+    private SeatType type = SeatType.STANDARD;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 50)
-    private SeatStatus status;
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private SeatStatus status = SeatStatus.ACTIVE;
 
-    @OneToMany(mappedBy = "seat", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "seat", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Ticket> tickets = new ArrayList<>();
 }

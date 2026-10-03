@@ -23,43 +23,46 @@ public class Booking {
     @Column(name = "booking_id")
     private Long bookingId;
 
-    // Trong sơ đồ hiển thị AccountId (FK) nhưng đường nối trỏ trực tiếp đến CUSTOMER (Customer_ID)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id")
-    private Customer customer;
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "promotion_id")
     private Promotion promotion;
 
-    @Column(name = "booking_time")
-    private LocalDateTime bookingTime;
+    @Column(name = "booking_time", nullable = false)
+    @Builder.Default
+    private LocalDateTime bookingTime = LocalDateTime.now();
 
-    @Column(name = "total_amount", precision = 18, scale = 2)
-    private BigDecimal totalAmount;
+    @Column(name = "total_amount", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal totalAmount = BigDecimal.ZERO;
 
-    @Column(name = "discount_amount", precision = 18, scale = 2)
-    private BigDecimal discountAmount;
+    @Column(name = "discount_amount", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 50)
-    private BookingStatus status;
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private BookingStatus status = BookingStatus.PENDING;
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Ticket> tickets = new ArrayList<>();
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<BookingFnB> bookingFnbs = new ArrayList<>();
 
-    @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Invoice invoice;
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Payment> payments = new ArrayList<>();
+    @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Payment payment;
 }

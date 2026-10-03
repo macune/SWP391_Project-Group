@@ -1,5 +1,6 @@
 package fu.cinema.entity;
 
+import fu.cinema.enums.PaymentMethod;
 import fu.cinema.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,20 +22,23 @@ public class Payment {
     @Column(name = "payment_id")
     private Long paymentId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;
 
-    @Column(name = "amount", precision = 18, scale = 2)
+    @Column(name = "amount", nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "payment_method", length = 50)
-    private String paymentMethod;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false, length = 50)
+    private PaymentMethod paymentMethod;
 
-    @Column(name = "transaction_time")
-    private LocalDateTime transactionTime;
+    @Column(name = "transaction_time", nullable = false)
+    @Builder.Default
+    private LocalDateTime transactionTime = LocalDateTime.now();
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 50)
-    private PaymentStatus status;
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private PaymentStatus status = PaymentStatus.PENDING;
 }

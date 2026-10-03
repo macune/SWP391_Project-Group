@@ -8,7 +8,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tickets")
+@Table(name = "tickets", uniqueConstraints = {
+        @UniqueConstraint(name = "UQ_Ticket_Showtime_Seat", columnNames = {"showtime_id", "seat_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -33,15 +35,16 @@ public class Ticket {
     @JoinColumn(name = "showtime_id", nullable = false)
     private Showtime showtime;
 
-    @Column(name = "qr_code", length = 500)
+    @Column(name = "qr_code", nullable = false, unique = true, length = 500)
     private String qrCode;
 
-    @Column(name = "price", precision = 18, scale = 2)
+    @Column(name = "price", nullable = false, precision = 18, scale = 2)
     private BigDecimal price;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 50)
-    private TicketStatus status;
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private TicketStatus status = TicketStatus.LOCKED;
 
     @Column(name = "checked_in_at")
     private LocalDateTime checkedInAt;

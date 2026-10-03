@@ -37,14 +37,15 @@ public class Showtime {
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
-    @Column(name = "base_price", precision = 18, scale = 2)
+    @Column(name = "base_price", nullable = false, precision = 18, scale = 2)
     private BigDecimal basePrice;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 50)
-    private ShowtimeStatus status;
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private ShowtimeStatus status = ShowtimeStatus.SCHEDULED;
 
-    @OneToMany(mappedBy = "showtime", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "showtime", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Ticket> tickets = new ArrayList<>();
 }

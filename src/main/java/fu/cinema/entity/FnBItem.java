@@ -1,5 +1,6 @@
 package fu.cinema.entity;
 
+import fu.cinema.enums.FnBCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,22 +22,24 @@ public class FnBItem {
     @Column(name = "item_id")
     private Long itemId;
 
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String name;
 
-    @Column(name = "category", length = 100)
-    private String category;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false, length = 50)
+    private FnBCategory category;
 
-    @Column(name = "price", precision = 18, scale = 2)
+    @Column(name = "price", nullable = false, precision = 18, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "is_available")
-    private Boolean isAvailable;
+    @Column(name = "is_available", nullable = false)
+    @Builder.Default
+    private Boolean isAvailable = true;
 
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
-    @OneToMany(mappedBy = "fnbItem", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "fnbItem", fetch = FetchType.LAZY)
     @Builder.Default
     private List<BookingFnB> bookingFnbs = new ArrayList<>();
 }

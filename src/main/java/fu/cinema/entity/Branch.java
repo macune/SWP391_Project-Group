@@ -1,5 +1,6 @@
 package fu.cinema.entity;
 
+import fu.cinema.enums.BranchStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,29 +22,31 @@ public class Branch {
     @Column(name = "branch_id")
     private Long branchId;
 
-    @Column(name = "branch_name", nullable = false, length = 255)
+    @Column(name = "branch_name", nullable = false, unique = true, columnDefinition = "NVARCHAR(255)")
     private String branchName;
 
-    @Column(name = "address", length = 500)
+    @Column(name = "address", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String address;
 
-    @Column(name = "hotline", length = 20)
+    @Column(name = "hotline", nullable = false, length = 20)
     private String hotline;
 
-    @Column(name = "opening_time")
+    @Column(name = "opening_time", nullable = false)
     private LocalTime openingTime;
 
-    @Column(name = "closing_time")
+    @Column(name = "closing_time", nullable = false)
     private LocalTime closingTime;
 
-    @Column(name = "status", length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private BranchStatus status = BranchStatus.ACTIVE;
 
     @OneToMany(mappedBy = "branch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Hall> halls = new ArrayList<>();
 
-    @OneToMany(mappedBy = "branch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "branch", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Staff> staffList = new ArrayList<>();
 }

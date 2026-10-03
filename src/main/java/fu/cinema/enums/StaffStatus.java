@@ -1,6 +1,6 @@
 package fu.cinema.enums;
 
-public enum SeatStatus {
+public enum StaffStatus {
     ACTIVE,
-    BROKEN
+    INACTIVE
 }
