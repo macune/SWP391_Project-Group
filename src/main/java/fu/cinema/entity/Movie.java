@@ -54,7 +54,7 @@ public class Movie {
     @Builder.Default
     private MovieStatus status = MovieStatus.COMING_SOON;
 
-    // Lưu ý: Đảm bảo bạn đã có class Showtime, nếu chưa hãy comment tạm 3 dòng này lại
+
     //@OneToMany(mappedBy = "movie", fetch = FetchType.LAZY)
     //@Builder.Default
     //private List<Showtime> showtimes = new ArrayList<>();

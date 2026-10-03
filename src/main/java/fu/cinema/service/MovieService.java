@@ -17,7 +17,7 @@ public class MovieService {
     private MovieRepository movieRepository;
 
     public void addMovie(MovieRequest request) {
-        // Dùng Builder của Lombok để tạo Entity nhanh chóng
+        // Dùng Builder của Lombok để tạo Entity
         Movie movie = Movie.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
