@@ -1,0 +1,518 @@
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          ~{::title},
+          ~{layout/sidebar :: manager-sidebar},
+          ~{::content},
+          ~{},
+          ~{::actorJs}
+      )}">
+
+<head>
+
+    <title>
+        F&B Management
+    </title>
+
+</head>
+
+<body>
+
+
+
+<th:block th:fragment="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                Quản lý Bắp nước
+            </h2>
+
+            <p class="text-cine-pastel mb-0">
+                Quản lý các sản phẩm đồ ăn và thức uống
+            </p>
+        </div>
+
+        <button class="btn btn-cine"
+                data-bs-toggle="modal"
+                data-bs-target="#fnbModal">
+
+            <i class="fa-solid fa-plus me-1"></i>
+            Thêm sản phẩm
+
+        </button>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- F&B TABLE -->
+    <!-- ========================= -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <table class="table table-cine align-middle">
+
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Ảnh</th>
+                    <th>Tên</th>
+                    <th>Danh mục</th>
+                    <th>Giá</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+
+                </tr>
+                </thead>
+
+                <tbody id="fnbTableBody">
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- MODAL -->
+    <!-- ========================= -->
+
+    <div class="modal fade"
+         id="fnbModal"
+         tabindex="-1">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title"
+                        id="modalTitle">
+
+                        Thêm sản phẩm
+
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal">
+                    </button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <input type="hidden"
+                           id="id">
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Tên sản phẩm
+                        </label>
+
+                        <input type="text"
+                               id="itemName"
+                               class="form-control">
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Danh mục
+                        </label>
+
+                        <select id="itemCategory"
+                                class="form-select">
+
+                            <option value="">
+                                -- Chọn danh mục --
+                            </option>
+
+                            <option value="POPCORN">
+                                Popcorn
+                            </option>
+
+                            <option value="DRINK">
+                                Drink
+                            </option>
+
+                            <option value="COMBO">
+                                Combo
+                            </option>
+
+                            <option value="FOOD">
+                                Food
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Giá
+                        </label>
+
+                        <input type="number"
+                               id="itemPrice"
+                               class="form-control"
+                               min="0">
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Trạng thái
+                        </label>
+
+                        <select id="itemAvailable"
+                                class="form-select">
+
+                            <option value="true">
+                                Available
+                            </option>
+
+                            <option value="false">
+                                Unavailable
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Image URL
+                        </label>
+
+                        <input type="text"
+                               id="itemImageUrl"
+                               class="form-control">
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-outline-cine"
+                            data-bs-dismiss="modal">
+
+                        Hủy
+
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-cine"
+                            onclick="saveItem()">
+
+                        Lưu
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+<!-- ========================= -->
+<!-- JAVASCRIPT -->
+<!-- ========================= -->
+
+<th:block th:fragment="actorJs">
+
+    <script>
+
+        const API_URL = "/api/fnb-items";
+
+
+        async function loadItems() {
+
+            const response = await fetch(API_URL);
+
+            const items = await response.json();
+
+            const tbody =
+                document.getElementById("fnbTableBody");
+
+            tbody.innerHTML = "";
+
+
+            items.forEach(item => {
+
+                const row =
+                    document.createElement("tr");
+
+
+                row.innerHTML = `
+
+            <td>
+                ${item.id}
+            </td>
+
+            <td>
+
+                ${
+                    item.imageUrl
+
+                        ? `<img
+                            src="${item.imageUrl}"
+                            width="55"
+                            height="55"
+                            class="rounded"
+                            style="object-fit:cover;"
+                       >`
+
+                        : "No image"
+                }
+
+            </td>
+
+            <td class="fw-semibold">
+                ${item.name}
+            </td>
+
+            <td>
+                ${item.category}
+            </td>
+
+            <td>
+                ${Number(item.price).toLocaleString("vi-VN")}
+                VND
+            </td>
+
+            <td>
+
+                ${
+                    item.isAvailable
+
+                        ? `<span class="badge bg-success">
+                            Available
+                       </span>`
+
+                        : `<span class="badge bg-secondary">
+                            Unavailable
+                       </span>`
+                }
+
+            </td>
+
+            <td class="text-end">
+
+                <button
+                    class="btn btn-sm btn-outline-cine"
+                    onclick='editItem(${JSON.stringify(item)})'>
+
+                    Edit
+
+                </button>
+
+                <button
+                    class="btn btn-sm btn-outline-danger"
+                    onclick="deleteItem(${item.id})">
+
+                    Delete
+
+                </button>
+
+            </td>
+
+        `;
+
+
+                tbody.appendChild(row);
+
+            });
+
+        }
+
+
+        function editItem(item) {
+
+            document.getElementById("modalTitle").innerText =
+                "Chỉnh sửa sản phẩm";
+
+            document.getElementById("id").value =
+                item.id;
+
+            document.getElementById("itemName").value =
+                item.name;
+
+            document.getElementById("itemCategory").value =
+                item.category;
+
+            document.getElementById("itemPrice").value =
+                item.price;
+
+            document.getElementById("itemAvailable").value =
+                item.isAvailable;
+
+            document.getElementById("itemImageUrl").value =
+                item.imageUrl || "";
+
+
+            const modal =
+                new bootstrap.Modal(
+                    document.getElementById("fnbModal")
+                );
+
+            modal.show();
+
+        }
+
+
+        async function saveItem() {
+
+            const id =
+                document.getElementById("id").value;
+
+
+            const data = {
+
+                name:
+                document.getElementById("itemName").value,
+
+                category:
+                document.getElementById("itemCategory").value,
+
+                price:
+                    Number(
+                        document.getElementById("itemPrice").value
+                    ),
+
+                isAvailable:
+                    document.getElementById("itemAvailable").value
+                    === "true",
+
+                imageUrl:
+                document.getElementById("itemImageUrl").value
+
+            };
+
+
+            let response;
+
+
+            if (id) {
+
+                response = await fetch(
+                    `${API_URL}/${id}`,
+                    {
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify(data)
+                    }
+                );
+
+            } else {
+
+                response = await fetch(
+                    API_URL,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify(data)
+                    }
+                );
+
+            }
+
+
+            if (!response.ok) {
+
+                const error = await response.json().catch(() => null);
+
+                alert(
+                    error?.message ||
+                    `Save failed. Status: ${response.status}`
+                );
+
+                return;
+            }
+
+
+            bootstrap.Modal
+                .getInstance(
+                    document.getElementById("fnbModal")
+                )
+                .hide();
+
+
+            loadItems();
+
+        }
+
+
+        async function deleteItem(id) {
+
+            if (!confirm(
+                "Bạn có chắc muốn xóa sản phẩm này?"
+            )) {
+                return;
+            }
+
+
+            const response =
+                await fetch(
+                    `${API_URL}/${id}`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                alert("Delete failed");
+
+                return;
+
+            }
+
+
+            loadItems();
+
+        }
+
+
+        loadItems();
+
+    </script>
+
+</th:block>
+</th:block>
+</body>
+
+</html>
