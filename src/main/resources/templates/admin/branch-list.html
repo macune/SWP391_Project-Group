@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: admin-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{::script}
+      )}">
+<head>
+    <title>Quản lý Chi nhánh | CineFlow Admin</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0">🏢 Danh sách Chi nhánh hệ thống</h4>
+        <button type="button" class="btn btn-cine px-3 py-2" data-bs-toggle="modal" data-bs-target="#addBranchModal">
+            <i class="fa-solid fa-plus me-1"></i>Thêm Chi nhánh mới
+        </button>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                <tr>
+                    <th class="ps-3">ID</th>
+                    <th>Tên chi nhánh</th>
+                    <th>Địa chỉ</th>
+                    <th>Hotline</th>
+                    <th>Giờ hoạt động</th>
+                    <th>Trạng thái</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(branches)}">
+                    <td colspan="6" class="text-center py-4 text-muted">Chưa có chi nhánh nào được tạo.</td>
+                </tr>
+                <tr th:each="b : ${branches}">
+                    <td class="ps-3 fw-bold" th:text="${b.branchId}">1</td>
+                    <td class="fw-semibold text-primary" th:text="${b.branchName}">CineFlow Hà Nội</td>
+                    <td th:text="${b.address}">123 Cầu Giấy, Hà Nội</td>
+                    <td th:text="${b.hotline}">0123456789</td>
+                    <td th:text="${b.openingTime + ' - ' + b.closingTime}">08:00 - 23:30</td>
+                    <td>
+                        <span class="badge"
+                              th:classappend="${b.status.name() == 'ACTIVE' ? 'bg-success' : (b.status.name() == 'MAINTENANCE' ? 'bg-warning text-dark' : 'bg-secondary')}"
+                              th:text="${b.status}">ACTIVE</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addBranchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-building me-2"></i>Thêm Chi nhánh mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/admin/branches/add}" th:object="${newBranch}" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Tên chi nhánh <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{branchName}" class="form-control" placeholder="Nhập tên rạp (ví dụ: CineFlow Cầu Giấy)" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Địa chỉ <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{address}" class="form-control" placeholder="Nhập địa chỉ đầy đủ" required>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Hotline <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{hotline}" class="form-control" placeholder="0123456789" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Trạng thái</label>
+                                <select th:field="*{status}" class="form-select">
+                                    <option th:each="st : ${statuses}" th:value="${st}" th:text="${st}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Giờ mở cửa <span class="text-danger">*</span></label>
+                                <input type="time" th:field="*{openingTime}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Giờ đóng cửa <span class="text-danger">*</span></label>
+                                <input type="time" th:field="*{closingTime}" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-cine px-4">Lưu Chi nhánh</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+</body>
+</html>
