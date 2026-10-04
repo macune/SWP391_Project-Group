@@ -119,4 +119,8 @@ public class MovieService {
             throw new IllegalArgumentException("Không thể xóa. Không tìm thấy phim với ID: " + id);
         }
     }
+    // Kiểm tra xem tên phim đã tồn tại chưa
+    public boolean checkDuplicateTitle(String title) {
+        return movieRepository.existsByTitleIgnoreCase(title);
+    }
 }

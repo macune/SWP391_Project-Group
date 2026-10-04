@@ -30,7 +30,16 @@ public class MovieController {
     }
 
     @PostMapping("/add")
-    public String processAddMovie(@ModelAttribute("movieRequest") MovieRequest request) {
+    public String processAddMovie(@ModelAttribute("movieRequest") MovieRequest request,
+                                  @RequestParam(required = false, name = "confirmDuplicate") Boolean confirmDuplicate,
+                                  Model model) {
+   
+        if (!Boolean.TRUE.equals(confirmDuplicate) && movieService.checkDuplicateTitle(request.getTitle())) {
+            model.addAttribute("duplicateWarning", "Phim '" + request.getTitle() + "' đã tồn tại trong hệ thống! Bạn có chắc chắn muốn thêm một bản ghi mới với tên trùng lặp không?");
+            model.addAttribute("movieRequest", request);
+            return "admin/add-movie";
+        }
+
         movieService.addMovie(request);
         return "redirect:/movies?success";
     }

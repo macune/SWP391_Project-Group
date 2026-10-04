@@ -3,16 +3,21 @@
       th:replace="~{layout/layout :: master(~{::title}, ~{::#sidebar}, ~{::#content}, ~{::#actorCss}, ~{::#actorJs})}">
 <head>
     <title>Thêm Phim Mới | CineFlow Admin</title>
-    <th:block id="actorCss"><link rel="stylesheet" th:href="@{/css/admin.css}"></th:block>
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/admin.css}">
+    </th:block>
 </head>
 <body>
+<!-- SIDEBAR -->
 <th:block id="sidebar">
     <div th:replace="~{layout/sidebar :: admin-sidebar}"></div>
 </th:block>
 
+<!-- CONTENT -->
 <div id="content" class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
+            <!-- Nút quay lại -->
             <a th:href="@{/movies}" class="text-decoration-none text-cine-pastel mb-3 d-inline-block hover-primary">
                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
             </a>
@@ -23,14 +28,15 @@
                 </div>
 
                 <div class="card-body p-4 text-light">
-                    <!-- HIỂN THỊ LỖI NẾU CÓ -->
-                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <!-- KHỐI HIỂN THỊ LỖI CHUNG (NẾU CÓ LỖI TỪ BACKEND NHƯ THỜI LƯỢNG ÂM) -->
+                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
                         <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
 
                     <form th:action="@{/movies/add}" th:object="${movieRequest}" method="POST">
 
+                        <!--Tên phim & Ngày chiếu -->
                         <div class="row mb-3">
                             <div class="col-md-8">
                                 <label class="form-label text-cine-pastel fw-medium">Tên phim <span class="text-danger">*</span></label>
@@ -43,25 +49,47 @@
                             </div>
                         </div>
 
+                        <!-- Thể loại, Ngôn ngữ, Thời lượng -->
                         <div class="row mb-3">
                             <div class="col-md-5">
                                 <label class="form-label text-cine-pastel fw-medium">Thể loại <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control bg-dark text-light border-cine" th:field="*{genre}" placeholder="Hành động, Tình cảm..." required />
+                                <!-- Dạng Select Dropdown -->
+                                <select class="form-select bg-dark text-light border-cine" th:field="*{genre}" required>
+                                    <option value="" disabled selected>-- Chọn thể loại --</option>
+                                    <option value="Hành động">Hành động</option>
+                                    <option value="Hài hước">Hài hước</option>
+                                    <option value="Tình cảm">Tình cảm</option>
+                                    <option value="Kinh dị">Kinh dị</option>
+                                    <option value="Hoạt hình">Hoạt hình</option>
+                                    <option value="Khoa học viễn tưởng">Khoa học viễn tưởng</option>
+                                    <option value="Tâm lý - Giật gân">Tâm lý - Giật gân</option>
+                                    <option value="Phiêu lưu">Phiêu lưu</option>
+                                    <option value="Tài liệu">Tài liệu</option>
+                                </select>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label text-cine-pastel fw-medium">Ngôn ngữ <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control bg-dark text-light border-cine" th:field="*{language}" placeholder="Tiếng Anh - Phụ đề TV" required />
+                                <!-- Dạng Select Dropdown -->
+                                <select class="form-select bg-dark text-light border-cine" th:field="*{language}" required>
+                                    <option value="" disabled selected>-- Chọn ngôn ngữ --</option>
+                                    <option value="Tiếng Anh - Phụ đề">Tiếng Anh - Phụ đề VN</option>
+                                    <option value="Tiếng Hàn - Phụ đề">Tiếng Hàn - Phụ đề VN</option>
+                                    <option value="Tiếng Nhật - Phụ đề">Tiếng Nhật - Phụ đề VN</option>
+                                    <option value="Tiếng Thái - Phụ đề">Tiếng Thái - Phụ đề VN</option>
+                                    <option value="Tiếng Việt">Phim Tiếng Việt</option>
+                                    <option value="Lồng tiếng">Lồng tiếng Tiếng Việt</option>
+                                </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label text-cine-pastel fw-medium">Thời lượng <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <!-- CHẶN FRONTEND: min là 1 -->
                                     <input type="number" class="form-control bg-dark text-light border-cine" th:field="*{duration}" min="1" required />
                                     <span class="input-group-text bg-secondary border-cine text-light">phút</span>
                                 </div>
                             </div>
                         </div>
 
+                        <!--Nhãn độ tuổi & Trạng thái -->
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label text-cine-pastel fw-medium">Nhãn độ tuổi <span class="text-danger">*</span></label>
@@ -82,6 +110,7 @@
                             </div>
                         </div>
 
+                        <!-- Liên kết Media -->
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label text-cine-pastel fw-medium">Link Ảnh Poster URL</label>
@@ -93,17 +122,38 @@
                             </div>
                         </div>
 
+                        <!-- Mô tả -->
                         <div class="mb-4">
                             <label class="form-label text-cine-pastel fw-medium">Mô tả tóm tắt nội dung</label>
                             <textarea class="form-control bg-dark text-light border-cine" th:field="*{description}" rows="5" placeholder="Nhập nội dung phim..."></textarea>
                         </div>
 
-                        <div class="text-end border-top border-cine pt-3 mt-4">
+                        <!-- ================= PHẦN NÚT BẤM (ĐÃ CHỈNH SỬA) ================= -->
+
+                        <!-- KHỐI 1: HIỂN THỊ KHI PHÁT HIỆN TRÙNG TÊN -->
+                        <div th:if="${duplicateWarning}" class="alert alert-warning shadow-sm mt-4 mb-0" role="alert">
+                            <h5 class="alert-heading text-dark fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Phát hiện trùng lặp dữ liệu!</h5>
+                            <p class="text-dark mb-3" th:text="${duplicateWarning}"></p>
+                            <hr class="border-warning">
+                            <div class="d-flex justify-content-end">
+                                <!-- Nút Hủy (Không lưu nữa) -->
+                                <a th:href="@{/movies}" class="btn btn-outline-dark me-2 px-4">Hủy bỏ</a>
+                                <!-- Nút Ép lưu (Gửi tham số confirmDuplicate=true lên Controller) -->
+                                <button type="submit" name="confirmDuplicate" value="true" class="btn btn-warning fw-bold text-dark px-4 shadow">
+                                    <i class="fa-solid fa-check-double me-2"></i>Vẫn Thêm Phim
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KHỐI 2: HIỂN THỊ KHI BÌNH THƯỜNG (Bị ẩn đi nếu có cảnh báo trùng) -->
+                        <div class="text-end border-top border-cine pt-3 mt-4" th:if="${duplicateWarning == null}">
                             <a th:href="@{/movies}" class="btn btn-outline-secondary me-2 px-4">Hủy bỏ</a>
                             <button type="submit" class="btn btn-cine px-5 fw-bold">
                                 <i class="fa-solid fa-floppy-disk me-2"></i>Lưu Phim Mới
                             </button>
                         </div>
+
+                        <!-- ================= KẾT THÚC PHẦN NÚT BẤM ================= -->
 
                     </form>
                 </div>
@@ -112,6 +162,8 @@
     </div>
 </div>
 
-<th:block id="actorJs"><script th:src="@{/js/admin.js}"></script></th:block>
+<th:block id="actorJs">
+    <script th:src="@{/js/admin.js}"></script>
+</th:block>
 </body>
 </html>

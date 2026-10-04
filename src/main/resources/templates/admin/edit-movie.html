@@ -38,19 +38,41 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label text-cine-pastel fw-medium">Ngày khởi chiếu <span class="text-danger">*</span></label>
-                                <!-- CHẶN FRONTEND: min là ngày hiện tại -->
-                                <input type="date" class="form-control bg-dark text-light border-cine" th:field="*{releaseDate}" th:attr="min=${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required />
+                                <!-- Bỏ th:field, dùng name và th:value với định dạng yyyy-MM-dd -->
+                                <input type="date" class="form-control bg-dark text-light border-cine"
+                                       id="releaseDate" name="releaseDate"
+                                       th:value="${#temporals.format(movieRequest.releaseDate, 'yyyy-MM-dd')}"
+                                       required />
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-5">
                                 <label class="form-label text-cine-pastel fw-medium">Thể loại <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control bg-dark text-light border-cine" th:field="*{genre}" required />
+                                <select class="form-select bg-dark text-light border-cine" th:field="*{genre}" required>
+                                    <option value="" disabled selected>-- Chọn thể loại --</option>
+                                    <option value="Hành động">Hành động</option>
+                                    <option value="Hài hước">Hài hước</option>
+                                    <option value="Tình cảm">Tình cảm</option>
+                                    <option value="Kinh dị">Kinh dị</option>
+                                    <option value="Hoạt hình">Hoạt hình</option>
+                                    <option value="Khoa học viễn tưởng">Khoa học viễn tưởng</option>
+                                    <option value="Tâm lý - Giật gân">Tâm lý - Giật gân</option>
+                                    <option value="Phiêu lưu">Phiêu lưu</option>
+                                    <option value="Tài liệu">Tài liệu</option>
+                                </select>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label text-cine-pastel fw-medium">Ngôn ngữ <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control bg-dark text-light border-cine" th:field="*{language}" required />
+                                <select class="form-select bg-dark text-light border-cine" th:field="*{language}" required>
+                                    <option value="" disabled selected>-- Chọn ngôn ngữ --</option>
+                                    <option value="Tiếng Anh - Phụ đề">Tiếng Anh - Phụ đề VN</option>
+                                    <option value="Tiếng Hàn - Phụ đề">Tiếng Hàn - Phụ đề VN</option>
+                                    <option value="Tiếng Nhật - Phụ đề">Tiếng Nhật - Phụ đề VN</option>
+                                    <option value="Tiếng Thái - Phụ đề">Tiếng Thái - Phụ đề VN</option>
+                                    <option value="Tiếng Việt">Phim Tiếng Việt</option>
+                                    <option value="Lồng tiếng">Lồng tiếng Tiếng Việt</option>
+                                </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label text-cine-pastel fw-medium">Thời lượng <span class="text-danger">*</span></label>
