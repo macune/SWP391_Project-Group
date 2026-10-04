@@ -12,12 +12,6 @@ public class HomeController {
         return "customer/home";
     }
 
-    // 2. Giao diện Đăng nhập chung
-    @GetMapping("/login")
-    public String loginPage() {
-        return "common/login";
-    }
-
     // 3. Giao diện System Admin
     @GetMapping("/admin/dashboard")
     public String adminDashboard() {

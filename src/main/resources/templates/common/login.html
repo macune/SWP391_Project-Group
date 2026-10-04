@@ -14,24 +14,57 @@
 
 <div id="page-content" class="container py-5">
     <div class="card shadow-sm border-0 mx-auto auth-card">
-        <div class="card-body p-4">
+        <div class="card-body p-4 p-md-5">
             <div class="text-center mb-4">
                 <i class="fa-solid fa-clapperboard fs-2 text-cine-primary mb-2"></i>
-                <h4 class="fw-bold mb-0">ĐĂNG NHẬP CINEFLOW</h4>
+                <h4 class="fw-bold mb-1">ĐĂNG NHẬP CINEFLOW</h4>
                 <p class="small text-muted">Hệ thống rạp chiếu phim đa chi nhánh</p>
             </div>
-            <form th:action="@{/login}" method="post">
+
+            <!-- Thông báo đăng ký thành công nếu được chuyển hướng từ trang Đăng ký -->
+            <div class="alert alert-success py-2 mb-3 small" th:if="${successMessage}" th:text="${successMessage}"></div>
+
+            <!-- Thông báo lỗi khi đăng nhập thất bại -->
+            <div class="alert alert-danger py-2 mb-3 small" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+            <div class="alert alert-danger py-2 mb-3 small" th:if="${param.error != null and errorMessage == null}">
+                Tên đăng nhập hoặc mật khẩu không chính xác!
+            </div>
+
+            <!-- Thông báo khi đăng xuất -->
+            <div class="alert alert-info py-2 mb-3 small" th:if="${param.logout != null}">
+                Bạn đã đăng xuất khỏi hệ thống thành công.
+            </div>
+
+            <form th:action="@{/login}" th:object="${loginRequest}" method="post">
                 <div class="mb-3">
-                    <label class="form-label fw-medium">Tài khoản / Email</label>
-                    <input type="text" name="username" class="form-control" placeholder="Nhập email..." required>
+                    <label class="form-label fw-medium">Tài khoản / Email <span class="text-danger">*</span></label>
+                    <input type="text" th:field="*{username}" class="form-control"
+                           th:classappend="${#fields.hasErrors('username')} ? 'is-invalid' : ''"
+                           placeholder="Nhập tài khoản hoặc email..." required>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
                 </div>
+
                 <div class="mb-3">
-                    <label class="form-label fw-medium">Mật khẩu</label>
-                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                    <label class="form-label fw-medium">Mật khẩu <span class="text-danger">*</span></label>
+                    <input type="password" th:field="*{password}" class="form-control"
+                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                           placeholder="••••••••" required>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                 </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" th:field="*{rememberMe}" class="form-check-input" id="rememberMe">
+                    <label class="form-check-label small text-muted" for="rememberMe">Ghi nhớ đăng nhập</label>
+                </div>
+
                 <button type="submit" class="btn btn-cine w-100 mt-2 py-2">
                     <i class="fa-solid fa-right-to-bracket me-1"></i>Đăng Nhập
                 </button>
+
+                <div class="text-center mt-3">
+                    <span class="small text-muted">Chưa có tài khoản? </span>
+                    <a th:href="@{/register}" class="small text-decoration-none fw-medium text-cine-primary">Đăng ký ngay</a>
+                </div>
             </form>
         </div>
     </div>
