@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(~{::title}, ~{::#sidebar}, ~{::#content}, ~{::#actorCss}, ~{::#actorJs})}">
+<head>
+    <title>Thêm Phim Mới | CineFlow Admin</title>
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/admin.css}">
+    </th:block>
+</head>
+<body>
+<!-- SIDEBAR -->
+<th:block id="sidebar">
+    <div th:replace="~{layout/sidebar :: admin-sidebar}"></div>
+</th:block>
+
+<!-- CONTENT -->
+<div id="content" class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Nút quay lại -->
+            <a th:href="@{/movies}" class="text-decoration-none text-cine-pastel mb-3 d-inline-block hover-primary">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
+            </a>
+
+            <div class="card bg-cine-dark border-cine shadow-lg">
+                <div class="card-header border-cine bg-dark py-3">
+                    <h4 class="mb-0 text-cine-primary fw-bold"><i class="fa-solid fa-film me-2"></i>Thêm Phim Mới</h4>
+                </div>
+
+                <div class="card-body p-4 text-light">
+                    <form th:action="@{/movies/add}" th:object="${movieRequest}" method="POST">
+
+                        <!--Tên phim & Ngày chiếu -->
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label text-cine-pastel fw-medium">Tên phim <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control bg-dark text-light border-cine" th:field="*{title}" placeholder="Nhập tên bộ phim" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-cine-pastel fw-medium">Ngày khởi chiếu <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control bg-dark text-light border-cine" th:field="*{releaseDate}" required />
+                            </div>
+                        </div>
+
+                        <!-- Thể loại, Ngôn ngữ, Thời lượng -->
+                        <div class="row mb-3">
+                            <div class="col-md-5">
+                                <label class="form-label text-cine-pastel fw-medium">Thể loại <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control bg-dark text-light border-cine" th:field="*{genre}" placeholder="Hành động, Tình cảm..." required />
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label text-cine-pastel fw-medium">Ngôn ngữ <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control bg-dark text-light border-cine" th:field="*{language}" placeholder="Tiếng Anh - Phụ đề TV" required />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-cine-pastel fw-medium">Thời lượng <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control bg-dark text-light border-cine" th:field="*{duration}" min="1" required />
+                                    <span class="input-group-text bg-secondary border-cine text-light">phút</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!--Nhãn độ tuổi & Trạng thái -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-cine-pastel fw-medium">Nhãn độ tuổi <span class="text-danger">*</span></label>
+                                <select class="form-select bg-dark text-light border-cine" th:field="*{ageRating}">
+                                    <option value="P">P - Phổ biến (Mọi độ tuổi)</option>
+                                    <option value="T13">T13 - Khán giả từ 13 tuổi trở lên</option>
+                                    <option value="T16">T16 - Khán giả từ 16 tuổi trở lên</option>
+                                    <option value="T18">T18 - Khán giả từ 18 tuổi trở lên</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-cine-pastel fw-medium">Trạng thái <span class="text-danger">*</span></label>
+                                <select class="form-select bg-dark text-light border-cine" th:field="*{status}">
+                                    <option value="COMING_SOON">Sắp chiếu</option>
+                                    <option value="NOW_SHOWING">Đang chiếu</option>
+                                    <option value="ENDED">Ngừng chiếu</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Liên kết Media -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-cine-pastel fw-medium">Link Ảnh Poster URL</label>
+                                <input type="url" class="form-control bg-dark text-light border-cine" th:field="*{posterUrl}" placeholder="https://..." />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-cine-pastel fw-medium">Link Trailer (Youtube)</label>
+                                <input type="url" class="form-control bg-dark text-light border-cine" th:field="*{trailerUrl}" placeholder="https://youtube.com/..." />
+                            </div>
+                        </div>
+
+                        <!-- Mô tả -->
+                        <div class="mb-4">
+                            <label class="form-label text-cine-pastel fw-medium">Mô tả tóm tắt nội dung</label>
+                            <textarea class="form-control bg-dark text-light border-cine" th:field="*{description}" rows="5" placeholder="Nhập nội dung phim..."></textarea>
+                        </div>
+
+                        <div class="text-end border-top border-cine pt-3 mt-4">
+                            <a th:href="@{/movies}" class="btn btn-outline-secondary me-2 px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-cine px-5 fw-bold">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>Lưu Phim Mới
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<th:block id="actorJs">
+    <script th:src="@{/js/admin.js}"></script>
+</th:block>
+</body>
+</html>

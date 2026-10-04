@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(~{::title}, ~{::#sidebar}, ~{::#content}, ~{::#actorCss}, ~{::#actorJs})}">
+<head>
+    <title>Danh Sách Phim | CineFlow Admin</title>
+
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/admin.css}">
+    </th:block>
+</head>
+<body>
+
+<th:block id="sidebar">
+    <div th:replace="~{layout/sidebar :: admin-sidebar}"></div>
+</th:block>
+
+<!--Nội dung chính của trang quản lý phim -->
+<div id="content" class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-cine pb-3">
+        <h2 class="text-cine-primary fw-bold mb-0">
+            <i class="fa-solid fa-film me-2"></i>Quản Lý Phim
+        </h2>
+        <a th:href="@{/movies/add}" class="btn btn-cine px-4 fw-medium shadow-sm">
+            <i class="fa-solid fa-plus me-2"></i>Thêm Phim Mới
+        </a>
+    </div>
+
+    <!-- Thông báo thao tác thành công -->
+    <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show bg-dark text-success border-success" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i>Thao tác thành công!
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Bảng Danh Sách Phim -->
+    <div class="card bg-cine-dark border-cine shadow">
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead class="table-active">
+                <tr>
+                    <th class="text-center">ID</th>
+                    <th class="text-center">Poster</th>
+                    <th>Tên Phim</th>
+                    <th>Thông tin</th>
+                    <th>Định dạng</th>
+                    <th>Trạng thái</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="movie : ${movies}">
+                    <td class="text-center fw-bold text-cine-pastel" th:text="${movie.movieId}"></td>
+                    <td class="text-center">
+                        <img th:if="${movie.posterUrl != null and !movie.posterUrl.isEmpty()}"
+                             th:src="${movie.posterUrl}"
+                             class="rounded object-fit-cover shadow-sm" width="60" height="85" alt="Poster">
+                        <div th:unless="${movie.posterUrl != null and !movie.posterUrl.isEmpty()}"
+                             class="bg-secondary rounded d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 85px;">
+                            <i class="fa-solid fa-image text-dark opacity-50"></i>
+                        </div>
+                    </td>
+                    <td>
+                        <h6 class="mb-1 text-light fw-bold" th:text="${movie.title}"></h6>
+                        <span class="badge bg-secondary" th:text="${movie.ageRating}"></span>
+                        <span class="small text-cine-pastel ms-2" th:text="${movie.genre}"></span>
+                    </td>
+                    <td>
+                        <div class="small text-light mb-1">
+                            <i class="fa-regular fa-clock me-1 text-cine-primary"></i> <span th:text="${movie.duration} + ' phút'"></span>
+                        </div>
+                        <div class="small text-light">
+                            <i class="fa-regular fa-calendar me-1 text-cine-primary"></i> <span th:text="${#temporals.format(movie.releaseDate, 'dd/MM/yyyy')}"></span>
+                        </div>
+                    </td>
+                    <td class="small text-light" th:text="${movie.language}"></td>
+                    <td>
+                        <span class="badge rounded-pill bg-success" th:if="${movie.status.name() == 'NOW_SHOWING'}">Đang chiếu</span>
+                        <span class="badge rounded-pill bg-warning text-dark" th:if="${movie.status.name() == 'COMING_SOON'}">Sắp chiếu</span>
+                        <span class="badge rounded-pill bg-danger" th:if="${movie.status.name() == 'ENDED'}">Ngừng chiếu</span>
+                    </td>
+                    <td class="text-center">
+                        <a th:href="@{/movies/edit/{id}(id=${movie.movieId})}" class="btn btn-sm btn-outline-info me-1" title="Sửa"><i class="fa-solid fa-pen"></i></a>
+                        <a th:href="@{/movies/delete/{id}(id=${movie.movieId})}" class="btn btn-sm btn-outline-danger" title="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa phim này?');"><i class="fa-solid fa-trash"></i></a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(movies)}">
+                    <td colspan="7" class="text-center py-5 text-secondary">
+                        <i class="fa-solid fa-film fs-1 mb-3 d-block opacity-50"></i>
+                        <h5>Chưa có dữ liệu phim</h5>
+                        <p class="mb-0">Hãy bấm nút "Thêm Phim Mới" để bắt đầu.</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<th:block id="actorJs">
+    <script th:src="@{/js/admin.js}"></script>
+</th:block>
+</body>
+</html>
