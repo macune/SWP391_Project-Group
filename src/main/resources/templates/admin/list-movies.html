@@ -3,7 +3,6 @@
       th:replace="~{layout/layout :: master(~{::title}, ~{::#sidebar}, ~{::#content}, ~{::#actorCss}, ~{::#actorJs})}">
 <head>
     <title>Danh Sách Phim | CineFlow Admin</title>
-
     <th:block id="actorCss">
         <link rel="stylesheet" th:href="@{/css/admin.css}">
     </th:block>
@@ -14,7 +13,6 @@
     <div th:replace="~{layout/sidebar :: admin-sidebar}"></div>
 </th:block>
 
-<!--Nội dung chính của trang quản lý phim -->
 <div id="content" class="container-fluid py-3">
     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-cine pb-3">
         <h2 class="text-cine-primary fw-bold mb-0">
@@ -25,13 +23,19 @@
         </a>
     </div>
 
-    <!-- Thông báo thao tác thành công -->
+    <!-- THÔNG BÁO THÀNH CÔNG NẾU TRÊN URL CÓ CHỮ ?success -->
     <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show bg-dark text-success border-success" role="alert">
-        <i class="fa-solid fa-circle-check me-2"></i>Thao tác thành công!
+        <i class="fa-solid fa-circle-check me-2"></i>Thao tác lưu phim thành công!
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
-    <!-- Bảng Danh Sách Phim -->
+    <!-- THÔNG BÁO LỖI TỪ GLOBAL EXCEPTION HANDLER (Ví dụ: ID không tồn tại) -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show bg-dark text-danger border-danger" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- BẢNG DANH SÁCH PHIM -->
     <div class="card bg-cine-dark border-cine shadow">
         <div class="card-body p-0 table-responsive">
             <table class="table table-dark table-hover align-middle mb-0">

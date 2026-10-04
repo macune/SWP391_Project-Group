@@ -1,6 +1,7 @@
 package fu.cinema.controller;
 
 import fu.cinema.dto.request.MovieRequest;
+import fu.cinema.dto.response.MovieResponse;
 import fu.cinema.service.MovieService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,37 +15,57 @@ public class MovieController {
     @Autowired
     private MovieService movieService;
 
-    // 1. Mở trang Danh sách
     @GetMapping
     public String listMovies(Model model) {
         model.addAttribute("movies", movieService.getAllMovies());
         return "admin/list-movies";
     }
 
-    // 2. Mở form Thêm phim
     @GetMapping("/add")
     public String showAddForm(Model model) {
-        model.addAttribute("movieRequest", new MovieRequest());
+        if (!model.containsAttribute("movieRequest")) {
+            model.addAttribute("movieRequest", new MovieRequest());
+        }
         return "admin/add-movie";
     }
 
-    // 3. Lưu Phim
     @PostMapping("/add")
     public String processAddMovie(@ModelAttribute("movieRequest") MovieRequest request) {
         movieService.addMovie(request);
         return "redirect:/movies?success";
     }
 
-    // 4. Xóa phim
+    @GetMapping("/edit/{id}")
+    public String showEditForm(@PathVariable("id") Long id, Model model) {
+        if (!model.containsAttribute("movieRequest")) {
+            MovieResponse movie = movieService.getMovieById(id);
+            MovieRequest request = MovieRequest.builder()
+                    .title(movie.getTitle())
+                    .description(movie.getDescription())
+                    .duration(movie.getDuration())
+                    .releaseDate(movie.getReleaseDate())
+                    .language(movie.getLanguage())
+                    .genre(movie.getGenre())
+                    .ageRating(movie.getAgeRating())
+                    .posterUrl(movie.getPosterUrl())
+                    .trailerUrl(movie.getTrailerUrl())
+                    .status(movie.getStatus())
+                    .build();
+            model.addAttribute("movieRequest", request);
+        }
+        model.addAttribute("movieId", id);
+        return "admin/edit-movie";
+    }
+
+    @PostMapping("/edit/{id}")
+    public String processEditMovie(@PathVariable("id") Long id, @ModelAttribute("movieRequest") MovieRequest request) {
+        movieService.updateMovie(id, request);
+        return "redirect:/movies?success";
+    }
+
     @GetMapping("/delete/{id}")
     public String deleteMovie(@PathVariable("id") Long id) {
         movieService.deleteMovie(id);
-        return "redirect:/movies";
-    }
-
-
-    @GetMapping("/edit/{id}")
-    public String showEditForm(@PathVariable("id") Long id) {
         return "redirect:/movies";
     }
 }
