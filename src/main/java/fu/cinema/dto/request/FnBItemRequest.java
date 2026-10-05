@@ -12,6 +12,8 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class FnBItemRequest {
+    private Long id;
+
     @NotBlank(message = "Name is required")
     private String name;
 

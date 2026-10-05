@@ -3,6 +3,7 @@ package fu.cinema.service;
 import fu.cinema.dto.request.FnBItemRequest;
 import fu.cinema.dto.response.FnBItemResponse;
 import fu.cinema.entity.FnBItem;
+import fu.cinema.enums.FnBCategory;
 import fu.cinema.exception.DuplicateFnBItemException;
 import fu.cinema.exception.FnBItemNotFoundException;
 import fu.cinema.mapper.FnBItemMapper;
@@ -85,5 +86,20 @@ public class FnBItemServiceImpl implements FnBItemService {
         fnBItem.setIsAvailable(availability);
         FnBItem updateItem = fnBItemRepository.save(fnBItem);
         return fnBItemMapper.toResponse(updateItem);
+    }
+    @Override
+    public List<FnBItemResponse> searchItems(
+            String name,
+            FnBCategory category) {
+
+        if (name != null && name.trim().isEmpty()) {
+            name = null;
+        }
+
+        return fnBItemRepository
+                .searchItems(name, category)
+                .stream()
+                .map(fnBItemMapper::toResponse)
+                .toList();
     }
 }

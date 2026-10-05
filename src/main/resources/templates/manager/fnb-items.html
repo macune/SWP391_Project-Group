@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/layout :: master(
@@ -10,7 +11,7 @@
 
 <head>
 
-    <title>
+    <title th:fragment="title">
         F&B Management
     </title>
 
@@ -18,13 +19,16 @@
 
 <body>
 
-
-
 <th:block th:fragment="content">
+
+    <!-- ========================= -->
+    <!-- HEADER -->
+    <!-- ========================= -->
 
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <div>
+
             <h2 class="fw-bold mb-1">
                 Quản lý Bắp nước
             </h2>
@@ -32,22 +36,92 @@
             <p class="text-cine-pastel mb-0">
                 Quản lý các sản phẩm đồ ăn và thức uống
             </p>
+
         </div>
 
-        <button class="btn btn-cine"
-                data-bs-toggle="modal"
-                data-bs-target="#fnbModal">
+        <!-- CREATE -->
+        <<button type="button"
+                 class="btn btn-cine"
+                 data-bs-toggle="modal"
+                 data-bs-target="#fnbModal">
 
-            <i class="fa-solid fa-plus me-1"></i>
-            Thêm sản phẩm
+        <i class="fa-solid fa-plus me-1"></i>
+        Thêm sản phẩm
 
-        </button>
+    </button>
 
     </div>
 
+    <form th:action="@{/manager/fnb-items}"
+          method="get"
+          class="row g-3 mb-4">
 
+        <!-- SEARCH -->
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">
+                Tìm kiếm theo tên
+            </label>
+
+            <input type="text"
+                   name="name"
+                   th:value="${param.name}"
+                   class="form-control"
+                   placeholder="Nhập tên sản phẩm...">
+        </div>
+
+        <!-- CATEGORY -->
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">
+                Danh mục
+            </label>
+
+            <select name="category"
+                    class="form-select">
+
+                <option value="">
+                    Tất cả danh mục
+                </option>
+
+                <option value="DRINK"
+                        th:selected="${param.category != null
+                    and param.category[0] == 'DRINK'}">
+                    Drink
+                </option>
+
+                <option value="COMBO"
+                        th:selected="${param.category != null
+                    and param.category[0] == 'COMBO'}">
+                    Combo
+                </option>
+
+                <option value="FOOD"
+                        th:selected="${param.category != null
+                    and param.category[0] == 'FOOD'}">
+                    Food
+                </option>
+
+            </select>
+        </div>
+
+        <!-- BUTTON -->
+        <div class="col-md-3 d-flex align-items-end gap-2">
+
+            <button type="submit"
+                    class="btn btn-cine">
+                <i class="fa-solid fa-magnifying-glass me-1"></i>
+                Tìm kiếm
+            </button>
+
+            <a th:href="@{/manager/fnb-items}"
+               class="btn btn-outline-cine">
+                Reset
+            </a>
+
+        </div>
+
+    </form>
     <!-- ========================= -->
-    <!-- F&B TABLE -->
+    <!-- TABLE -->
     <!-- ========================= -->
 
     <div class="card shadow-sm">
@@ -57,19 +131,149 @@
             <table class="table table-cine align-middle">
 
                 <thead>
+
                 <tr>
-                    <th>ID</th>
+
+                    <th>STT</th>
                     <th>Ảnh</th>
                     <th>Tên</th>
                     <th>Danh mục</th>
                     <th>Giá</th>
                     <th>Trạng thái</th>
-                    <th></th>
+                    <th>Thao tác</th>
 
                 </tr>
+
                 </thead>
 
-                <tbody id="fnbTableBody">
+
+                <tbody>
+
+                <!-- LOOP F&B -->
+
+                <tr th:each="item, itemStat : ${items}">
+
+                    <!-- stt -->
+                    <td th:text="${itemStat.index + 1}"></td>
+
+
+                    <!-- IMAGE -->
+
+                    <td>
+
+                        <img th:if="${item.imageUrl != null
+                                     and !#strings.isEmpty(item.imageUrl)}"
+
+                             th:src="@{${item.imageUrl}}"
+
+                             alt="F&B Image"
+
+                             width="100"
+                             height="100"
+
+                             style="object-fit: cover;
+                                    border-radius: 8px;">
+
+                    </td>
+
+
+                    <!-- NAME -->
+
+                    <td th:text="${item.name}">
+                        Coca
+                    </td>
+
+
+                    <!-- CATEGORY -->
+
+                    <td th:text="${item.category}">
+                        DRINK
+                    </td>
+
+
+                    <!-- PRICE -->
+
+                    <td>
+
+                        <span th:text="${item.price}">
+                            20000
+                        </span>
+
+                        VND
+
+                    </td>
+
+
+                    <!-- STATUS -->
+
+                    <td>
+
+                        <span th:if="${item.isAvailable}"
+                              class="badge bg-success">
+
+                            Available
+
+                        </span>
+
+
+                        <span th:unless="${item.isAvailable}"
+                              class="badge bg-secondary">
+
+                            Unavailable
+
+                        </span>
+
+                    </td>
+
+
+                    <!-- ACTION -->
+
+                    <td>
+
+                        <!-- EDIT -->
+
+                        <a th:href="@{/manager/fnb-items/edit/{id}(id=${item.id})}"
+                           class="btn btn-sm btn-outline-cine">
+
+                            Edit
+
+                        </a>
+
+
+                        <!-- DELETE -->
+
+                        <form th:action="@{/manager/fnb-items/delete/{id}(id=${item.id})}"
+                              method="post"
+                              style="display:inline;">
+
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
+
+                                Delete
+
+                            </button>
+
+                        </form>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- EMPTY -->
+
+                <tr th:if="${#lists.isEmpty(items)}">
+
+                    <td colspan="7"
+                        class="text-center py-4">
+
+                        Chưa có sản phẩm F&B.
+
+                    </td>
+
+                </tr>
+
                 </tbody>
 
             </table>
@@ -80,155 +284,196 @@
 
 
     <!-- ========================= -->
-    <!-- MODAL -->
+    <!-- CREATE / EDIT MODAL -->
     <!-- ========================= -->
 
     <div class="modal fade"
          id="fnbModal"
-         tabindex="-1">
+         tabindex="-1"
+         th:classappend="${item != null and item.id != null} ? ' show' : ''"
+         th:style="${item != null and item.id != null} ? 'display:block;' : ''">
 
         <div class="modal-dialog">
 
             <div class="modal-content">
 
+
+                <!-- HEADER -->
+
                 <div class="modal-header">
 
                     <h5 class="modal-title"
-                        id="modalTitle">
+                        th:text="${item != null and item.id != null}
+                            ? 'Chỉnh sửa sản phẩm'
+                            : 'Thêm sản phẩm'">
 
                         Thêm sản phẩm
 
                     </h5>
 
-                    <button type="button"
-                            class="btn-close"
-                            data-bs-dismiss="modal">
-                    </button>
+
+                    <a th:href="@{/manager/fnb-items}"
+                       class="btn-close">
+
+                    </a>
 
                 </div>
 
+
+                <!-- BODY -->
 
                 <div class="modal-body">
 
-                    <input type="hidden"
-                           id="id">
+                    <!-- ========================= -->
+                    <!-- CREATE + EDIT FORM -->
+                    <!-- ========================= -->
+
+                    <form th:action="@{/manager/fnb-items/save}"
+                          th:object="${item}"
+                          method="post">
 
 
-                    <div class="mb-3">
+                        <!-- ID -->
 
-                        <label class="form-label">
-                            Tên sản phẩm
-                        </label>
-
-                        <input type="text"
-                               id="itemName"
-                               class="form-control">
-
-                    </div>
+                        <input type="hidden"
+                               th:field="*{id}">
 
 
-                    <div class="mb-3">
+                        <!-- NAME -->
 
-                        <label class="form-label">
-                            Danh mục
-                        </label>
+                        <div class="mb-3">
 
-                        <select id="itemCategory"
-                                class="form-select">
+                            <label class="form-label">
+                                Tên sản phẩm
+                            </label>
 
-                            <option value="">
-                                -- Chọn danh mục --
-                            </option>
+                            <input type="text"
+                                   th:field="*{name}"
+                                   class="form-control"
+                                   required>
 
-                            <option value="POPCORN">
-                                Popcorn
-                            </option>
-
-                            <option value="DRINK">
-                                Drink
-                            </option>
-
-                            <option value="COMBO">
-                                Combo
-                            </option>
-
-                            <option value="FOOD">
-                                Food
-                            </option>
-
-                        </select>
-
-                    </div>
+                        </div>
 
 
-                    <div class="mb-3">
+                        <!-- CATEGORY -->
 
-                        <label class="form-label">
-                            Giá
-                        </label>
+                        <div class="mb-3">
 
-                        <input type="number"
-                               id="itemPrice"
-                               class="form-control"
-                               min="0">
+                            <label class="form-label">
+                                Danh mục
+                            </label>
 
-                    </div>
+                            <select th:field="*{category}"
+                                    class="form-select"
+                                    required>
 
+                                <option value="">
+                                    -- Chọn danh mục --
+                                </option>
 
-                    <div class="mb-3">
+                                <option value="DRINK">
+                                    Drink
+                                </option>
 
-                        <label class="form-label">
-                            Trạng thái
-                        </label>
+                                <option value="COMBO">
+                                    Combo
+                                </option>
 
-                        <select id="itemAvailable"
-                                class="form-select">
+                                <option value="FOOD">
+                                    Food
+                                </option>
 
-                            <option value="true">
-                                Available
-                            </option>
+                            </select>
 
-                            <option value="false">
-                                Unavailable
-                            </option>
-
-                        </select>
-
-                    </div>
+                        </div>
 
 
-                    <div class="mb-3">
+                        <!-- PRICE -->
 
-                        <label class="form-label">
-                            Image URL
-                        </label>
+                        <div class="mb-3">
 
-                        <input type="text"
-                               id="itemImageUrl"
-                               class="form-control">
+                            <label class="form-label">
+                                Giá
+                            </label>
 
-                    </div>
+                            <input type="number"
+                                   th:field="*{price}"
+                                   class="form-control"
+                                   min="0"
+                                   step="0.01"
+                                   required>
 
-                </div>
+                        </div>
 
 
-                <div class="modal-footer">
+                        <!-- AVAILABLE -->
 
-                    <button type="button"
-                            class="btn btn-outline-cine"
-                            data-bs-dismiss="modal">
+                        <div class="mb-3">
 
-                        Hủy
+                            <label class="form-label">
+                                Trạng thái
+                            </label>
 
-                    </button>
+                            <select th:field="*{isAvailable}"
+                                    class="form-select">
 
-                    <button type="button"
-                            class="btn btn-cine"
-                            onclick="saveItem()">
+                                <option value="true">
+                                    Available
+                                </option>
 
-                        Lưu
+                                <option value="false">
+                                    Unavailable
+                                </option>
 
-                    </button>
+                            </select>
+
+                        </div>
+
+
+                        <!-- IMAGE -->
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                Image URL
+                            </label>
+
+                            <input type="text"
+                                   th:field="*{imageUrl}"
+                                   class="form-control"
+                                   placeholder="/images/FnB/Coca.jpg">
+
+                        </div>
+
+
+                        <!-- FOOTER -->
+
+                        <div class="text-end">
+
+                            <a th:href="@{/manager/fnb-items}"
+                               class="btn btn-outline-cine">
+
+                                Hủy
+
+                            </a>
+
+
+                            <button type="submit"
+                                    class="btn btn-cine">
+
+                                <span th:text="${item != null and item.id != null}
+                                    ? 'Cập nhật'
+                                    : 'Thêm sản phẩm'">
+
+                                    Lưu
+
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                    </form>
 
                 </div>
 
@@ -239,280 +484,15 @@
     </div>
 
 
-<!-- ========================= -->
-<!-- JAVASCRIPT -->
-<!-- ========================= -->
-
-<th:block th:fragment="actorJs">
-
-    <script>
-
-        const API_URL = "/api/fnb-items";
-
-
-        async function loadItems() {
-
-            const response = await fetch(API_URL);
-
-            const items = await response.json();
-
-            const tbody =
-                document.getElementById("fnbTableBody");
-
-            tbody.innerHTML = "";
-
-
-            items.forEach(item => {
-
-                const row =
-                    document.createElement("tr");
-
-
-                row.innerHTML = `
-
-            <td>
-                ${item.id}
-            </td>
-
-            <td>
-
-                ${
-                    item.imageUrl
-
-                        ? `<img
-                            src="${item.imageUrl}"
-                            width="55"
-                            height="55"
-                            class="rounded"
-                            style="object-fit:cover;"
-                       >`
-
-                        : "No image"
-                }
-
-            </td>
-
-            <td class="fw-semibold">
-                ${item.name}
-            </td>
-
-            <td>
-                ${item.category}
-            </td>
-
-            <td>
-                ${Number(item.price).toLocaleString("vi-VN")}
-                VND
-            </td>
-
-            <td>
-
-                ${
-                    item.isAvailable
-
-                        ? `<span class="badge bg-success">
-                            Available
-                       </span>`
-
-                        : `<span class="badge bg-secondary">
-                            Unavailable
-                       </span>`
-                }
-
-            </td>
-
-            <td class="text-end">
-
-                <button
-                    class="btn btn-sm btn-outline-cine"
-                    onclick='editItem(${JSON.stringify(item)})'>
-
-                    Edit
-
-                </button>
-
-                <button
-                    class="btn btn-sm btn-outline-danger"
-                    onclick="deleteItem(${item.id})">
-
-                    Delete
-
-                </button>
-
-            </td>
-
-        `;
-
-
-                tbody.appendChild(row);
-
-            });
-
-        }
-
-
-        function editItem(item) {
-
-            document.getElementById("modalTitle").innerText =
-                "Chỉnh sửa sản phẩm";
-
-            document.getElementById("id").value =
-                item.id;
-
-            document.getElementById("itemName").value =
-                item.name;
-
-            document.getElementById("itemCategory").value =
-                item.category;
-
-            document.getElementById("itemPrice").value =
-                item.price;
-
-            document.getElementById("itemAvailable").value =
-                item.isAvailable;
-
-            document.getElementById("itemImageUrl").value =
-                item.imageUrl || "";
-
-
-            const modal =
-                new bootstrap.Modal(
-                    document.getElementById("fnbModal")
-                );
-
-            modal.show();
-
-        }
-
-
-        async function saveItem() {
-
-            const id =
-                document.getElementById("id").value;
-
-
-            const data = {
-
-                name:
-                document.getElementById("itemName").value,
-
-                category:
-                document.getElementById("itemCategory").value,
-
-                price:
-                    Number(
-                        document.getElementById("itemPrice").value
-                    ),
-
-                isAvailable:
-                    document.getElementById("itemAvailable").value
-                    === "true",
-
-                imageUrl:
-                document.getElementById("itemImageUrl").value
-
-            };
-
-
-            let response;
-
-
-            if (id) {
-
-                response = await fetch(
-                    `${API_URL}/${id}`,
-                    {
-                        method: "PUT",
-
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-
-                        body: JSON.stringify(data)
-                    }
-                );
-
-            } else {
-
-                response = await fetch(
-                    API_URL,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-
-                        body: JSON.stringify(data)
-                    }
-                );
-
-            }
-
-
-            if (!response.ok) {
-
-                const error = await response.json().catch(() => null);
-
-                alert(
-                    error?.message ||
-                    `Save failed. Status: ${response.status}`
-                );
-
-                return;
-            }
-
-
-            bootstrap.Modal
-                .getInstance(
-                    document.getElementById("fnbModal")
-                )
-                .hide();
-
-
-            loadItems();
-
-        }
-
-
-        async function deleteItem(id) {
-
-            if (!confirm(
-                "Bạn có chắc muốn xóa sản phẩm này?"
-            )) {
-                return;
-            }
-
-
-            const response =
-                await fetch(
-                    `${API_URL}/${id}`,
-                    {
-                        method: "DELETE"
-                    }
-                );
-
-
-            if (!response.ok) {
-
-                alert("Delete failed");
-
-                return;
-
-            }
-
-
-            loadItems();
-
-        }
-
-
-        loadItems();
-
-    </script>
+    <!-- ========================= -->
+    <!-- ACTOR JS -->
+    <!-- ========================= -->
+
+    <th:block th:fragment="actorJs">
+    </th:block>
 
 </th:block>
-</th:block>
+
 </body>
 
 </html>
