@@ -32,9 +32,29 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <!-- Thanh tìm kiếm chi nhánh -->
-    <div class="mb-3">
-        <input type="text" id="searchInput" class="form-control border-cine" placeholder="🔍 Tìm kiếm chi nhánh theo tên hoặc địa chỉ..." onkeyup="filterTable()">
+    <!-- Thanh Tìm kiếm theo tên & Bộ lọc vị trí theo locations.json -->
+    <div class="card border-cine p-3 mb-3 bg-white shadow-sm">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <input type="text" id="searchNameInput" class="form-control border-cine"
+                       placeholder="🔍 Tìm kiếm theo tên chi nhánh..." onkeyup="filterTable()">
+            </div>
+            <div class="col-md-3">
+                <select id="filterCitySelect" class="form-select border-cine" onchange="loadFilterWards()">
+                    <option value="">-- Tất cả Tỉnh/Thành phố --</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="filterWardSelect" class="form-select border-cine" onchange="filterTable()">
+                    <option value="">-- Tất cả Quận/Huyện --</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-outline-cine w-100" onclick="resetFilter()" title="Đặt lại bộ lọc">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Bảng danh sách chi nhánh -->
@@ -147,7 +167,7 @@
         </div>
     </div>
 
-    <!-- Modal Chỉnh Sửa Chi Nhánh -->
+    <!-- Modal Chỉnh Sửa Chi Nhánh (Chọn từ locations.json) -->
     <div class="modal fade" id="editBranchModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content bg-cine-dark border-cine">
@@ -162,10 +182,24 @@
                             <label class="form-label fw-medium">Tên chi nhánh <span class="text-cine-primary">*</span></label>
                             <input type="text" id="editBranchName" name="branchName" class="form-control border-cine" required>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-medium">Địa chỉ <span class="text-cine-primary">*</span></label>
-                            <input type="text" id="editAddress" name="address" class="form-control border-cine" required>
+
+                        <!-- Chọn Địa chỉ từ locations.json -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Tỉnh/Thành phố <span class="text-cine-primary">*</span></label>
+                                <select id="editCitySelect" class="form-select border-cine" required onchange="loadEditWards()">
+                                    <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Quận/Huyện <span class="text-cine-primary">*</span></label>
+                                <select id="editWardSelect" class="form-select border-cine" required onchange="updateEditAddress()">
+                                    <option value="">-- Chọn Quận/Huyện --</option>
+                                </select>
+                            </div>
                         </div>
+                        <input type="hidden" id="editAddress" name="address" required>
+
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-medium">Hotline <span class="text-cine-primary">*</span></label>
@@ -278,20 +312,39 @@
 <script>
     let locationData = [];
 
-    // Tải dữ liệu locations.json
+    // Tải dữ liệu từ locations.json nạp vào các Select Box (Thêm, Sửa, Lọc)
     fetch('/js/locations.json')
         .then(response => response.json())
         .then(data => {
             locationData = data;
             const citySelect = document.getElementById('citySelect');
+            const editCitySelect = document.getElementById('editCitySelect');
+            const filterCitySelect = document.getElementById('filterCitySelect');
+
             data.forEach((city, index) => {
-                let option = document.createElement('option');
-                option.value = index;
-                option.text = city.name;
-                citySelect.appendChild(option);
+                // Dropdown Modal Thêm
+                let optAdd = document.createElement('option');
+                optAdd.value = index;
+                optAdd.text = city.name;
+                citySelect.appendChild(optAdd);
+
+                // Dropdown Modal Sửa
+                let optEdit = document.createElement('option');
+                optEdit.value = index;
+                optEdit.text = city.name;
+                editCitySelect.appendChild(optEdit);
+
+                // Dropdown Bộ Lọc
+                let optFilter = document.createElement('option');
+                optFilter.value = index;
+                optFilter.text = city.name;
+                filterCitySelect.appendChild(optFilter);
             });
         });
 
+    /* ==============================================
+       1. XỬ LÝ ĐỊA CHỈ TRONG MODAL THÊM MỚI
+       ============================================== */
     function loadWards() {
         const cityIndex = document.getElementById('citySelect').value;
         const wardSelect = document.getElementById('wardSelect');
@@ -313,7 +366,7 @@
         const citySelect = document.getElementById('citySelect');
         const wardSelect = document.getElementById('wardSelect');
 
-        if(citySelect.value !== "" && wardSelect.value !== "") {
+        if (citySelect.value !== "" && wardSelect.value !== "") {
             const cityName = citySelect.options[citySelect.selectedIndex].text;
             const wardName = wardSelect.value;
             document.getElementById('finalAddress').value = wardName + ", " + cityName;
@@ -322,27 +375,39 @@
         }
     }
 
-    // Bộ lọc tìm kiếm chi nhánh theo tên hoặc địa chỉ
-    function filterTable() {
-        let input = document.getElementById("searchInput").value.toLowerCase();
-        let rows = document.querySelectorAll("#branchTable tbody tr");
+    /* ==============================================
+       2. XỬ LÝ ĐỊA CHỈ TRONG MODAL CHỈNH SỬA
+       ============================================== */
+    function loadEditWards() {
+        const cityIndex = document.getElementById('editCitySelect').value;
+        const wardSelect = document.getElementById('editWardSelect');
+        wardSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
 
-        rows.forEach(row => {
-            let nameCol = row.querySelector(".branch-name");
-            let addressCol = row.querySelector(".branch-address");
-            if (nameCol && addressCol) {
-                let name = nameCol.innerText.toLowerCase();
-                let address = addressCol.innerText.toLowerCase();
-                if (name.includes(input) || address.includes(input)) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-            }
-        });
+        if (cityIndex !== "") {
+            const wards = locationData[cityIndex].wards;
+            wards.forEach(ward => {
+                let option = document.createElement('option');
+                option.value = ward;
+                option.text = ward;
+                wardSelect.appendChild(option);
+            });
+        }
+        updateEditAddress();
     }
 
-    // Gán dữ liệu vào modal Edit
+    function updateEditAddress() {
+        const citySelect = document.getElementById('editCitySelect');
+        const wardSelect = document.getElementById('editWardSelect');
+
+        if (citySelect.value !== "" && wardSelect.value !== "") {
+            const cityName = citySelect.options[citySelect.selectedIndex].text;
+            const wardName = wardSelect.value;
+            document.getElementById('editAddress').value = wardName + ", " + cityName;
+        } else {
+            document.getElementById('editAddress').value = "";
+        }
+    }
+
     function openEditModal(id, name, address, hotline, opening, closing, status) {
         document.getElementById('editBranchId').value = id;
         document.getElementById('editBranchName').value = name;
@@ -352,8 +417,84 @@
         document.getElementById('editClosingTime').value = closing;
         document.getElementById('editStatus').value = status;
 
-        var editModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
+        const editCitySelect = document.getElementById('editCitySelect');
+        const editWardSelect = document.getElementById('editWardSelect');
+
+        editCitySelect.value = "";
+        editWardSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+
+        // Phân tích chuỗi "Quận/Huyện, Tỉnh/Thành phố" để tự động chọn đúng dropdown
+        if (address && address.includes(',')) {
+            const parts = address.split(',').map(s => s.trim());
+            const ward = parts[0];
+            const city = parts[1];
+
+            const cityIndex = locationData.findIndex(item => item.name.toLowerCase() === city.toLowerCase());
+            if (cityIndex !== -1) {
+                editCitySelect.value = cityIndex;
+                loadEditWards();
+                editWardSelect.value = ward;
+                document.getElementById('editAddress').value = address;
+            }
+        }
+
+        const editModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
         editModal.show();
+    }
+
+    /* ==============================================
+       3. BỘ LỌC TÌM KIẾM THEO TÊN & VỊ TRÍ
+       ============================================== */
+    function loadFilterWards() {
+        const cityIndex = document.getElementById('filterCitySelect').value;
+        const wardSelect = document.getElementById('filterWardSelect');
+        wardSelect.innerHTML = '<option value="">-- Tất cả Quận/Huyện --</option>';
+
+        if (cityIndex !== "") {
+            const wards = locationData[cityIndex].wards;
+            wards.forEach(ward => {
+                let option = document.createElement('option');
+                option.value = ward;
+                option.text = ward;
+                wardSelect.appendChild(option);
+            });
+        }
+        filterTable();
+    }
+
+    function resetFilter() {
+        document.getElementById("searchNameInput").value = "";
+        document.getElementById("filterCitySelect").value = "";
+        document.getElementById("filterWardSelect").innerHTML = '<option value="">-- Tất cả Quận/Huyện --</option>';
+        filterTable();
+    }
+
+    function filterTable() {
+        const nameInput = document.getElementById("searchNameInput").value.toLowerCase().trim();
+        const citySelect = document.getElementById("filterCitySelect");
+        const selectedCity = citySelect.value !== "" ? citySelect.options[citySelect.selectedIndex].text.toLowerCase().trim() : "";
+        const selectedWard = document.getElementById("filterWardSelect").value.toLowerCase().trim();
+
+        const rows = document.querySelectorAll("#branchTable tbody tr");
+
+        rows.forEach(row => {
+            const nameCol = row.querySelector(".branch-name");
+            const addressCol = row.querySelector(".branch-address");
+            if (nameCol && addressCol) {
+                const name = nameCol.innerText.toLowerCase();
+                const address = addressCol.innerText.toLowerCase();
+
+                const nameMatch = !nameInput || name.includes(nameInput);
+                const cityMatch = !selectedCity || address.includes(selectedCity);
+                const wardMatch = !selectedWard || address.includes(selectedWard);
+
+                if (nameMatch && cityMatch && wardMatch) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        });
     }
 </script>
 <script th:src="@{/js/admin.js}"></script>

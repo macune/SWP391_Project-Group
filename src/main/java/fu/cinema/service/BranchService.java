@@ -33,7 +33,7 @@ public class BranchService {
         return branchRepository.findAll();
     }
 
-    // Lấy danh sách tài khoản người dùng bình thường để chọn làm Manager
+    // Lấy danh sách tài khoản CUSTOMER để bổ nhiệm làm Manager
     public List<Account> getEligibleUsersForManager() {
         return accountRepository.findByRole(Role.CUSTOMER);
     }
@@ -44,7 +44,6 @@ public class BranchService {
             throw new IllegalArgumentException("Tên chi nhánh đã tồn tại!");
         }
 
-        // Trạng thái ban đầu của branch luôn là CLOSED
         branch.setStatus(BranchStatus.CLOSED);
         return branchRepository.save(branch);
     }
@@ -77,7 +76,6 @@ public class BranchService {
         branchRepository.deleteById(branchId);
     }
 
-    // Thêm 1 user thông thường trở thành Manager của chi nhánh
     @Transactional
     public void assignManager(Long branchId, Long accountId) {
         Branch branch = branchRepository.findById(branchId)
@@ -89,14 +87,17 @@ public class BranchService {
             throw new IllegalArgumentException("Chỉ có thể chọn người dùng bình thường (CUSTOMER) để nâng quyền thành Manager!");
         }
 
-        // Cập nhật vai trò tài khoản thành MANAGER
+        // Nâng quyền tài khoản lên MANAGER
         account.setRole(Role.MANAGER);
-        accountRepository.save(account);
 
-        // Tạo hồ sơ nhân sự (Staff) gắn với chi nhánh
-        Staff staff = staffRepository.findById(accountId).orElse(new Staff());
-        staff.setStaffId(account.getAccountId());
-        staff.setAccount(account);
+        // Khởi tạo hồ sơ Staff liên kết với Account
+        Staff staff = staffRepository.findById(accountId).orElse(null);
+        if (staff == null) {
+            staff = new Staff();
+            staff.setAccount(account);
+            // Không gán staff.setStaffId(...) để Hibernate tự map qua @MapsId và nhận diện là thực thể mới
+        }
+
         staff.setBranch(branch);
         staff.setEmail(account.getEmail());
         staff.setStatus(StaffStatus.ACTIVE);
@@ -109,10 +110,13 @@ public class BranchService {
             staff.setPhone("Chưa cập nhật");
         }
 
+        // Đồng bộ 2 chiều
+        account.setStaff(staff);
+
+        accountRepository.save(account);
         staffRepository.save(staff);
     }
 
-    // Xóa Manager khỏi chi nhánh và đưa tài khoản về người dùng thông thường
     @Transactional
     public void removeManager(Long branchId, Long staffId) {
         Staff staff = staffRepository.findById(staffId)
@@ -125,6 +129,7 @@ public class BranchService {
         Account account = staff.getAccount();
         if (account != null) {
             account.setRole(Role.CUSTOMER);
+            account.setStaff(null);
             accountRepository.save(account);
         }
 
