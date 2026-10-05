@@ -16,48 +16,74 @@
 <div id="page-content" class="container-fluid">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0">🏢 Danh sách Chi nhánh hệ thống</h4>
+        <h4 class="fw-bold mb-0 text-cine-primary">🏢 Danh sách Chi nhánh hệ thống</h4>
         <button type="button" class="btn btn-cine px-3 py-2" data-bs-toggle="modal" data-bs-target="#addBranchModal">
-            <i class="fa-solid fa-plus me-1"></i>Thêm Chi nhánh mới
+            <i class="fa-solid fa-plus me-1"></i> Thêm Chi nhánh mới
         </button>
     </div>
 
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <!-- Thông báo kết quả -->
+    <div th:if="${successMessage}" class="alert bg-cine-soft border-cine alert-dismissible fade show" role="alert">
         <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <div th:if="${errorMessage}" class="alert bg-cine-hot text-white alert-dismissible fade show" role="alert">
         <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <!-- Thanh tìm kiếm chi nhánh -->
+    <div class="mb-3">
+        <input type="text" id="searchInput" class="form-control border-cine" placeholder="🔍 Tìm kiếm chi nhánh theo tên hoặc địa chỉ..." onkeyup="filterTable()">
+    </div>
+
+    <!-- Bảng danh sách chi nhánh -->
+    <div class="card border-cine shadow-sm">
         <div class="card-body p-0">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-dark">
+            <table class="table table-cine table-hover align-middle mb-0" id="branchTable">
+                <thead>
                 <tr>
-                    <th class="ps-3">ID</th>
+                    <th class="ps-3">STT</th>
                     <th>Tên chi nhánh</th>
                     <th>Địa chỉ</th>
                     <th>Hotline</th>
                     <th>Giờ hoạt động</th>
                     <th>Trạng thái</th>
+                    <th class="text-center">Người quản lý</th>
+                    <th class="text-center">Thao tác</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:if="${#lists.isEmpty(branches)}">
-                    <td colspan="6" class="text-center py-4 text-muted">Chưa có chi nhánh nào được tạo.</td>
+                    <td colspan="8" class="text-center py-4 text-cine-pastel">Chưa có chi nhánh nào được tạo.</td>
                 </tr>
-                <tr th:each="b : ${branches}">
-                    <td class="ps-3 fw-bold" th:text="${b.branchId}">1</td>
-                    <td class="fw-semibold text-primary" th:text="${b.branchName}">CineFlow Hà Nội</td>
-                    <td th:text="${b.address}">123 Cầu Giấy, Hà Nội</td>
+                <tr th:each="b, iterStat : ${branches}">
+                    <td class="ps-3 fw-bold" th:text="${iterStat.count}">1</td>
+                    <td class="fw-semibold text-cine-primary branch-name" th:text="${b.branchName}">CineFlow Hà Nội</td>
+                    <td class="branch-address" th:text="${b.address}">123 Cầu Giấy, Hà Nội</td>
                     <td th:text="${b.hotline}">0123456789</td>
                     <td th:text="${b.openingTime + ' - ' + b.closingTime}">08:00 - 23:30</td>
                     <td>
                         <span class="badge"
-                              th:classappend="${b.status.name() == 'ACTIVE' ? 'bg-success' : (b.status.name() == 'MAINTENANCE' ? 'bg-warning text-dark' : 'bg-secondary')}"
-                              th:text="${b.status}">ACTIVE</span>
+                              th:classappend="${b.status.name() == 'ACTIVE' ? 'bg-cine-primary' : (b.status.name() == 'MAINTENANCE' ? 'bg-cine-soft text-cine-hot' : 'bg-cine-hot')}"
+                              th:text="${b.status}">CLOSED</span>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-cine position-relative" data-bs-toggle="modal" th:data-bs-target="'#managerModal-' + ${b.branchId}">
+                            <i class="fa-solid fa-user-tie me-1"></i> Managers
+                            <span class="badge bg-cine-hot ms-1" th:text="${b.staffList != null ? #lists.size(b.staffList) : 0}">0</span>
+                        </button>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-cine me-1"
+                                th:onclick="openEditModal([[${b.branchId}]], [[${b.branchName}]], [[${b.address}]], [[${b.hotline}]], [[${b.openingTime}]], [[${b.closingTime}]], [[${b.status}]])">
+                            <i class="fa-solid fa-pen-to-square"></i> Sửa
+                        </button>
+                        <form th:action="@{/admin/branches/delete/{id}(id=${b.branchId})}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa chi nhánh này?');">
+                            <button type="submit" class="btn btn-sm btn-cine">
+                                <i class="fa-solid fa-trash"></i> Xóa
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 </tbody>
@@ -65,48 +91,55 @@
         </div>
     </div>
 
+    <!-- Modal Form Thêm Chi Nhánh Mới -->
     <div class="modal fade" id="addBranchModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-building me-2"></i>Thêm Chi nhánh mới</h5>
+            <div class="modal-content bg-cine-dark border-cine">
+                <div class="modal-header border-cine">
+                    <h5 class="modal-title fw-bold text-cine-primary"><i class="fa-solid fa-building me-2"></i>Thêm Chi nhánh mới</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form th:action="@{/admin/branches/add}" th:object="${newBranch}" method="post">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label fw-medium">Tên chi nhánh <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{branchName}" class="form-control" placeholder="Nhập tên rạp (ví dụ: CineFlow Cầu Giấy)" required>
+                            <label class="form-label fw-medium">Tên chi nhánh <span class="text-cine-primary">*</span></label>
+                            <input type="text" th:field="*{branchName}" class="form-control border-cine" placeholder="Nhập tên chi nhánh" required>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-medium">Địa chỉ <span class="text-danger">*</span></label>
-                            <input type="text" th:field="*{address}" class="form-control" placeholder="Nhập địa chỉ đầy đủ" required>
-                        </div>
+
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-medium">Hotline <span class="text-danger">*</span></label>
-                                <input type="text" th:field="*{hotline}" class="form-control" placeholder="0123456789" required>
+                                <label class="form-label fw-medium">Tỉnh/Thành phố <span class="text-cine-primary">*</span></label>
+                                <select id="citySelect" class="form-select border-cine" required onchange="loadWards()">
+                                    <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                                </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-medium">Trạng thái</label>
-                                <select th:field="*{status}" class="form-select">
-                                    <option th:each="st : ${statuses}" th:value="${st}" th:text="${st}"></option>
+                                <label class="form-label fw-medium">Quận/Huyện <span class="text-cine-primary">*</span></label>
+                                <select id="wardSelect" class="form-select border-cine" required onchange="updateAddress()">
+                                    <option value="">-- Chọn Quận/Huyện --</option>
                                 </select>
                             </div>
                         </div>
+                        <input type="hidden" th:field="*{address}" id="finalAddress">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Hotline <span class="text-cine-primary">*</span></label>
+                            <input type="text" th:field="*{hotline}" class="form-control border-cine" placeholder="0123456789" required>
+                        </div>
+
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-medium">Giờ mở cửa <span class="text-danger">*</span></label>
-                                <input type="time" th:field="*{openingTime}" class="form-control" required>
+                                <label class="form-label fw-medium">Giờ mở cửa <span class="text-cine-primary">*</span></label>
+                                <input type="time" th:field="*{openingTime}" class="form-control border-cine" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-medium">Giờ đóng cửa <span class="text-danger">*</span></label>
-                                <input type="time" th:field="*{closingTime}" class="form-control" required>
+                                <label class="form-label fw-medium">Giờ đóng cửa <span class="text-cine-primary">*</span></label>
+                                <input type="time" th:field="*{closingTime}" class="form-control border-cine" required>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <div class="modal-footer border-cine">
+                        <button type="button" class="btn btn-outline-cine" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-cine px-4">Lưu Chi nhánh</button>
                     </div>
                 </form>
@@ -114,8 +147,215 @@
         </div>
     </div>
 
+    <!-- Modal Chỉnh Sửa Chi Nhánh -->
+    <div class="modal fade" id="editBranchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-cine-dark border-cine">
+                <div class="modal-header border-cine">
+                    <h5 class="modal-title fw-bold text-cine-primary"><i class="fa-solid fa-pen-to-square me-2"></i>Cập nhật Chi nhánh</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/admin/branches/edit}" method="post">
+                    <input type="hidden" id="editBranchId" name="branchId">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Tên chi nhánh <span class="text-cine-primary">*</span></label>
+                            <input type="text" id="editBranchName" name="branchName" class="form-control border-cine" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Địa chỉ <span class="text-cine-primary">*</span></label>
+                            <input type="text" id="editAddress" name="address" class="form-control border-cine" required>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Hotline <span class="text-cine-primary">*</span></label>
+                                <input type="text" id="editHotline" name="hotline" class="form-control border-cine" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Trạng thái <span class="text-cine-primary">*</span></label>
+                                <select id="editStatus" name="status" class="form-select border-cine">
+                                    <option th:each="st : ${statuses}" th:value="${st}" th:text="${st}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Giờ mở cửa <span class="text-cine-primary">*</span></label>
+                                <input type="time" id="editOpeningTime" name="openingTime" class="form-control border-cine" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Giờ đóng cửa <span class="text-cine-primary">*</span></label>
+                                <input type="time" id="editClosingTime" name="closingTime" class="form-control border-cine" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-cine">
+                        <button type="button" class="btn btn-outline-cine" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-cine px-4">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xem & Quản Lý Manager Cho Từng Chi Nhánh -->
+    <div th:each="b : ${branches}" class="modal fade" th:id="'managerModal-' + ${b.branchId}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-cine-dark border-cine">
+                <div class="modal-header border-cine">
+                    <h5 class="modal-title fw-bold text-cine-primary">
+                        <i class="fa-solid fa-users-gear me-2"></i>Quản lý Manager - <span th:text="${b.branchName}"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Khu vực thêm Manager mới -->
+                    <div class="card p-3 mb-3 border-cine">
+                        <h6 class="fw-bold mb-2 text-cine-primary"><i class="fa-solid fa-user-plus me-1"></i>Thêm Manager cho chi nhánh</h6>
+                        <form th:action="@{/admin/branches/{branchId}/managers/add(branchId=${b.branchId})}" method="post" class="row g-2 align-items-center">
+                            <div class="col-md-9">
+                                <select name="accountId" class="form-select border-cine" required>
+                                    <option value="">-- Chọn một User thông thường để bổ nhiệm làm Manager --</option>
+                                    <option th:each="u : ${eligibleUsers}"
+                                            th:value="${u.accountId}"
+                                            th:text="${(u.customer != null ? u.customer.fullName : u.username) + ' - Username: ' + u.username + ' (' + u.email + ')'}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-cine w-100">
+                                    <i class="fa-solid fa-check me-1"></i>Bổ nhiệm
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Bảng danh sách Manager hiện tại -->
+                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-list me-1"></i>Danh sách Manager đang quản lý chi nhánh</h6>
+                    <div class="table-responsive">
+                        <table class="table table-cine table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Họ và tên</th>
+                                <th>Email</th>
+                                <th>Số điện thoại</th>
+                                <th class="text-center">Hành động</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${#lists.isEmpty(b.staffList)}">
+                                <td colspan="5" class="text-center py-3 text-cine-pastel">Chi nhánh này hiện chưa có Manager nào phụ trách.</td>
+                            </tr>
+                            <tr th:each="m, mStat : ${b.staffList}">
+                                <td th:text="${mStat.count}">1</td>
+                                <td class="fw-semibold text-cine-primary" th:text="${m.fullName}">Nguyễn Văn A</td>
+                                <td th:text="${m.email}">manager@gmail.com</td>
+                                <td th:text="${m.phone}">0987654321</td>
+                                <td class="text-center">
+                                    <form th:action="@{/admin/branches/{branchId}/managers/remove/{staffId}(branchId=${b.branchId}, staffId=${m.staffId})}"
+                                          method="post" class="d-inline"
+                                          onsubmit="return confirm('Bạn có chắc muốn xóa quyền Manager của người này?');">
+                                        <button type="submit" class="btn btn-sm btn-cine">
+                                            <i class="fa-solid fa-user-minus me-1"></i>Xóa Manager
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-cine">
+                    <button type="button" class="btn btn-outline-cine" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
+<script>
+    let locationData = [];
+
+    // Tải dữ liệu locations.json
+    fetch('/js/locations.json')
+        .then(response => response.json())
+        .then(data => {
+            locationData = data;
+            const citySelect = document.getElementById('citySelect');
+            data.forEach((city, index) => {
+                let option = document.createElement('option');
+                option.value = index;
+                option.text = city.name;
+                citySelect.appendChild(option);
+            });
+        });
+
+    function loadWards() {
+        const cityIndex = document.getElementById('citySelect').value;
+        const wardSelect = document.getElementById('wardSelect');
+        wardSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+
+        if (cityIndex !== "") {
+            const wards = locationData[cityIndex].wards;
+            wards.forEach(ward => {
+                let option = document.createElement('option');
+                option.value = ward;
+                option.text = ward;
+                wardSelect.appendChild(option);
+            });
+        }
+        updateAddress();
+    }
+
+    function updateAddress() {
+        const citySelect = document.getElementById('citySelect');
+        const wardSelect = document.getElementById('wardSelect');
+
+        if(citySelect.value !== "" && wardSelect.value !== "") {
+            const cityName = citySelect.options[citySelect.selectedIndex].text;
+            const wardName = wardSelect.value;
+            document.getElementById('finalAddress').value = wardName + ", " + cityName;
+        } else {
+            document.getElementById('finalAddress').value = "";
+        }
+    }
+
+    // Bộ lọc tìm kiếm chi nhánh theo tên hoặc địa chỉ
+    function filterTable() {
+        let input = document.getElementById("searchInput").value.toLowerCase();
+        let rows = document.querySelectorAll("#branchTable tbody tr");
+
+        rows.forEach(row => {
+            let nameCol = row.querySelector(".branch-name");
+            let addressCol = row.querySelector(".branch-address");
+            if (nameCol && addressCol) {
+                let name = nameCol.innerText.toLowerCase();
+                let address = addressCol.innerText.toLowerCase();
+                if (name.includes(input) || address.includes(input)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        });
+    }
+
+    // Gán dữ liệu vào modal Edit
+    function openEditModal(id, name, address, hotline, opening, closing, status) {
+        document.getElementById('editBranchId').value = id;
+        document.getElementById('editBranchName').value = name;
+        document.getElementById('editAddress').value = address;
+        document.getElementById('editHotline').value = hotline;
+        document.getElementById('editOpeningTime').value = opening;
+        document.getElementById('editClosingTime').value = closing;
+        document.getElementById('editStatus').value = status;
+
+        var editModal = new bootstrap.Modal(document.getElementById('editBranchModal'));
+        editModal.show();
+    }
+</script>
 <script th:src="@{/js/admin.js}"></script>
 </body>
 </html>
