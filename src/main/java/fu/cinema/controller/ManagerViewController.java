@@ -2,6 +2,7 @@ package fu.cinema.controller;
 import fu.cinema.dto.request.FnBItemRequest;
 import fu.cinema.dto.response.FnBItemResponse;
 import fu.cinema.enums.FnBCategory;
+import fu.cinema.exception.DuplicateFnBItemException;
 import fu.cinema.service.FnBItemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -134,6 +135,25 @@ public class ManagerViewController {
         }
 
         model.addAttribute("item", item);
+
+        return "manager/fnb-items";
+    }
+    @ExceptionHandler(DuplicateFnBItemException.class)
+    public String handleDuplicateFnBItem(
+            DuplicateFnBItemException ex,
+            Model model) {
+
+        model.addAttribute("errorMessage", ex.getMessage());
+
+        model.addAttribute(
+                "items",
+                fnBItemService.GetAllItems()
+        );
+
+        model.addAttribute(
+                "item",
+                new FnBItemRequest()
+        );
 
         return "manager/fnb-items";
     }

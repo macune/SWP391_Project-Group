@@ -290,8 +290,10 @@
     <div class="modal fade"
          id="fnbModal"
          tabindex="-1"
-         th:classappend="${item != null and item.id != null} ? ' show' : ''"
-         th:style="${item != null and item.id != null} ? 'display:block;' : ''">
+         th:classappend="${(item != null and item.id != null) or errorMessage != null}
+                      ? ' show' : ''"
+         th:style="${(item != null and item.id != null) or errorMessage != null}
+                ? 'display:block;' : ''">
 
         <div class="modal-dialog">
 
@@ -319,7 +321,14 @@
 
                 </div>
 
+                <div th:if="${errorMessage}"
+                     class="alert alert-danger"
+                     role="alert">
 
+                    <i class="fa-solid fa-circle-exclamation me-2"></i>
+                    <span th:text="${errorMessage}"></span>
+
+                </div>
                 <!-- BODY -->
 
                 <div class="modal-body">
