@@ -48,10 +48,18 @@ public class MovieService {
         movieRepository.save(movie);
     }
 
-    public List<MovieResponse> getAllMovies() {
-        List<Movie> movies = movieRepository.findAll();
-        List<MovieResponse> responses = new ArrayList<>();
 
+    public List<MovieResponse> getAllMovies(String keyword) {
+        List<Movie> movies;
+
+        //tìm kiếm
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            movies = movieRepository.findByTitleContainingIgnoreCase(keyword.trim());
+        } else {
+            movies = movieRepository.findAll();
+        }
+
+        List<MovieResponse> responses = new ArrayList<>();
         for (Movie movie : movies) {
             responses.add(MovieResponse.builder()
                     .movieId(movie.getMovieId())

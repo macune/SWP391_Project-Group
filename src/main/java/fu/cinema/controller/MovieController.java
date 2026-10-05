@@ -16,8 +16,10 @@ public class MovieController {
     private MovieService movieService;
 
     @GetMapping
-    public String listMovies(Model model) {
-        model.addAttribute("movies", movieService.getAllMovies());
+    public String listMovies(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
+        model.addAttribute("movies", movieService.getAllMovies(keyword));
+
+        model.addAttribute("keyword", keyword);
         return "admin/list-movies";
     }
 

@@ -13,43 +13,43 @@
 <div id="content" class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <a th:href="@{/movies}" class="text-decoration-none text-cine-pastel mb-3 d-inline-block hover-primary">
+            <a th:href="@{/movies}" class="text-decoration-none mb-3 d-inline-block" style="color: #c95d63;">
                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
             </a>
 
-            <div class="card bg-cine-dark border-cine shadow-lg">
-                <div class="card-header border-cine bg-dark py-3">
-                    <h4 class="mb-0 text-cine-primary fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Cập Nhật Phim</h4>
+            <!-- Form Card -->
+            <div class="card shadow-sm border-0" style="background-color: #f7ede8;">
+                <!-- Header màu Trắng -->
+                <div class="card-header py-3 bg-white border-bottom">
+                    <h4 class="mb-0 fw-bold" style="color: #c95d63;"><i class="fa-solid fa-pen-to-square me-2"></i>Cập Nhật Phim</h4>
                 </div>
 
-                <div class="card-body p-4 text-light">
-                    <!-- HIỂN THỊ LỖI NẾU CÓ -->
-                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="card-body p-4 text-dark">
+                    <!-- KHỐI LỖI -->
+                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
                         <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
 
                     <form th:action="@{/movies/edit/{id}(id=${movieId})}" th:object="${movieRequest}" method="POST">
 
                         <div class="row mb-3">
                             <div class="col-md-8">
-                                <label class="form-label text-cine-pastel fw-medium">Tên phim <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control bg-dark text-light border-cine" th:field="*{title}" required />
+                                <label class="form-label fw-medium" style="color: #c95d63;">Tên phim <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control shadow-sm" th:field="*{title}" required />
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label text-cine-pastel fw-medium">Ngày khởi chiếu <span class="text-danger">*</span></label>
-                                <!-- Bỏ th:field, dùng name và th:value với định dạng yyyy-MM-dd -->
-                                <input type="date" class="form-control bg-dark text-light border-cine"
+                                <label class="form-label fw-medium" style="color: #c95d63;">Ngày khởi chiếu <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control shadow-sm"
                                        id="releaseDate" name="releaseDate"
-                                       th:value="${#temporals.format(movieRequest.releaseDate, 'yyyy-MM-dd')}"
-                                       required />
+                                       th:value="${#temporals.format(movieRequest.releaseDate, 'yyyy-MM-dd')}" required />
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-5">
-                                <label class="form-label text-cine-pastel fw-medium">Thể loại <span class="text-danger">*</span></label>
-                                <select class="form-select bg-dark text-light border-cine" th:field="*{genre}" required>
+                                <label class="form-label fw-medium" style="color: #c95d63;">Thể loại <span class="text-danger">*</span></label>
+                                <select class="form-select shadow-sm" th:field="*{genre}" required>
                                     <option value="" disabled selected>-- Chọn thể loại --</option>
                                     <option value="Hành động">Hành động</option>
                                     <option value="Hài hước">Hài hước</option>
@@ -63,8 +63,8 @@
                                 </select>
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label text-cine-pastel fw-medium">Ngôn ngữ <span class="text-danger">*</span></label>
-                                <select class="form-select bg-dark text-light border-cine" th:field="*{language}" required>
+                                <label class="form-label fw-medium" style="color: #c95d63;">Ngôn ngữ <span class="text-danger">*</span></label>
+                                <select class="form-select shadow-sm" th:field="*{language}" required>
                                     <option value="" disabled selected>-- Chọn ngôn ngữ --</option>
                                     <option value="Tiếng Anh - Phụ đề">Tiếng Anh - Phụ đề VN</option>
                                     <option value="Tiếng Hàn - Phụ đề">Tiếng Hàn - Phụ đề VN</option>
@@ -75,19 +75,18 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label text-cine-pastel fw-medium">Thời lượng <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <!-- CHẶN FRONTEND: min là 1 -->
-                                    <input type="number" class="form-control bg-dark text-light border-cine" th:field="*{duration}" min="1" required />
-                                    <span class="input-group-text bg-secondary border-cine text-light">phút</span>
+                                <label class="form-label fw-medium" style="color: #c95d63;">Thời lượng <span class="text-danger">*</span></label>
+                                <div class="input-group shadow-sm">
+                                    <input type="number" class="form-control" th:field="*{duration}" min="1" required />
+                                    <span class="input-group-text bg-white">phút</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label text-cine-pastel fw-medium">Nhãn độ tuổi <span class="text-danger">*</span></label>
-                                <select class="form-select bg-dark text-light border-cine" th:field="*{ageRating}">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Nhãn độ tuổi <span class="text-danger">*</span></label>
+                                <select class="form-select shadow-sm" th:field="*{ageRating}">
                                     <option value="P">P - Phổ biến</option>
                                     <option value="T13">T13 - Khán giả từ 13 tuổi</option>
                                     <option value="T16">T16 - Khán giả từ 16 tuổi</option>
@@ -95,8 +94,8 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label text-cine-pastel fw-medium">Trạng thái <span class="text-danger">*</span></label>
-                                <select class="form-select bg-dark text-light border-cine" th:field="*{status}">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Trạng thái <span class="text-danger">*</span></label>
+                                <select class="form-select shadow-sm" th:field="*{status}">
                                     <option value="COMING_SOON">Sắp chiếu</option>
                                     <option value="NOW_SHOWING">Đang chiếu</option>
                                     <option value="ENDED">Ngừng chiếu</option>
@@ -106,23 +105,23 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label text-cine-pastel fw-medium">Link Ảnh Poster</label>
-                                <input type="url" class="form-control bg-dark text-light border-cine" th:field="*{posterUrl}" />
+                                <label class="form-label fw-medium" style="color: #c95d63;">Link Ảnh Poster</label>
+                                <input type="url" class="form-control shadow-sm" th:field="*{posterUrl}" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label text-cine-pastel fw-medium">Link Trailer (Youtube)</label>
-                                <input type="url" class="form-control bg-dark text-light border-cine" th:field="*{trailerUrl}" />
+                                <label class="form-label fw-medium" style="color: #c95d63;">Link Trailer (Youtube)</label>
+                                <input type="url" class="form-control shadow-sm" th:field="*{trailerUrl}" />
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label text-cine-pastel fw-medium">Mô tả tóm tắt nội dung</label>
-                            <textarea class="form-control bg-dark text-light border-cine" th:field="*{description}" rows="5"></textarea>
+                            <label class="form-label fw-medium" style="color: #c95d63;">Mô tả tóm tắt nội dung</label>
+                            <textarea class="form-control shadow-sm" th:field="*{description}" rows="5"></textarea>
                         </div>
 
-                        <div class="text-end border-top border-cine pt-3 mt-4">
+                        <div class="text-end pt-3 mt-4" style="border-top: 1px solid #c95d63;">
                             <a th:href="@{/movies}" class="btn btn-outline-secondary me-2 px-4">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-info px-5 fw-bold text-dark">
+                            <button type="submit" class="btn text-white px-5 fw-bold shadow-sm" style="background-color: #c95d63;">
                                 <i class="fa-solid fa-floppy-disk me-2"></i>Cập Nhật
                             </button>
                         </div>

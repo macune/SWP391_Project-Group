@@ -14,34 +14,52 @@
 </th:block>
 
 <div id="content" class="container-fluid py-3">
-    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-cine pb-3">
-        <h2 class="text-cine-primary fw-bold mb-0">
+    <!-- TIÊU ĐỀ & THANH TÌM KIẾM -->
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3" style="border-color: #c95d63 !important;">
+        <h2 class="fw-bold mb-0 flex-shrink-0" style="color: #c95d63;">
             <i class="fa-solid fa-film me-2"></i>Quản Lý Phim
         </h2>
-        <a th:href="@{/movies/add}" class="btn btn-cine px-4 fw-medium shadow-sm">
+
+        <!-- THANH TÌM KIẾM -->
+        <form th:action="@{/movies}" method="GET" class="d-flex w-50 mx-4">
+            <div class="input-group shadow-sm">
+                <input type="text" name="keyword" th:value="${keyword}"
+                       class="form-control"
+                       placeholder="Nhập tên phim cần tìm...">
+
+                <button class="btn text-white fw-bold" type="submit" style="background-color: #c95d63;">
+                    <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm
+                </button>
+
+                <a th:if="${keyword != null and !keyword.isEmpty()}" th:href="@{/movies}"
+                   class="btn btn-outline-danger" title="Xóa tìm kiếm">
+                    <i class="fa-solid fa-xmark"></i>
+                </a>
+            </div>
+        </form>
+
+        <a th:href="@{/movies/add}" class="btn text-white px-4 fw-medium shadow-sm flex-shrink-0" style="background-color: #c95d63;">
             <i class="fa-solid fa-plus me-2"></i>Thêm Phim Mới
         </a>
     </div>
 
-    <!-- THÔNG BÁO THÀNH CÔNG NẾU TRÊN URL CÓ CHỮ ?success -->
-    <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show bg-dark text-success border-success" role="alert">
+    <!-- THÔNG BÁO -->
+    <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
         <i class="fa-solid fa-circle-check me-2"></i>Thao tác lưu phim thành công!
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-
-    <!-- THÔNG BÁO LỖI TỪ GLOBAL EXCEPTION HANDLER (Ví dụ: ID không tồn tại) -->
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show bg-dark text-danger border-danger" role="alert">
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
         <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
-    <!-- BẢNG DANH SÁCH PHIM -->
-    <div class="card bg-cine-dark border-cine shadow">
-        <div class="card-body p-0 table-responsive">
-            <table class="table table-dark table-hover align-middle mb-0">
-                <thead class="table-active">
+    <!-- BẢNG DANH SÁCH PHIM  -->
+    <div class="card border-0 shadow-sm bg-white">
+        <div class="card-body p-0 table-responsive rounded overflow-hidden">
+            <table class="table table-hover align-middle mb-0 bg-white">
+                <thead class="table-light">
                 <tr>
-                    <th class="text-center">ID</th>
+                    <th class="text-center">STT</th>
                     <th class="text-center">Poster</th>
                     <th>Tên Phim</th>
                     <th>Thông tin</th>
@@ -51,31 +69,31 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="movie : ${movies}">
-                    <td class="text-center fw-bold text-cine-pastel" th:text="${movie.movieId}"></td>
+                <tr th:each="movie, iterStat : ${movies}">
+                    <td class="text-center fw-bold" style="color: #c95d63;" th:text="${iterStat.count}"></td>
                     <td class="text-center">
                         <img th:if="${movie.posterUrl != null and !movie.posterUrl.isEmpty()}"
                              th:src="${movie.posterUrl}"
                              class="rounded object-fit-cover shadow-sm" width="60" height="85" alt="Poster">
                         <div th:unless="${movie.posterUrl != null and !movie.posterUrl.isEmpty()}"
-                             class="bg-secondary rounded d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 85px;">
-                            <i class="fa-solid fa-image text-dark opacity-50"></i>
+                             class="bg-light rounded d-inline-flex align-items-center justify-content-center border" style="width: 60px; height: 85px;">
+                            <i class="fa-solid fa-image text-secondary opacity-50"></i>
                         </div>
                     </td>
                     <td>
-                        <h6 class="mb-1 text-light fw-bold" th:text="${movie.title}"></h6>
+                        <h6 class="mb-1 text-dark fw-bold" th:text="${movie.title}"></h6>
                         <span class="badge bg-secondary" th:text="${movie.ageRating}"></span>
-                        <span class="small text-cine-pastel ms-2" th:text="${movie.genre}"></span>
+                        <span class="small text-muted ms-2" th:text="${movie.genre}"></span>
                     </td>
                     <td>
-                        <div class="small text-light mb-1">
-                            <i class="fa-regular fa-clock me-1 text-cine-primary"></i> <span th:text="${movie.duration} + ' phút'"></span>
+                        <div class="small text-dark mb-1">
+                            <i class="fa-regular fa-clock me-1" style="color: #c95d63;"></i> <span th:text="${movie.duration} + ' phút'"></span>
                         </div>
-                        <div class="small text-light">
-                            <i class="fa-regular fa-calendar me-1 text-cine-primary"></i> <span th:text="${#temporals.format(movie.releaseDate, 'dd/MM/yyyy')}"></span>
+                        <div class="small text-dark">
+                            <i class="fa-regular fa-calendar me-1" style="color: #c95d63;"></i> <span th:text="${#temporals.format(movie.releaseDate, 'dd/MM/yyyy')}"></span>
                         </div>
                     </td>
-                    <td class="small text-light" th:text="${movie.language}"></td>
+                    <td class="small text-dark" th:text="${movie.language}"></td>
                     <td>
                         <span class="badge rounded-pill bg-success" th:if="${movie.status.name() == 'NOW_SHOWING'}">Đang chiếu</span>
                         <span class="badge rounded-pill bg-warning text-dark" th:if="${movie.status.name() == 'COMING_SOON'}">Sắp chiếu</span>
@@ -89,8 +107,8 @@
                 <tr th:if="${#lists.isEmpty(movies)}">
                     <td colspan="7" class="text-center py-5 text-secondary">
                         <i class="fa-solid fa-film fs-1 mb-3 d-block opacity-50"></i>
-                        <h5>Chưa có dữ liệu phim</h5>
-                        <p class="mb-0">Hãy bấm nút "Thêm Phim Mới" để bắt đầu.</p>
+                        <h5 th:text="${keyword != null and !keyword.isEmpty() ? 'Không tìm thấy phim phù hợp' : 'Chưa có dữ liệu phim'}"></h5>
+                        <p class="mb-0" th:text="${keyword != null and !keyword.isEmpty() ? 'Vui lòng thử lại với từ khóa khác.' : 'Hãy bấm nút Thêm Phim Mới để bắt đầu.'}"></p>
                     </td>
                 </tr>
                 </tbody>
