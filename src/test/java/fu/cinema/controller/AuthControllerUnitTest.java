@@ -111,9 +111,44 @@ class AuthControllerUnitTest {
     }
 
     @Test
-    void testLogout() {
+    void testProcessLoginDisabledAccount() {
+        LoginRequest request = LoginRequest.builder()
+                .username("customer1")
+                .password("password123")
+                .build();
+        BindingResult bindingResult = new BeanPropertyBindingResult(request, "loginRequest");
         MockHttpServletResponse response = new MockHttpServletResponse();
-        String view = authController.logout(response);
+
+        when(authenticationManager.authenticate(any())).thenThrow(new org.springframework.security.authentication.DisabledException("Disabled"));
+
+        String view = authController.processLogin(request, bindingResult, response, model);
+
+        assertEquals("common/login", view);
+        assertEquals("Tài khoản chưa được kích hoạt! Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập.", model.getAttribute("errorMessage"));
+    }
+
+    @Test
+    void testProcessLoginLockedAccount() {
+        LoginRequest request = LoginRequest.builder()
+                .username("customer1")
+                .password("password123")
+                .build();
+        BindingResult bindingResult = new BeanPropertyBindingResult(request, "loginRequest");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        when(authenticationManager.authenticate(any())).thenThrow(new org.springframework.security.authentication.LockedException("Locked"));
+
+        String view = authController.processLogin(request, bindingResult, response, model);
+
+        assertEquals("common/login", view);
+        assertEquals("Tài khoản của bạn đã bị khóa! Vui lòng liên hệ ban quản trị để được hỗ trợ.", model.getAttribute("errorMessage"));
+    }
+
+    @Test
+    void testLogout() {
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        String view = authController.logout(request, response);
 
         assertEquals("redirect:/login?logout=true", view);
         Cookie cookie = response.getCookie(JwtAuthenticationFilter.JWT_COOKIE_NAME);
@@ -182,5 +217,28 @@ class AuthControllerUnitTest {
 
         assertEquals("customer/register", view);
         assertTrue(bindingResult.hasFieldErrors("username"));
+    }
+
+    @Test
+    void testVerifyEmailSuccess() {
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+
+        String view = authController.verifyEmail("valid-token", redirectAttributes);
+
+        assertEquals("redirect:/login", view);
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
+        verify(customerService, times(1)).verifyEmail("valid-token");
+    }
+
+    @Test
+    void testVerifyEmailFailed() {
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+        doThrow(new fu.cinema.exception.EmailTokenExpiredException()).when(customerService).verifyEmail("expired-token");
+
+        String view = authController.verifyEmail("expired-token", redirectAttributes);
+
+        assertEquals("redirect:/login", view);
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("errorMessage"));
+        verify(customerService, times(1)).verifyEmail("expired-token");
     }
 }

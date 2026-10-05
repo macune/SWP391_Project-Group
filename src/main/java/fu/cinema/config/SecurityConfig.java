@@ -45,6 +45,11 @@ public class SecurityConfig {
     }
 
     @Bean
+    public org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect springSecurityDialect() {
+        return new org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect();
+    }
+
+    @Bean
     public org.springframework.boot.web.servlet.FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(JwtAuthenticationFilter filter) {
         org.springframework.boot.web.servlet.FilterRegistrationBean<JwtAuthenticationFilter> registration =
                 new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filter);
@@ -59,7 +64,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
                 // Những api được toàn quyền đi qua (không bị chặn bởi Spring Security)
-                .requestMatchers("/", "/login", "/register", "/logout", "/css/**", "/js/**", "/vendor/**", "/webjars/**", "/images/**", "/error").permitAll()
+                .requestMatchers("/", "/login", "/register", "/logout", "/verify-email", "/css/**", "/js/**", "/vendor/**", "/webjars/**", "/images/**", "/error").permitAll()
 
                 // Chỉ role Admin mới được chấp nhận api này
                 .requestMatchers("/admin/**").hasRole("ADMIN")

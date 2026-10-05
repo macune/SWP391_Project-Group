@@ -12,10 +12,11 @@ public interface CustomerMapper {
     @Mapping(target = "accountId", ignore = true)
     @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "role", constant = "CUSTOMER")
-    @Mapping(target = "status", constant = "ACTIVE")
+    @Mapping(target = "status", constant = "INACTIVE")
     @Mapping(target = "customer", ignore = true)
     @Mapping(target = "staff", ignore = true)
     @Mapping(target = "bookings", ignore = true)
+    @Mapping(target = "verificationToken", ignore = true)
     Account toAccount(CustomerCreationRequest request);
 
     @Mapping(target = "customerId", ignore = true)

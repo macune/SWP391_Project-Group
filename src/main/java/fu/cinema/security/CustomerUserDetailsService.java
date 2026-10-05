@@ -26,6 +26,7 @@ public class CustomerUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với tài khoản/email: " + identifier));
 
         boolean enabled = account.getStatus() == AccountStatus.ACTIVE;
+        boolean accountNonLocked = account.getStatus() != AccountStatus.LOCKED;
 
         return new User(
                 account.getUsername(),
@@ -33,7 +34,7 @@ public class CustomerUserDetailsService implements UserDetailsService {
                 enabled,
                 true,
                 true,
-                enabled,
+                accountNonLocked,
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + account.getRole().name()))
         );
     }

@@ -2,6 +2,7 @@ package fu.cinema.controller;
 
 import fu.cinema.dto.request.CustomerCreationRequest;
 import fu.cinema.dto.request.LoginRequest;
+import fu.cinema.exception.AppException;
 import fu.cinema.exception.CustomerAlreadyExistsException;
 import fu.cinema.exception.ErrorCode;
 import fu.cinema.security.JwtAuthenticationFilter;
@@ -16,6 +17,7 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -28,6 +30,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Slf4j
@@ -38,6 +41,7 @@ public class AuthController {
     private final CustomerService customerService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+
 
     // 1. Hiển thị form đăng nhập
     @GetMapping("/login")
@@ -108,7 +112,10 @@ public class AuthController {
             model.addAttribute("errorMessage", "Tên đăng nhập hoặc mật khẩu không chính xác!");
             return "common/login";
         } catch (DisabledException ex) {
-            model.addAttribute("errorMessage", "Tài khoản của bạn đã bị khóa hoặc chưa được kích hoạt!");
+            model.addAttribute("errorMessage", "Tài khoản chưa được kích hoạt! Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập.");
+            return "common/login";
+        } catch (LockedException ex) {
+            model.addAttribute("errorMessage", "Tài khoản của bạn đã bị khóa! Vui lòng liên hệ ban quản trị để được hỗ trợ.");
             return "common/login";
         } catch (AuthenticationException ex) {
             model.addAttribute("errorMessage", "Đăng nhập thất bại: " + ex.getMessage());
@@ -116,16 +123,26 @@ public class AuthController {
         }
     }
 
-    // 3. Xử lý logout (Xóa JWT Cookie và SecurityContext)
-    @GetMapping("/logout")
-    public String logout(HttpServletResponse response) {
+    // 3. Xử lý logout (Xóa JWT Cookie, Session và SecurityContext)
+    @org.springframework.web.bind.annotation.RequestMapping(value = "/logout", method = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST})
+    public String logout(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
         Cookie jwtCookie = new Cookie(JwtAuthenticationFilter.JWT_COOKIE_NAME, null);
         jwtCookie.setHttpOnly(true);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0);
         response.addCookie(jwtCookie);
 
+        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            new org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler().logout(request, response, auth);
+        }
         SecurityContextHolder.clearContext();
+
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+
         return "redirect:/login?logout=true";
     }
 
@@ -158,7 +175,7 @@ public class AuthController {
 
         try {
             customerService.register(request);
-            redirectAttributes.addFlashAttribute("successMessage", "Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
+            redirectAttributes.addFlashAttribute("successMessage", "Đăng ký tài khoản thành công! Vui lòng xác thực tài khoản thông qua Email vừa đăng ký.");
             return "redirect:/login";
         } catch (CustomerAlreadyExistsException ex) {
             // Đẩy lỗi vào đúng trường input tương ứng
@@ -173,5 +190,16 @@ public class AuthController {
             }
             return "customer/register";
         }
+    }
+
+    @GetMapping("/verify-email")
+    public String verifyEmail(@RequestParam("token") String token, RedirectAttributes redirectAttributes) {
+        try {
+            customerService.verifyEmail(token);
+            redirectAttributes.addFlashAttribute("successMessage", "Xác thực email thành công! Bạn có thể đăng nhập ngay bây giờ.");
+        } catch (AppException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/login";
     }
 }

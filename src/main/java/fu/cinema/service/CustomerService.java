@@ -6,4 +6,5 @@ import fu.cinema.entity.Customer;
 public interface CustomerService {
 
     Customer register(CustomerCreationRequest request);
+    void verifyEmail(String token);
 }
