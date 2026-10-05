@@ -32,7 +32,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <!-- Thanh Tìm kiếm theo tên & Bộ lọc vị trí theo locations.json -->
+    <!-- Thanh Tìm kiếm theo tên & Bộ lọc vị trí -->
     <div class="card border-cine p-3 mb-3 bg-white shadow-sm">
         <div class="row g-2 align-items-center">
             <div class="col-md-5">
@@ -69,7 +69,7 @@
                     <th>Hotline</th>
                     <th>Giờ hoạt động</th>
                     <th>Trạng thái</th>
-                    <th class="text-center">Người quản lý</th>
+                    <th>Quản lý chi nhánh</th>
                     <th class="text-center">Thao tác</th>
                 </tr>
                 </thead>
@@ -88,12 +88,29 @@
                               th:classappend="${b.status.name() == 'ACTIVE' ? 'bg-cine-primary' : (b.status.name() == 'MAINTENANCE' ? 'bg-cine-soft text-cine-hot' : 'bg-cine-hot')}"
                               th:text="${b.status}">CLOSED</span>
                     </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-cine position-relative" data-bs-toggle="modal" th:data-bs-target="'#managerModal-' + ${b.branchId}">
-                            <i class="fa-solid fa-user-tie me-1"></i> Managers
-                            <span class="badge bg-cine-hot ms-1" th:text="${b.staffList != null ? #lists.size(b.staffList) : 0}">0</span>
-                        </button>
+
+                    <!-- Hiển thị 1 Quản lý duy nhất -->
+                    <td>
+                        <div th:if="${b.manager != null}" class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="fw-bold text-cine-primary" th:text="${b.manager.fullName}">Nguyễn Văn A</div>
+                                <small class="text-cine-pastel" th:text="'@' + ${b.manager.account.username}"></small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-cine ms-2"
+                                    data-bs-toggle="modal" th:data-bs-target="'#managerModal-' + ${b.branchId}"
+                                    title="Thay đổi hoặc gỡ quản lý">
+                                <i class="fa-solid fa-user-pen"></i> Đổi
+                            </button>
+                        </div>
+                        <div th:unless="${b.manager != null}" class="d-flex align-items-center justify-content-between">
+                            <span class="badge bg-cine-soft text-cine-pastel">Chưa phân công</span>
+                            <button type="button" class="btn btn-sm btn-cine ms-2"
+                                    data-bs-toggle="modal" th:data-bs-target="'#managerModal-' + ${b.branchId}">
+                                <i class="fa-solid fa-user-plus me-1"></i> Gán
+                            </button>
+                        </div>
                     </td>
+
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-cine me-1"
                                 th:onclick="openEditModal([[${b.branchId}]], [[${b.branchName}]], [[${b.address}]], [[${b.hotline}]], [[${b.openingTime}]], [[${b.closingTime}]], [[${b.status}]])">
@@ -167,7 +184,7 @@
         </div>
     </div>
 
-    <!-- Modal Chỉnh Sửa Chi Nhánh (Chọn từ locations.json) -->
+    <!-- Modal Chỉnh Sửa Chi Nhánh -->
     <div class="modal fade" id="editBranchModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content bg-cine-dark border-cine">
@@ -183,7 +200,6 @@
                             <input type="text" id="editBranchName" name="branchName" class="form-control border-cine" required>
                         </div>
 
-                        <!-- Chọn Địa chỉ từ locations.json -->
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-medium">Tỉnh/Thành phố <span class="text-cine-primary">*</span></label>
@@ -232,72 +248,60 @@
         </div>
     </div>
 
-    <!-- Modal Xem & Quản Lý Manager Cho Từng Chi Nhánh -->
+    <!-- Modal Quản Lý 1 Manager Cho Từng Chi Nhánh -->
     <div th:each="b : ${branches}" class="modal fade" th:id="'managerModal-' + ${b.branchId}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog">
             <div class="modal-content bg-cine-dark border-cine">
                 <div class="modal-header border-cine">
                     <h5 class="modal-title fw-bold text-cine-primary">
-                        <i class="fa-solid fa-users-gear me-2"></i>Quản lý Manager - <span th:text="${b.branchName}"></span>
+                        <i class="fa-solid fa-user-tie me-2"></i>Quản lý - <span th:text="${b.branchName}"></span>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Khu vực thêm Manager mới -->
-                    <div class="card p-3 mb-3 border-cine">
-                        <h6 class="fw-bold mb-2 text-cine-primary"><i class="fa-solid fa-user-plus me-1"></i>Thêm Manager cho chi nhánh</h6>
-                        <form th:action="@{/admin/branches/{branchId}/managers/add(branchId=${b.branchId})}" method="post" class="row g-2 align-items-center">
-                            <div class="col-md-9">
+                    <!-- Nếu chi nhánh đã có Quản lý -->
+                    <div th:if="${b.manager != null}" class="card p-3 mb-3 border-cine bg-white">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span class="badge bg-cine-primary mb-1">Đang phụ trách</span>
+                                <h6 class="fw-bold mb-0 text-cine-primary" th:text="${b.manager.fullName}">Nguyễn Văn A</h6>
+                                <small class="text-cine-pastel" th:text="'Username: ' + ${b.manager.account.username}"></small>
+                            </div>
+                            <form th:action="@{/admin/branches/{branchId}/managers/remove(branchId=${b.branchId})}" method="post"
+                                  onsubmit="return confirm('Bạn có chắc muốn gỡ quyền Quản lý của nhân sự này khỏi chi nhánh?');">
+                                <button type="submit" class="btn btn-sm btn-outline-cine text-danger border-danger">
+                                    <i class="fa-solid fa-user-xmark me-1"></i>Gỡ bỏ
+                                </button>
+                            </form>
+                        </div>
+                        <div class="small text-cine-main">
+                            <div><i class="fa-solid fa-envelope me-2 text-cine-pastel"></i><span th:text="${b.manager.email}">email@example.com</span></div>
+                            <div><i class="fa-solid fa-phone me-2 text-cine-pastel"></i><span th:text="${b.manager.phone}">0123456789</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Form Phân công hoặc Thay thế Quản lý -->
+                    <div class="card p-3 border-cine bg-white">
+                        <h6 class="fw-bold mb-2 text-cine-primary">
+                            <i class="fa-solid fa-user-check me-1"></i>
+                            <span th:text="${b.manager != null ? 'Thay thế Quản lý mới' : 'Bổ nhiệm Quản lý'}">Bổ nhiệm Quản lý</span>
+                        </h6>
+                        <form th:action="@{/admin/branches/{branchId}/managers/assign(branchId=${b.branchId})}" method="post">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium small">Chọn User (Vai trò Customer):</label>
                                 <select name="accountId" class="form-select border-cine" required>
-                                    <option value="">-- Chọn một User thông thường để bổ nhiệm làm Manager --</option>
+                                    <option value="">-- Chọn User để làm Manager --</option>
                                     <option th:each="u : ${eligibleUsers}"
                                             th:value="${u.accountId}"
-                                            th:text="${(u.customer != null ? u.customer.fullName : u.username) + ' - Username: ' + u.username + ' (' + u.email + ')'}">
+                                            th:text="${(u.customer != null ? u.customer.fullName : u.username) + ' (@' + u.username + ') - ' + u.email}">
                                     </option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <button type="submit" class="btn btn-cine w-100">
-                                    <i class="fa-solid fa-check me-1"></i>Bổ nhiệm
-                                </button>
-                            </div>
+                            <button type="submit" class="btn btn-cine w-100">
+                                <i class="fa-solid fa-check me-1"></i>
+                                <span th:text="${b.manager != null ? 'Xác nhận thay thế' : 'Xác nhận bổ nhiệm'}">Xác nhận</span>
+                            </button>
                         </form>
-                    </div>
-
-                    <!-- Bảng danh sách Manager hiện tại -->
-                    <h6 class="fw-bold mb-2"><i class="fa-solid fa-list me-1"></i>Danh sách Manager đang quản lý chi nhánh</h6>
-                    <div class="table-responsive">
-                        <table class="table table-cine table-hover align-middle mb-0">
-                            <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>Họ và tên</th>
-                                <th>Email</th>
-                                <th>Số điện thoại</th>
-                                <th class="text-center">Hành động</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr th:if="${#lists.isEmpty(b.staffList)}">
-                                <td colspan="5" class="text-center py-3 text-cine-pastel">Chi nhánh này hiện chưa có Manager nào phụ trách.</td>
-                            </tr>
-                            <tr th:each="m, mStat : ${b.staffList}">
-                                <td th:text="${mStat.count}">1</td>
-                                <td class="fw-semibold text-cine-primary" th:text="${m.fullName}">Nguyễn Văn A</td>
-                                <td th:text="${m.email}">manager@gmail.com</td>
-                                <td th:text="${m.phone}">0987654321</td>
-                                <td class="text-center">
-                                    <form th:action="@{/admin/branches/{branchId}/managers/remove/{staffId}(branchId=${b.branchId}, staffId=${m.staffId})}"
-                                          method="post" class="d-inline"
-                                          onsubmit="return confirm('Bạn có chắc muốn xóa quyền Manager của người này?');">
-                                        <button type="submit" class="btn btn-sm btn-cine">
-                                            <i class="fa-solid fa-user-minus me-1"></i>Xóa Manager
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
                     </div>
                 </div>
                 <div class="modal-footer border-cine">
@@ -312,7 +316,6 @@
 <script>
     let locationData = [];
 
-    // Tải dữ liệu từ locations.json nạp vào các Select Box (Thêm, Sửa, Lọc)
     fetch('/js/locations.json')
         .then(response => response.json())
         .then(data => {
@@ -322,19 +325,16 @@
             const filterCitySelect = document.getElementById('filterCitySelect');
 
             data.forEach((city, index) => {
-                // Dropdown Modal Thêm
                 let optAdd = document.createElement('option');
                 optAdd.value = index;
                 optAdd.text = city.name;
                 citySelect.appendChild(optAdd);
 
-                // Dropdown Modal Sửa
                 let optEdit = document.createElement('option');
                 optEdit.value = index;
                 optEdit.text = city.name;
                 editCitySelect.appendChild(optEdit);
 
-                // Dropdown Bộ Lọc
                 let optFilter = document.createElement('option');
                 optFilter.value = index;
                 optFilter.text = city.name;
@@ -342,9 +342,6 @@
             });
         });
 
-    /* ==============================================
-       1. XỬ LÝ ĐỊA CHỈ TRONG MODAL THÊM MỚI
-       ============================================== */
     function loadWards() {
         const cityIndex = document.getElementById('citySelect').value;
         const wardSelect = document.getElementById('wardSelect');
@@ -375,9 +372,6 @@
         }
     }
 
-    /* ==============================================
-       2. XỬ LÝ ĐỊA CHỈ TRONG MODAL CHỈNH SỬA
-       ============================================== */
     function loadEditWards() {
         const cityIndex = document.getElementById('editCitySelect').value;
         const wardSelect = document.getElementById('editWardSelect');
@@ -423,7 +417,6 @@
         editCitySelect.value = "";
         editWardSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
 
-        // Phân tích chuỗi "Quận/Huyện, Tỉnh/Thành phố" để tự động chọn đúng dropdown
         if (address && address.includes(',')) {
             const parts = address.split(',').map(s => s.trim());
             const ward = parts[0];
@@ -442,9 +435,6 @@
         editModal.show();
     }
 
-    /* ==============================================
-       3. BỘ LỌC TÌM KIẾM THEO TÊN & VỊ TRÍ
-       ============================================== */
     function loadFilterWards() {
         const cityIndex = document.getElementById('filterCitySelect').value;
         const wardSelect = document.getElementById('filterWardSelect');

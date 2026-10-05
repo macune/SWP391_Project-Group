@@ -33,7 +33,6 @@ public class BranchService {
         return branchRepository.findAll();
     }
 
-    // Lấy danh sách tài khoản CUSTOMER để bổ nhiệm làm Manager
     public List<Account> getEligibleUsersForManager() {
         return accountRepository.findByRole(Role.CUSTOMER);
     }
@@ -43,7 +42,6 @@ public class BranchService {
         if (branchRepository.existsByBranchName(branch.getBranchName())) {
             throw new IllegalArgumentException("Tên chi nhánh đã tồn tại!");
         }
-
         branch.setStatus(BranchStatus.CLOSED);
         return branchRepository.save(branch);
     }
@@ -76,63 +74,80 @@ public class BranchService {
         branchRepository.deleteById(branchId);
     }
 
+    // Bổ nhiệm (hoặc thay thế) Manager duy nhất cho chi nhánh
     @Transactional
     public void assignManager(Long branchId, Long accountId) {
         Branch branch = branchRepository.findById(branchId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh!"));
-        Account account = accountRepository.findById(accountId)
+        Account newAccount = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản người dùng!"));
 
-        if (account.getRole() != Role.CUSTOMER) {
-            throw new IllegalArgumentException("Chỉ có thể chọn người dùng bình thường (CUSTOMER) để nâng quyền thành Manager!");
+        if (newAccount.getRole() != Role.CUSTOMER) {
+            throw new IllegalArgumentException("Chỉ có thể chọn người dùng bình thường (CUSTOMER) để bổ nhiệm làm Manager!");
         }
 
-        // Nâng quyền tài khoản lên MANAGER
-        account.setRole(Role.MANAGER);
+        // 1. Nếu chi nhánh đã có Manager cũ -> Thu hồi quyền, trả về CUSTOMER và xóa hồ sơ Staff cũ
+        List<Staff> existingStaffList = staffRepository.findByBranchBranchId(branchId);
+        for (Staff s : existingStaffList) {
+            if (s.getAccount() != null && s.getAccount().getRole() == Role.MANAGER) {
+                Account oldAccount = s.getAccount();
+                oldAccount.setRole(Role.CUSTOMER);
+                oldAccount.setStaff(null);
+                accountRepository.save(oldAccount);
+                staffRepository.delete(s);
+            }
+        }
+        staffRepository.flush(); // Đồng bộ ngay với DB để dọn sạch Session
 
-        // Khởi tạo hồ sơ Staff liên kết với Account
-        Staff staff = staffRepository.findById(accountId).orElse(null);
+        // 2. Nâng quyền cho User mới
+        newAccount.setRole(Role.MANAGER);
+
+        Staff staff = newAccount.getStaff();
         if (staff == null) {
             staff = new Staff();
-            staff.setAccount(account);
-            // Không gán staff.setStaffId(...) để Hibernate tự map qua @MapsId và nhận diện là thực thể mới
+            staff.setAccount(newAccount);
+            newAccount.setStaff(staff);
         }
-
         staff.setBranch(branch);
-        staff.setEmail(account.getEmail());
+        staff.setEmail(newAccount.getEmail());
         staff.setStatus(StaffStatus.ACTIVE);
 
-        if (account.getCustomer() != null) {
-            staff.setFullName(account.getCustomer().getFullName());
-            staff.setPhone(account.getCustomer().getPhone());
+        if (newAccount.getCustomer() != null) {
+            staff.setFullName(newAccount.getCustomer().getFullName());
+            staff.setPhone(newAccount.getCustomer().getPhone());
         } else {
-            staff.setFullName(account.getUsername());
+            staff.setFullName(newAccount.getUsername());
             staff.setPhone("Chưa cập nhật");
         }
 
-        // Đồng bộ 2 chiều
-        account.setStaff(staff);
-
-        accountRepository.save(account);
-        staffRepository.save(staff);
+        // Tự động lưu Staff thông qua Cascade của Account, tránh lỗi xung đột Session
+        accountRepository.save(newAccount);
     }
 
+    // Hủy quyền Quản lý của chi nhánh
     @Transactional
-    public void removeManager(Long branchId, Long staffId) {
-        Staff staff = staffRepository.findById(staffId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ Manager!"));
+    public void removeManager(Long branchId) {
+        Branch branch = branchRepository.findById(branchId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh!"));
 
-        if (staff.getBranch() == null || !staff.getBranch().getBranchId().equals(branchId)) {
-            throw new IllegalArgumentException("Manager này không thuộc chi nhánh hiện tại!");
+        List<Staff> existingStaffList = staffRepository.findByBranchBranchId(branchId);
+        boolean found = false;
+        for (Staff s : existingStaffList) {
+            if (s.getAccount() != null && s.getAccount().getRole() == Role.MANAGER) {
+                Account oldAccount = s.getAccount();
+                if (oldAccount != null) {
+                    oldAccount.setRole(Role.CUSTOMER);
+                    oldAccount.setStaff(null);
+                    accountRepository.save(oldAccount);
+                }
+                staffRepository.delete(s);
+                found = true;
+            }
         }
 
-        Account account = staff.getAccount();
-        if (account != null) {
-            account.setRole(Role.CUSTOMER);
-            account.setStaff(null);
-            accountRepository.save(account);
+        if (!found) {
+            throw new IllegalArgumentException("Chi nhánh này hiện chưa có Manager để gỡ!");
         }
-
-        staffRepository.delete(staff);
+        staffRepository.flush();
     }
 }

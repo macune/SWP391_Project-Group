@@ -62,26 +62,24 @@ public class AdminBranchController {
         return "redirect:/admin/branches";
     }
 
-    @PostMapping("/{branchId}/managers/add")
-    public String addManager(@PathVariable Long branchId,
-                             @RequestParam("accountId") Long accountId,
-                             RedirectAttributes redirectAttributes) {
+    @PostMapping("/{branchId}/managers/assign")
+    public String assignManager(@PathVariable Long branchId,
+                                @RequestParam("accountId") Long accountId,
+                                RedirectAttributes redirectAttributes) {
         try {
             branchService.assignManager(branchId, accountId);
-            redirectAttributes.addFlashAttribute("successMessage", "Gán quyền Manager cho chi nhánh thành công!");
+            redirectAttributes.addFlashAttribute("successMessage", "Phân công Quản lý cho chi nhánh thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/admin/branches";
     }
 
-    @PostMapping("/{branchId}/managers/remove/{staffId}")
-    public String removeManager(@PathVariable Long branchId,
-                                @PathVariable Long staffId,
-                                RedirectAttributes redirectAttributes) {
+    @PostMapping("/{branchId}/managers/remove")
+    public String removeManager(@PathVariable Long branchId, RedirectAttributes redirectAttributes) {
         try {
-            branchService.removeManager(branchId, staffId);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa Manager khỏi chi nhánh thành công!");
+            branchService.removeManager(branchId);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã gỡ Quản lý khỏi chi nhánh thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
