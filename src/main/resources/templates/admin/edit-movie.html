@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(~{::title}, ~{::#sidebar}, ~{::#content}, ~{::#actorCss}, ~{::#actorJs})}">
+<head>
+    <title>Cập Nhật Phim | CineFlow Admin</title>
+    <th:block id="actorCss"><link rel="stylesheet" th:href="@{/css/admin.css}"></th:block>
+</head>
+<body>
+<th:block id="sidebar">
+    <div th:replace="~{layout/sidebar :: admin-sidebar}"></div>
+</th:block>
+
+<div id="content" class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <a th:href="@{/movies}" class="text-decoration-none mb-3 d-inline-block" style="color: #c95d63;">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
+            </a>
+
+            <!-- Form Card -->
+            <div class="card shadow-sm border-0" style="background-color: #f7ede8;">
+                <!-- Header màu Trắng -->
+                <div class="card-header py-3 bg-white border-bottom">
+                    <h4 class="mb-0 fw-bold" style="color: #c95d63;"><i class="fa-solid fa-pen-to-square me-2"></i>Cập Nhật Phim</h4>
+                </div>
+
+                <div class="card-body p-4 text-dark">
+                    <!-- KHỐI LỖI -->
+                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
+                    <form th:action="@{/movies/edit/{id}(id=${movieId})}" th:object="${movieRequest}" method="POST">
+
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Tên phim <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control shadow-sm" th:field="*{title}" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Ngày khởi chiếu <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control shadow-sm"
+                                       id="releaseDate" name="releaseDate"
+                                       th:value="${#temporals.format(movieRequest.releaseDate, 'yyyy-MM-dd')}" required />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-5">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Thể loại <span class="text-danger">*</span></label>
+                                <select class="form-select shadow-sm" th:field="*{genre}" required>
+                                    <option value="" disabled selected>-- Chọn thể loại --</option>
+                                    <option value="Hành động">Hành động</option>
+                                    <option value="Hài hước">Hài hước</option>
+                                    <option value="Tình cảm">Tình cảm</option>
+                                    <option value="Kinh dị">Kinh dị</option>
+                                    <option value="Hoạt hình">Hoạt hình</option>
+                                    <option value="Khoa học viễn tưởng">Khoa học viễn tưởng</option>
+                                    <option value="Tâm lý - Giật gân">Tâm lý - Giật gân</option>
+                                    <option value="Phiêu lưu">Phiêu lưu</option>
+                                    <option value="Tài liệu">Tài liệu</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Ngôn ngữ <span class="text-danger">*</span></label>
+                                <select class="form-select shadow-sm" th:field="*{language}" required>
+                                    <option value="" disabled selected>-- Chọn ngôn ngữ --</option>
+                                    <option value="Tiếng Anh - Phụ đề">Tiếng Anh - Phụ đề VN</option>
+                                    <option value="Tiếng Hàn - Phụ đề">Tiếng Hàn - Phụ đề VN</option>
+                                    <option value="Tiếng Nhật - Phụ đề">Tiếng Nhật - Phụ đề VN</option>
+                                    <option value="Tiếng Thái - Phụ đề">Tiếng Thái - Phụ đề VN</option>
+                                    <option value="Tiếng Việt">Phim Tiếng Việt</option>
+                                    <option value="Lồng tiếng">Lồng tiếng Tiếng Việt</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Thời lượng <span class="text-danger">*</span></label>
+                                <div class="input-group shadow-sm">
+                                    <input type="number" class="form-control" th:field="*{duration}" min="1" required />
+                                    <span class="input-group-text bg-white">phút</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Nhãn độ tuổi <span class="text-danger">*</span></label>
+                                <select class="form-select shadow-sm" th:field="*{ageRating}">
+                                    <option value="P">P - Phổ biến</option>
+                                    <option value="T13">T13 - Khán giả từ 13 tuổi</option>
+                                    <option value="T16">T16 - Khán giả từ 16 tuổi</option>
+                                    <option value="T18">T18 - Khán giả từ 18 tuổi</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Trạng thái <span class="text-danger">*</span></label>
+                                <select class="form-select shadow-sm" th:field="*{status}">
+                                    <option value="COMING_SOON">Sắp chiếu</option>
+                                    <option value="NOW_SHOWING">Đang chiếu</option>
+                                    <option value="ENDED">Ngừng chiếu</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Link Ảnh Poster</label>
+                                <input type="url" class="form-control shadow-sm" th:field="*{posterUrl}" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" style="color: #c95d63;">Link Trailer (Youtube)</label>
+                                <input type="url" class="form-control shadow-sm" th:field="*{trailerUrl}" />
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-medium" style="color: #c95d63;">Mô tả tóm tắt nội dung</label>
+                            <textarea class="form-control shadow-sm" th:field="*{description}" rows="5"></textarea>
+                        </div>
+
+                        <div class="text-end pt-3 mt-4" style="border-top: 1px solid #c95d63;">
+                            <a th:href="@{/movies}" class="btn btn-outline-secondary me-2 px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn text-white px-5 fw-bold shadow-sm" style="background-color: #c95d63;">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>Cập Nhật
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block id="actorJs"><script th:src="@{/js/admin.js}"></script></th:block>
+</body>
+</html>
