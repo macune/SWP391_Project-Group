@@ -1,63 +1,31 @@
 package fu.cinema.service;
 
+import fu.cinema.dto.request.HallRequest;
+import fu.cinema.dto.request.SeatUpdateItem;
+import fu.cinema.dto.response.HallResponse;
+import fu.cinema.dto.response.SeatResponse;
 import fu.cinema.entity.Branch;
-import fu.cinema.entity.Hall;
-import fu.cinema.repository.BranchRepository;
-import fu.cinema.repository.HallRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
-@Service
-public class HallService {
+public interface HallService {
 
-    private final HallRepository hallRepository;
-    private final BranchRepository branchRepository;
+    Branch getBranchById(Long branchId);
 
-    public HallService(HallRepository hallRepository, BranchRepository branchRepository) {
-        this.hallRepository = hallRepository;
-        this.branchRepository = branchRepository;
-    }
+    List<HallResponse> getHallsByBranch(Long branchId);
 
-    public List<Hall> getHallsByBranch(Long branchId) {
-        return hallRepository.findByBranchBranchId(branchId);
-    }
+    HallResponse getHallById(Long hallId);
 
-    @Transactional
-    public Hall createHall(Hall hall, Long branchId) {
-        if (hallRepository.existsByBranchBranchIdAndHallName(branchId, hall.getHallName())) {
-            throw new IllegalArgumentException("Tên phòng chiếu đã tồn tại trong chi nhánh này!");
-        }
-        Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh hợp lệ!"));
+    HallResponse createHallWithSeats(Long branchId, HallRequest request);
 
-        hall.setBranch(branch);
-        return hallRepository.save(hall);
-    }
+    HallResponse updateHall(Long branchId, HallRequest request);
 
-    @Transactional
-    public void updateHall(Hall updatedHall, Long branchId) {
-        Hall existing = hallRepository.findById(updatedHall.getHallId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phòng chiếu!"));
+    void deleteHall(Long hallId);
 
-        if (!existing.getHallName().equals(updatedHall.getHallName()) &&
-                hallRepository.existsByBranchBranchIdAndHallName(branchId, updatedHall.getHallName())) {
-            throw new IllegalArgumentException("Tên phòng chiếu đã tồn tại!");
-        }
+    // Lấy sơ đồ ghế gom nhóm sẵn theo từng hàng (A -> [A1, A2...], B -> [B1, B2...])
+    Map<String, List<SeatResponse>> getSeatMapByHall(Long hallId);
 
-        existing.setHallName(updatedHall.getHallName());
-        existing.setCapacity(updatedHall.getCapacity());
-        existing.setStatus(updatedHall.getStatus());
-
-        hallRepository.save(existing);
-    }
-
-    @Transactional
-    public void deleteHall(Long hallId) {
-        if (!hallRepository.existsById(hallId)) {
-            throw new IllegalArgumentException("Không tìm thấy phòng chiếu để xóa!");
-        }
-        hallRepository.deleteById(hallId);
-    }
+    // Cập nhật hàng loạt loại ghế và trạng thái ghế từ giao diện thiết kế
+    void updateSeatMatrix(Long hallId, List<SeatUpdateItem> seatUpdates);
 }

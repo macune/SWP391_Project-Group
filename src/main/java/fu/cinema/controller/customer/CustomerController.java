@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequestMapping("/customer")
-public class CustomerPortalController {
+public class CustomerController {
 
     // 1. Trang tổng quan tài khoản thành viên
     @GetMapping("/dashboard")

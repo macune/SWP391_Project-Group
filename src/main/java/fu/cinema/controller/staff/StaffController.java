@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequestMapping("/staff")
-public class StaffPosController {
+public class StaffController {
 
     // 1. Màn hình Bán vé & Bắp nước tại quầy (POS)
     @GetMapping("/pos")

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: manager-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{::script}
+      )}">
+<head>
+    <title>Thiết kế Sơ đồ ghế | CineFlow Manager</title>
+    <link rel="stylesheet" th:href="@{/css/manager.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+
+    <!-- Header thông tin phòng -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <a th:href="@{/manager/halls}" class="btn btn-sm btn-outline-cine mb-2">
+                <i class="fa-solid fa-arrow-left me-1"></i> Quay lại danh sách phòng
+            </a>
+            <h4 class="fw-bold mb-0 text-cine-primary">
+                💺 Thiết kế Sơ đồ ghế: <span th:text="${hall.hallName}">Phòng 01</span>
+            </h4>
+            <small class="text-muted">
+                Chi nhánh: <strong th:text="${hall.branchName}">CineFlow Hà Nội</strong> |
+                Kích thước: <strong th:text="${hall.totalRows + ' hàng × ' + hall.seatsPerRow + ' ghế'}">8x12</strong>
+            </small>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary" onclick="resetAllToStandard()">
+                <i class="fa-solid fa-rotate-left me-1"></i> Đặt lại tất cả Standard
+            </button>
+            <button type="button" id="saveSeatMapBtn" class="btn btn-cine px-4 py-2 fw-bold"
+                    th:data-hall-id="${hall.hallId}"
+                    onclick="saveSeatConfiguration(this)">
+                <i class="fa-solid fa-floppy-disk me-1"></i> Lưu sơ đồ ghế
+            </button>
+        </div>
+    </div>
+
+    <!-- Thanh công cụ chọn Loại ghế (Cọ vẽ) -->
+    <div class="card border-cine shadow-sm mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="fw-bold text-cine-primary me-2">
+                    <i class="fa-solid fa-paintbrush me-1"></i>1. Chọn công cụ gán ghế:
+                </span>
+
+                <button type="button" class="btn btn-sm seat-STANDARD brush-btn active px-3 py-2 fw-bold"
+                        data-brush="STANDARD" onclick="selectBrush('STANDARD', this)">
+                    Ghế Thường (STANDARD)
+                </button>
+
+                <button type="button" class="btn btn-sm seat-VIP brush-btn px-3 py-2 fw-bold"
+                        data-brush="VIP" onclick="selectBrush('VIP', this)">
+                    <i class="fa-solid fa-crown me-1"></i>Ghế VIP
+                </button>
+
+                <button type="button" class="btn btn-sm seat-SWEETBOX brush-btn px-3 py-2 fw-bold"
+                        data-brush="SWEETBOX" onclick="selectBrush('SWEETBOX', this)">
+                    <i class="fa-solid fa-heart me-1"></i>Ghế Đôi (SWEETBOX)
+                </button>
+
+                <button type="button" class="btn btn-sm seat-BROKEN brush-btn px-3 py-2 fw-bold"
+                        data-brush="BROKEN" onclick="selectBrush('BROKEN', this)">
+                    <i class="fa-solid fa-ban me-1"></i>Ghế Hỏng / Bảo trì (BROKEN)
+                </button>
+            </div>
+
+            <div class="small text-muted">
+                💡 <strong>Mẹo nhanh:</strong> Click vào <strong>chữ cái đầu hàng (A, B, C...)</strong> để áp dụng loại ghế đang chọn cho <strong>toàn bộ hàng đó</strong>!
+            </div>
+        </div>
+    </div>
+
+    <!-- Khung Sơ đồ Rạp chiếu -->
+    <div class="card border-cine shadow-sm">
+        <div class="card-body py-4 px-3 overflow-auto text-center">
+
+            <!-- Màn hình chiếu -->
+            <div class="cinema-screen">MÀN HÌNH CHIẾU (SCREEN)</div>
+
+            <!-- Ma trận ghế -->
+            <div class="d-inline-block text-nowrap">
+                <div th:each="entry : ${seatMap}" class="seat-row" th:data-row="${entry.key}">
+                    <!-- Nút đầu hàng bên trái -->
+                    <button type="button" class="row-label-btn"
+                            th:title="'Click để đổi cả hàng ' + ${entry.key}"
+                            th:text="${entry.key}"
+                            th:data-row-code="${entry.key}"
+                            onclick="applyBrushToRowBtn(this)">
+                        A
+                    </button>
+
+                    <!-- Các ghế trong hàng -->
+                    <div th:each="seat : ${entry.value}"
+                         class="seat-box"
+                         th:classappend="${seat.status.name() == 'BROKEN' ? 'seat-BROKEN' : 'seat-' + seat.type.name()}"
+                         th:data-seat-id="${seat.seatId}"
+                         th:data-row="${seat.rowCode}"
+                         th:data-type="${seat.type.name()}"
+                         th:data-status="${seat.status.name()}"
+                         th:text="${seat.rowCode + seat.number}"
+                         onclick="applyBrushToSeat(this)">
+                        A1
+                    </div>
+
+                    <!-- Nút đầu hàng bên phải -->
+                    <button type="button" class="row-label-btn"
+                            th:title="'Click để đổi cả hàng ' + ${entry.key}"
+                            th:text="${entry.key}"
+                            th:data-row-code="${entry.key}"
+                            onclick="applyBrushToRowBtn(this)">
+                        A
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thống kê số lượng từng loại ghế theo thời gian thực -->
+            <div class="mt-4 pt-3 border-top d-flex flex-wrap justify-content-center gap-4 small fw-medium">
+                <span>Standard: <strong id="countStandard">0</strong></span>
+                <span class="text-warning-emphasis">VIP: <strong id="countVip">0</strong></span>
+                <span class="text-danger">Sweetbox: <strong id="countSweetbox">0</strong></span>
+                <span class="text-secondary">Ghế bảo trì (Broken): <strong id="countBroken">0</strong></span>
+                <span class="text-cine-primary">Tổng ghế khả dụng: <strong id="countActive">0</strong></span>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script th:src="@{/js/manager.js}"></script>
+</body>
+</html>
