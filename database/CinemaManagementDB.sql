@@ -32,6 +32,7 @@ IF OBJECT_ID('dbo.staff_manager', 'U') IS NOT NULL DROP TABLE dbo.staff_manager;
 IF OBJECT_ID('dbo.customers', 'U') IS NOT NULL DROP TABLE dbo.customers;
 IF OBJECT_ID('dbo.branches', 'U') IS NOT NULL DROP TABLE dbo.branches;
 IF OBJECT_ID('dbo.accounts', 'U') IS NOT NULL DROP TABLE dbo.accounts;
+IF OBJECT_ID('dbo.verification_tokens', 'U') IS NOT NULL DROP TABLE dbo.verification_tokens;
 GO
 
 -- =============================================
@@ -50,6 +51,17 @@ CREATE TABLE dbo.accounts (
 GO
 
 -- 2. Bảng CUSTOMER (Shared Primary Key với ACCOUNT)
+-- 2.1. Bảng VERIFICATION_TOKEN (Xác thực Email & Quên mật khẩu - Quan hệ 1-1 với ACCOUNT)
+CREATE TABLE dbo.verification_tokens (
+                                         id BIGINT IDENTITY(1,1) PRIMARY KEY,
+                                         token VARCHAR(255) NOT NULL UNIQUE,
+                                         account_id BIGINT NOT NULL UNIQUE,
+                                         expiry_date DATETIME2 NOT NULL,
+                                         CONSTRAINT FK_VerificationTokens_Accounts FOREIGN KEY (account_id) REFERENCES dbo.accounts(account_id) ON DELETE CASCADE
+);
+GO
+
+-- 2.1. Bảng CUSTOMER (Shared Primary Key với ACCOUNT)
 CREATE TABLE dbo.customers (
                                customer_id BIGINT PRIMARY KEY, -- Không dùng IDENTITY, lấy trực tiếp từ account_id
                                full_name NVARCHAR(255) NOT NULL,
@@ -255,4 +267,37 @@ CREATE TABLE dbo.booking_fnb (
                                  CONSTRAINT FK_BookingFnB_Bookings FOREIGN KEY (booking_id) REFERENCES dbo.bookings(booking_id) ON DELETE CASCADE,
                                  CONSTRAINT FK_BookingFnB_Items FOREIGN KEY (item_id) REFERENCES dbo.fnb_items(item_id)
 );
+GO
+
+-- =============================================
+-- 4. DỮ LIỆU MẪU (SEED DATA CHO 4 ACTOR - PASS: 123456)
+-- =============================================
+
+-- 4.1. Tạo Chi nhánh mẫu #1
+SET IDENTITY_INSERT dbo.branches ON;
+INSERT INTO dbo.branches (branch_id, branch_name, address, hotline, opening_time, closing_time, status)
+VALUES (1, N'CineFlow Hà Nội', N'Cầu Giấy, Thành phố Hà Nội', '0901234567', '08:00:00', '23:30:00', 'ACTIVE');
+SET IDENTITY_INSERT dbo.branches OFF;
+GO
+
+-- 4.2. Tạo 4 Account mẫu (Mật khẩu chung: 123456)
+SET IDENTITY_INSERT dbo.accounts ON;
+INSERT INTO dbo.accounts (account_id, username, password_hash, email, role, status) VALUES
+                                                                                        (1, 'admin',    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin@cineflow.vn',    'ADMIN',    'ACTIVE'),
+                                                                                        (2, 'manager',  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'manager@cineflow.vn',  'MANAGER',  'ACTIVE'),
+                                                                                        (3, 'staff',    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'staff@cineflow.vn',    'STAFF',    'ACTIVE'),
+                                                                                        (4, 'customer', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'customer@cineflow.vn', 'CUSTOMER', 'ACTIVE');
+SET IDENTITY_INSERT dbo.accounts OFF;
+GO
+
+-- 4.3. Tạo hồ sơ Staff/Manager/Admin trong bảng staff_manager (Shared PK với account_id = 1, 2, 3)
+INSERT INTO dbo.staff_manager (staff_id, branch_id, full_name, email, phone, status) VALUES
+(1, NULL, N'Quản Trị Viên Hệ Thống', 'admin@cineflow.vn',   '0900000001', 'ACTIVE'),
+(2, 1,    N'Nguyễn Quản Lý Rạp',     'manager@cineflow.vn', '0900000002', 'ACTIVE'),
+(3, 1,    N'Trần Nhân Viên Quầy Vé', 'staff@cineflow.vn',   '0900000003', 'ACTIVE');
+GO
+
+-- 4.4. Tạo hồ sơ Customer trong bảng customers (Shared PK với account_id = 4)
+INSERT INTO dbo.customers (customer_id, full_name, phone, email_verified) VALUES
+(4, N'Lê Khách Hàng Thân Thiết', '0900000004', 1);
 GO

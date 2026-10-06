@@ -4,6 +4,7 @@ import fu.cinema.security.CustomerUserDetailsService;
 import fu.cinema.security.JwtAuthenticationEntryPoint;
 import fu.cinema.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect;
 
 @Configuration
 @EnableWebSecurity
@@ -33,8 +35,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
@@ -47,14 +47,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect springSecurityDialect() {
-        return new org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect();
+    public SpringSecurityDialect springSecurityDialect() {
+        return new SpringSecurityDialect();
     }
 
     @Bean
-    public org.springframework.boot.web.servlet.FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(JwtAuthenticationFilter filter) {
-        org.springframework.boot.web.servlet.FilterRegistrationBean<JwtAuthenticationFilter> registration =
-                new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filter);
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false); // Ngăn Tomcat đăng ký làm Servlet filter độc lập
         return registration;
     }
@@ -62,42 +61,46 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Tạm tắt CSRF để API CRUD hoạt động
                 .csrf(csrf -> csrf.disable())
-
+                .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
+                        // 1. ACTOR GUEST / PUBLIC (Trang chủ, Auth, Báo lỗi, Static resources)
                         .requestMatchers(
-                                "/css/**",
-                                "/js/**",
-                                "/images/**",
-                                "/manager/**",
-                                "/api/fnb-items/**"
+                                "/", "/home", "/login", "/register", "/logout", "/verify-email", "/access-denied",
+                                "/css/**", "/js/**", "/vendor/**", "/webjars/**", "/images/**", "/error"
                         ).permitAll()
-                        .anyRequest().permitAll()
-                );
-            .authenticationProvider(authenticationProvider())
-            .authorizeHttpRequests(auth -> auth
 
-                // Những api được toàn quyền đi qua (không bị chặn bởi Spring Security)
-                .requestMatchers("/", "/login", "/register", "/logout", "/verify-email", "/css/**", "/js/**", "/vendor/**", "/webjars/**", "/images/**", "/error").permitAll()
+                        // 2. ACTOR SYSTEM ADMIN (Quản trị hệ thống, Chi nhánh, Kho phim hệ thống)
+                        .requestMatchers("/admin/**", "/movies/**").hasRole("ADMIN")
 
-                // Chỉ role Admin mới được chấp nhận api này
-                .requestMatchers("/admin/**").hasRole("ADMIN")
+                        // 3. ACTOR BRANCH MANAGER (Quản lý rạp, Phòng chiếu, Lịch chiếu, Bắp nước)
+                        .requestMatchers("/manager/**", "/api/fnb-items/**").hasAnyRole("ADMIN", "MANAGER")
 
-                // Role Admin + Manager
-                .requestMatchers("/manager/**").hasAnyRole("ADMIN", "MANAGER")
+                        // 4. ACTOR STAFF (Bán vé tại quầy POS, Soát vé QR)
+                        .requestMatchers("/staff/**").hasAnyRole("ADMIN", "MANAGER", "STAFF")
 
-                // Role Admin + Manager + Staff
-                .requestMatchers("/staff/**").hasAnyRole("ADMIN", "MANAGER", "STAFF")
-                .anyRequest().authenticated()
-            )
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        // 5. ACTOR CUSTOMER / MEMBER (Đặt vé online, Lịch sử vé, Profile cá nhân)
+                        .requestMatchers("/customer/**", "/booking/**", "/profile/**").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
+
+                        // Các request còn lại bắt buộc phải đăng nhập
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedPage("/access-denied")
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .deleteCookies(JwtAuthenticationFilter.JWT_COOKIE_NAME, "JSESSIONID")
+                        .clearAuthentication(true)
+                        .invalidateHttpSession(true)
+                        .logoutSuccessUrl("/login?logout=true")
+                        .permitAll()
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

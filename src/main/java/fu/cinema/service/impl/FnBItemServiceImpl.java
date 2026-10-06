@@ -1,4 +1,4 @@
-package fu.cinema.service;
+package fu.cinema.service.impl;
 
 import fu.cinema.dto.request.FnBItemRequest;
 import fu.cinema.dto.response.FnBItemResponse;
@@ -9,6 +9,7 @@ import fu.cinema.exception.FnBItemNotFoundException;
 import fu.cinema.mapper.FnBItemMapper;
 import fu.cinema.repository.FnBItemRepository;
 
+import fu.cinema.service.FnBItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

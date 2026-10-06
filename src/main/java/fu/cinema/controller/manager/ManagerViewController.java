@@ -1,4 +1,4 @@
-package fu.cinema.controller;
+package fu.cinema.controller.manager;
 import fu.cinema.dto.request.FnBItemRequest;
 import fu.cinema.dto.response.FnBItemResponse;
 import fu.cinema.enums.FnBCategory;

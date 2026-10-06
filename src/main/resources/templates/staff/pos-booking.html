@@ -1,37 +1,54 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{layout/layout :: master(
           title = ~{::title},
           sidebar = ~{layout/sidebar :: staff-sidebar},
           content = ~{::#page-content},
-          actorCss = ~{::link},
-          actorJs = ~{::script}
+          actorCss = ~{},
+          actorJs = ~{}
       )}">
 <head>
-    <title>Bán vé tại quầy POS | CineFlow Staff</title>
-    <link rel="stylesheet" th:href="@{/css/staff.css}">
+    <title>Quầy Vé POS | CineFlow Staff</title>
 </head>
 <body>
 
 <div id="page-content" class="container-fluid">
-    <h4 class="fw-bold mb-4">Quầy bán vé & Bắp nước trực tiếp (CineFlow POS)</h4>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 text-cine-primary">
+                <i class="fa-solid fa-cash-register me-2"></i>Quầy Bán Vé & Bắp Nước (POS)
+            </h4>
+            <p class="small text-muted mb-0">
+                Nhân viên trực quầy: <strong sec:authentication="name">staff</strong> | Chi nhánh: CineFlow Hà Nội
+            </p>
+        </div>
+        <span class="badge bg-success px-3 py-2">Ca trực đang mở</span>
+    </div>
 
     <div class="row g-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <img th:src="@{/images/concessions/combo-couple.png}" class="card-img-top p-3" alt="Combo">
-                <div class="card-body">
-                    <h6 class="fw-bold">Combo Pink Couple (1 Bắp lớn + 2 Nước)</h6>
-                    <p class="text-cine-primary fw-bold fs-5 mb-2">115.000 ₫</p>
-                    <button class="btn btn-cine btn-sm w-100">
-                        <i class="fa-solid fa-cart-plus me-1"></i>Thêm vào hóa đơn
-                    </button>
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm p-4">
+                <h6 class="fw-bold text-cine-primary mb-3">1. Chọn Suất Chiếu Đang Mở Bán</h6>
+                <div class="alert bg-cine-soft border-cine mb-0">
+                    Khu vực hiển thị danh sách suất chiếu trong ngày và sơ đồ ghế cho Nhân viên POS.
                 </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-4">
+                <h6 class="fw-bold text-cine-primary mb-3">Hóa Đơn Tạm Tính</h6>
+                <p class="small text-muted">Chưa có ghế hoặc bắp nước nào được chọn.</p>
+                <hr>
+                <div class="d-flex justify-content-between fw-bold mb-3">
+                    <span>Tổng cộng:</span>
+                    <span class="text-cine-primary">0 ₫</span>
+                </div>
+                <button class="btn btn-cine w-100" disabled>Thanh toán & In vé</button>
             </div>
         </div>
     </div>
 </div>
 
-<script th:src="@{/js/staff.js}"></script>
 </body>
 </html>

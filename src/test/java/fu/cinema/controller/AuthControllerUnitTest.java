@@ -1,5 +1,6 @@
 package fu.cinema.controller;
 
+import fu.cinema.controller.common.AuthController;
 import fu.cinema.dto.request.CustomerCreationRequest;
 import fu.cinema.dto.request.LoginRequest;
 import fu.cinema.entity.Customer;

@@ -5,16 +5,13 @@
           ~{::title},
           ~{layout/sidebar :: manager-sidebar},
           ~{::content},
-          ~{},
+          ~{::link},
           ~{::actorJs}
       )}">
 
 <head>
-
-    <title th:fragment="title">
-        F&B Management
-    </title>
-
+    <title th:fragment="title">Quản lý Bắp nước | CineFlow Manager</title>
+    <link rel="stylesheet" th:href="@{/css/manager.css}">
 </head>
 
 <body>
@@ -40,7 +37,7 @@
         </div>
 
         <!-- CREATE -->
-        <<button type="button"
+        <button type="button"
                  class="btn btn-cine"
                  data-bs-toggle="modal"
                  data-bs-target="#fnbModal">
@@ -320,19 +317,17 @@
                     </a>
 
                 </div>
-
-                <div th:if="${errorMessage}"
-                     class="alert alert-danger"
-                     role="alert">
-
-                    <i class="fa-solid fa-circle-exclamation me-2"></i>
-                    <span th:text="${errorMessage}"></span>
-
-                </div>
                 <!-- BODY -->
 
                 <div class="modal-body">
+                    <div th:if="${errorMessage}"
+                         class="alert alert-danger"
+                         role="alert">
 
+                        <i class="fa-solid fa-circle-exclamation me-2"></i>
+                        <span th:text="${errorMessage}"></span>
+
+                    </div>
                     <!-- ========================= -->
                     <!-- CREATE + EDIT FORM -->
                     <!-- ========================= -->

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: customer-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{::script}
+      )}">
+<head>
+    <title>Khu vực Thành viên | CineFlow</title>
+    <link rel="stylesheet" th:href="@{/css/customer.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h4 class="fw-bold mb-1 text-cine-primary"
+                th:text="${sectionTitle != null ? sectionTitle : 'Khu vực Thành viên'}">
+                Tổng quan tài khoản
+            </h4>
+            <p class="small text-muted mb-0">
+                Xin chào thành viên <strong sec:authentication="name">customer</strong>!
+            </p>
+        </div>
+        <a th:href="@{/}" class="btn btn-cine btn-sm px-3 py-2">
+            <i class="fa-solid fa-film me-1"></i>Ra Trang Chủ Đặt Vé
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-cine-dark text-white border-0 shadow-sm p-3">
+                <span class="small text-cine-pastel">Vé sắp chiếu của bạn</span>
+                <h3 class="fw-bold mb-0 mt-1">0 Vé</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-cine-primary border-0 shadow-sm p-3">
+                <span class="small">Tổng đơn đặt vé hoàn tất</span>
+                <h3 class="fw-bold mb-0 mt-1">0 Đơn</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-cine-soft border-0 shadow-sm p-3">
+                <span class="small text-dark">Trạng thái tài khoản</span>
+                <h3 class="fw-bold mb-0 mt-1 text-cine-primary">Đã xác thực</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h6 class="fw-bold mb-0 text-cine-primary">
+                <i class="fa-solid fa-clock-rotate-left me-2"></i>Danh sách vé đã đặt gần đây
+            </h6>
+        </div>
+        <div class="card-body text-center py-5 text-muted">
+            <i class="fa-solid fa-ticket fs-1 mb-2 d-block opacity-50"></i>
+            <p class="mb-0">Bạn chưa có giao dịch đặt vé nào.</p>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/customer.js}"></script>
+</body>
+</html>

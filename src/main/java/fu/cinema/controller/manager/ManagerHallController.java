@@ -1,4 +1,4 @@
-package fu.cinema.controller;
+package fu.cinema.controller.manager;
 
 import fu.cinema.entity.Hall;
 import fu.cinema.enums.HallStatus;

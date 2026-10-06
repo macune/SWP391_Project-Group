@@ -1,4 +1,4 @@
-package fu.cinema.controller;
+package fu.cinema.controller.admin;
 
 import fu.cinema.dto.request.MovieRequest;
 import fu.cinema.dto.response.MovieResponse;

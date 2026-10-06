@@ -11,14 +11,15 @@ import org.springframework.web.servlet.ModelAndView;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    // lỗi nhập sai dữ liệu Phim
+    // 1. Lỗi nhập sai dữ liệu Phim (của thành viên làm Movie)
     @ExceptionHandler(InvalidMovieDataException.class)
     public String handleInvalidMovieData(InvalidMovieDataException ex, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-
         String referer = request.getHeader("Referer");
         return "redirect:" + (referer != null ? referer : "/movies");
-    // Bắt các lỗi nghiệp vụ ( Bắt lỗi AppException, các lỗi con extends từ AppException cũng bị bắt)
+    }
+
+    // 2. Bắt các lỗi nghiệp vụ kế thừa từ AppException (của phần Auth/Customer)
     @ExceptionHandler(AppException.class)
     public ModelAndView handleAppException(AppException ex) {
         log.warn("Lỗi nghiệp vụ: {}", ex.getMessage());
@@ -27,17 +28,22 @@ public class GlobalExceptionHandler {
         return mav;
     }
 
-    // lỗi không tìm thấy Phim
+    // 3. Lỗi IllegalArgumentException (của Movie, Branch, Hall)
     @ExceptionHandler(IllegalArgumentException.class)
-    public String handleIllegalArgument(IllegalArgumentException ex, RedirectAttributes redirectAttributes) {
+    public String handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-        return "redirect:/movies";
-    // Bắt tất cả các lỗi hệ thống (Exception)
+        String referer = request.getHeader("Referer");
+        return "redirect:" + (referer != null ? referer : "/movies");
+    }
+
+    // 4. Bắt tất cả các lỗi hệ thống còn lại (Exception)
     @ExceptionHandler(Exception.class)
     public ModelAndView handleGenericException(Exception ex) {
         log.error("Lỗi hệ thống: ", ex);
         ModelAndView mav = new ModelAndView("common/error");
-        mav.addObject("errorMessage", "Đã xảy ra sự cố trong quá trình xử lý. Vui lòng thử lại sau!");
+        // In rõ tên lỗi và chi tiết lỗi để dễ debug khi ghép nhánh
+        mav.addObject("errorTitle", ex.getClass().getSimpleName());
+        mav.addObject("errorMessage", "Chi tiết lỗi: " + ex.getMessage());
         return mav;
     }
 }

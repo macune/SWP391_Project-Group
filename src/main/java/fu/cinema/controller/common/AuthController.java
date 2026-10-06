@@ -1,4 +1,4 @@
-package fu.cinema.controller;
+package fu.cinema.controller.common;
 
 import fu.cinema.dto.request.CustomerCreationRequest;
 import fu.cinema.dto.request.LoginRequest;
@@ -9,7 +9,9 @@ import fu.cinema.security.JwtAuthenticationFilter;
 import fu.cinema.security.JwtService;
 import fu.cinema.service.CustomerService;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,12 +26,15 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -41,7 +46,6 @@ public class AuthController {
     private final CustomerService customerService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-
 
     // 1. Hiển thị form đăng nhập
     @GetMapping("/login")
@@ -97,7 +101,7 @@ public class AuthController {
             // Lưu Authentication vào SecurityContext
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Phân quyền
+            // Phân quyền điều hướng sau khi đăng nhập
             if ("ROLE_ADMIN".equals(role)) {
                 return "redirect:/admin/dashboard";
             } else if ("ROLE_MANAGER".equals(role)) {
@@ -105,7 +109,7 @@ public class AuthController {
             } else if ("ROLE_STAFF".equals(role)) {
                 return "redirect:/staff/pos";
             } else {
-                return "redirect:/";
+                return "redirect:/customer/dashboard";
             }
 
         } catch (BadCredentialsException ex) {
@@ -124,21 +128,21 @@ public class AuthController {
     }
 
     // 3. Xử lý logout (Xóa JWT Cookie, Session và SecurityContext)
-    @org.springframework.web.bind.annotation.RequestMapping(value = "/logout", method = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST})
-    public String logout(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
+    @RequestMapping(value = "/logout", method = {RequestMethod.GET, RequestMethod.POST})
+    public String logout(HttpServletRequest request, HttpServletResponse response) {
         Cookie jwtCookie = new Cookie(JwtAuthenticationFilter.JWT_COOKIE_NAME, null);
         jwtCookie.setHttpOnly(true);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0);
         response.addCookie(jwtCookie);
 
-        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null) {
-            new org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler().logout(request, response, auth);
+            new SecurityContextLogoutHandler().logout(request, response, auth);
         }
         SecurityContextHolder.clearContext();
 
-        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
         }
@@ -152,7 +156,7 @@ public class AuthController {
         if (!model.containsAttribute("customerCreationRequest")) {
             model.addAttribute("customerCreationRequest", new CustomerCreationRequest());
         }
-        return "customer/register";
+        return "common/register";
     }
 
     // 5. Xử lý gửi biểu mẫu đăng ký
@@ -170,7 +174,7 @@ public class AuthController {
 
         // Nếu có lỗi validate, giữ người dùng ở lại form đăng ký để hiển thị lỗi bên dưới input
         if (bindingResult.hasErrors()) {
-            return "customer/register";
+            return "common/register";
         }
 
         try {
@@ -188,10 +192,11 @@ public class AuthController {
             } else {
                 model.addAttribute("errorMessage", ex.getMessage());
             }
-            return "customer/register";
+            return "common/register";
         }
     }
 
+    // 6. Xác thực Email qua link
     @GetMapping("/verify-email")
     public String verifyEmail(@RequestParam("token") String token, RedirectAttributes redirectAttributes) {
         try {
@@ -201,5 +206,13 @@ public class AuthController {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/login";
+    }
+
+    // 7. Báo lỗi không đủ quyền truy cập (403)
+    @GetMapping("/access-denied")
+    public String accessDenied(Model model) {
+        model.addAttribute("errorTitle", "Truy cập bị từ chối (403)");
+        model.addAttribute("errorMessage", "Tài khoản của bạn không có quyền truy cập vào khu vực này!");
+        return "common/error";
     }
 }

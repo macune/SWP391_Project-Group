@@ -1,28 +1,28 @@
-package fu.cinema.controller;
+package fu.cinema.controller.admin;
 
-import fu.cinema.entity.Branch;
+import fu.cinema.dto.request.BranchRequest;
 import fu.cinema.enums.BranchStatus;
 import fu.cinema.service.BranchService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/admin/branches")
+@RequiredArgsConstructor
 public class AdminBranchController {
 
     private final BranchService branchService;
-
-    public AdminBranchController(BranchService branchService) {
-        this.branchService = branchService;
-    }
 
     @GetMapping
     public String listBranches(Model model) {
         model.addAttribute("branches", branchService.getAllBranches());
         if (!model.containsAttribute("newBranch")) {
-            model.addAttribute("newBranch", new Branch());
+            model.addAttribute("newBranch", new BranchRequest());
         }
         model.addAttribute("statuses", BranchStatus.values());
         model.addAttribute("eligibleUsers", branchService.getEligibleUsersForManager());
@@ -30,9 +30,16 @@ public class AdminBranchController {
     }
 
     @PostMapping("/add")
-    public String addBranch(@ModelAttribute("newBranch") Branch branch, RedirectAttributes redirectAttributes) {
+    public String addBranch(@Valid @ModelAttribute("newBranch") BranchRequest request,
+                            BindingResult bindingResult,
+                            RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    bindingResult.getAllErrors().getFirst().getDefaultMessage());
+            return "redirect:/admin/branches";
+        }
         try {
-            branchService.createBranch(branch);
+            branchService.createBranch(request);
             redirectAttributes.addFlashAttribute("successMessage", "Thêm chi nhánh mới thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -41,9 +48,16 @@ public class AdminBranchController {
     }
 
     @PostMapping("/edit")
-    public String editBranch(@ModelAttribute("editBranch") Branch branch, RedirectAttributes redirectAttributes) {
+    public String editBranch(@Valid @ModelAttribute("editBranch") BranchRequest request,
+                             BindingResult bindingResult,
+                             RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    bindingResult.getAllErrors().getFirst().getDefaultMessage());
+            return "redirect:/admin/branches";
+        }
         try {
-            branchService.updateBranch(branch);
+            branchService.updateBranch(request);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật chi nhánh thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());

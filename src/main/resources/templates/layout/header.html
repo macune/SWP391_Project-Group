@@ -18,14 +18,27 @@
                 <li class="nav-item">
                     <a class="nav-link active text-cine-primary fw-bold" th:href="@{/}">Phim Đang Chiếu</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/admin/dashboard}">Trang Admin (Test)</a>
+
+                <!-- Nút vào không gian riêng cho từng Actor sau khi đăng nhập -->
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/admin/dashboard}">
+                        <i class="fa-solid fa-gauge-high me-1"></i>Quản trị Hệ thống
+                    </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/manager/showtimes}">Trang Manager (Test)</a>
+                <li class="nav-item" sec:authorize="hasRole('MANAGER')">
+                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/manager/showtimes}">
+                        <i class="fa-solid fa-building-user me-1"></i>Quản lý Chi nhánh
+                    </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/staff/pos}">Trang Staff (Test)</a>
+                <li class="nav-item" sec:authorize="hasRole('STAFF')">
+                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/staff/pos}">
+                        <i class="fa-solid fa-cash-register me-1"></i>Quầy Vé POS
+                    </a>
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('CUSTOMER')">
+                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/customer/dashboard}">
+                        <i class="fa-solid fa-user-gear me-1"></i>Tài khoản của tôi
+                    </a>
                 </li>
             </ul>
 
