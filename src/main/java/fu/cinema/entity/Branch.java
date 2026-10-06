@@ -1,6 +1,7 @@
 package fu.cinema.entity;
 
 import fu.cinema.enums.BranchStatus;
+import fu.cinema.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -49,4 +50,16 @@ public class Branch {
     @OneToMany(mappedBy = "branch", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Staff> staffList = new ArrayList<>();
+
+    // Lấy Quản lý duy nhất đang phụ trách chi nhánh
+    @Transient
+    public Staff getManager() {
+        if (staffList == null || staffList.isEmpty()) {
+            return null;
+        }
+        return staffList.stream()
+                .filter(s -> s.getAccount() != null && s.getAccount().getRole() == Role.MANAGER)
+                .findFirst()
+                .orElse(null);
+    }
 }

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: manager-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{::script}
+      )}">
+<head>
+    <title>Quản lý Phòng chiếu | CineFlow Manager</title>
+    <link rel="stylesheet" th:href="@{/css/manager.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0 text-cine-primary">🎬 Danh sách Phòng chiếu (Chi nhánh #<span th:text="${branchId}"></span>)</h4>
+        <button type="button" class="btn btn-cine px-3 py-2" data-bs-toggle="modal" data-bs-target="#addHallModal">
+            <i class="fa-solid fa-plus me-1"></i>Thêm Phòng chiếu mới
+        </button>
+    </div>
+
+    <!-- Thông báo kết quả -->
+    <div th:if="${successMessage}" class="alert bg-cine-soft border-cine alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert bg-cine-hot text-white alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Thanh tìm kiếm phòng chiếu -->
+    <div class="mb-3">
+        <input type="text" id="searchInput" class="form-control border-cine" placeholder="🔍 Tìm kiếm phòng chiếu theo tên..." onkeyup="filterTable()">
+    </div>
+
+    <!-- Bảng danh sách phòng chiếu -->
+    <div class="card border-cine shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-cine table-hover align-middle mb-0" id="hallTable">
+                <thead>
+                <tr>
+                    <th class="ps-3">STT</th>
+                    <th>Tên phòng chiếu</th>
+                    <th>Sức chứa (Số ghế)</th>
+                    <th>Trạng thái</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(halls)}">
+                    <td colspan="5" class="text-center py-4 text-cine-pastel">Chưa có phòng chiếu nào trong chi nhánh này.</td>
+                </tr>
+                <tr th:each="h, iterStat : ${halls}">
+                    <td class="ps-3 fw-bold" th:text="${iterStat.count}">1</td>
+                    <td class="fw-semibold text-cine-primary hall-name" th:text="${h.hallName}">Phòng 01 (IMAX)</td>
+                    <td th:text="${h.capacity + ' ghế'}">120 ghế</td>
+                    <td>
+                        <span class="badge"
+                              th:classappend="${h.status.name() == 'ACTIVE' ? 'bg-cine-primary' : 'bg-cine-soft text-cine-hot'}"
+                              th:text="${h.status}">ACTIVE</span>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-cine me-1"
+                                th:onclick="openEditModal([[${h.hallId}]], [[${h.hallName}]], [[${h.capacity}]], [[${h.status}]])">
+                            <i class="fa-solid fa-pen-to-square"></i> Sửa
+                        </button>
+                        <form th:action="@{/manager/halls/delete/{id}(id=${h.hallId})}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng chiếu này? Mọi dữ liệu liên quan sẽ bị ảnh hưởng.');">
+                            <button type="submit" class="btn btn-sm btn-cine">
+                                <i class="fa-solid fa-trash"></i> Xóa
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Form Thêm Mới Phòng Chiếu -->
+    <div class="modal fade" id="addHallModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-cine-dark border-cine">
+                <div class="modal-header border-cine">
+                    <h5 class="modal-title fw-bold text-cine-primary"><i class="fa-solid fa-couch me-2"></i>Thêm Phòng chiếu mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/manager/halls/add}" th:object="${newHall}" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Tên phòng chiếu <span class="text-cine-primary">*</span></label>
+                            <input type="text" th:field="*{hallName}" class="form-control border-cine" placeholder="Ví dụ: Phòng 01 (IMAX)" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Sức chứa (Số lượng ghế) <span class="text-cine-primary">*</span></label>
+                            <input type="number" th:field="*{capacity}" class="form-control border-cine" placeholder="Ví dụ: 120" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Trạng thái</label>
+                            <select th:field="*{status}" class="form-select border-cine">
+                                <option th:each="st : ${statuses}" th:value="${st}" th:text="${st}"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-cine">
+                        <button type="button" class="btn btn-outline-cine" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-cine px-4">Lưu Phòng chiếu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Chỉnh Sửa Phòng Chiếu -->
+    <div class="modal fade" id="editHallModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-cine-dark border-cine">
+                <div class="modal-header border-cine">
+                    <h5 class="modal-title fw-bold text-cine-primary"><i class="fa-solid fa-pen-to-square me-2"></i>Cập nhật Phòng chiếu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/manager/halls/edit}" method="post">
+                    <input type="hidden" id="editHallId" name="hallId">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Tên phòng chiếu <span class="text-cine-primary">*</span></label>
+                            <input type="text" id="editHallName" name="hallName" class="form-control border-cine" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Sức chứa (Số lượng ghế) <span class="text-cine-primary">*</span></label>
+                            <input type="number" id="editCapacity" name="capacity" class="form-control border-cine" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Trạng thái <span class="text-cine-primary">*</span></label>
+                            <select id="editStatus" name="status" class="form-select border-cine">
+                                <option th:each="st : ${statuses}" th:value="${st}" th:text="${st}"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-cine">
+                        <button type="button" class="btn btn-outline-cine" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-cine px-4">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Bộ lọc tìm kiếm phòng chiếu theo tên
+    function filterTable() {
+        let input = document.getElementById("searchInput").value.toLowerCase();
+        let rows = document.querySelectorAll("#hallTable tbody tr");
+
+        rows.forEach(row => {
+            let nameCol = row.querySelector(".hall-name");
+            if (nameCol) {
+                let name = nameCol.innerText.toLowerCase();
+                if (name.includes(input)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        });
+    }
+
+    // Gán dữ liệu vào modal Edit
+    function openEditModal(id, name, capacity, status) {
+        document.getElementById('editHallId').value = id;
+        document.getElementById('editHallName').value = name;
+        document.getElementById('editCapacity').value = capacity;
+        document.getElementById('editStatus').value = status;
+
+        var editModal = new bootstrap.Modal(document.getElementById('editHallModal'));
+        editModal.show();
+    }
+</script>
+<script th:src="@{/js/manager.js}"></script>
+</body>
+</html>
