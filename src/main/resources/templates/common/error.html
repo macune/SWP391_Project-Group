@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{},
+          content = ~{::#page-content},
+          actorCss = ~{},
+          actorJs = ~{}
+      )}">
+<head>
+    <title th:text="${errorTitle != null ? errorTitle + ' | CineFlow' : 'Thông báo lỗi | CineFlow'}">Thông báo lỗi | CineFlow</title>
+</head>
+<body>
+
+<div id="page-content" class="container py-5">
+    <div class="card shadow-sm border-0 mx-auto text-center" style="max-width: 580px;">
+        <div class="card-body p-4 p-md-5">
+            <div class="mb-3">
+                <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 3.5rem;"></i>
+            </div>
+            
+            <h3 class="fw-bold text-danger mb-2" 
+                th:text="${errorTitle != null ? errorTitle : (status != null ? 'Lỗi ' + status : 'Đã có lỗi xảy ra')}">
+                Đã có lỗi xảy ra
+            </h3>
+            
+            <p class="text-muted fw-semibold small mb-3" 
+               th:if="${errorCode != null}" 
+               th:text="'Mã lỗi hệ thống: ' + ${errorCode}"></p>
+
+            <div class="alert alert-danger py-3 text-start" th:if="${errorMessage != null}">
+                <i class="fa-solid fa-circle-exclamation me-1"></i>
+                <span th:text="${errorMessage}">Đã xảy ra sự cố trong quá trình xử lý.</span>
+            </div>
+
+            <!-- Danh sách chi tiết nếu có nhiều lỗi validation trên form -->
+            <div class="text-start mb-4" th:if="${fieldErrors != null and !fieldErrors.isEmpty()}">
+                <p class="fw-medium text-danger mb-2 small">Chi tiết các lỗi biểu mẫu:</p>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item text-danger py-1 px-0" th:each="err : ${fieldErrors}">
+                        <i class="fa-solid fa-minus me-1"></i>
+                        <strong th:text="${err.field}"></strong>: <span th:text="${err.defaultMessage}"></span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="d-flex justify-content-center gap-2 mt-4">
+                <button type="button" class="btn btn-outline-secondary px-3 py-2" onclick="window.history.back()">
+                    <i class="fa-solid fa-arrow-left me-1"></i>Quay lại trang trước
+                </button>
+                <a th:href="@{/}" class="btn btn-cine px-4 py-2">
+                    <i class="fa-solid fa-house me-1"></i>Về trang chủ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
