@@ -7,7 +7,6 @@ import fu.cinema.entity.Branch;
 import fu.cinema.entity.Staff;
 import fu.cinema.enums.BranchStatus;
 import fu.cinema.enums.Role;
-import fu.cinema.enums.StaffStatus;
 import fu.cinema.repository.AccountRepository;
 import fu.cinema.repository.BranchRepository;
 import fu.cinema.repository.StaffRepository;
@@ -131,7 +130,7 @@ public class BranchServiceImpl implements BranchService {
         }
         staffRepository.flush();
 
-        // 2. Nâng quyền cho User mới
+        // 2. Nâng quyền cho User mới (Không còn setEmail và setStatus trên Staff)
         newAccount.setRole(Role.MANAGER);
 
         Staff staff = newAccount.getStaff();
@@ -141,8 +140,6 @@ public class BranchServiceImpl implements BranchService {
             newAccount.setStaff(staff);
         }
         staff.setBranch(branch);
-        staff.setEmail(newAccount.getEmail());
-        staff.setStatus(StaffStatus.ACTIVE);
 
         if (newAccount.getCustomer() != null) {
             staff.setFullName(newAccount.getCustomer().getFullName());
@@ -182,6 +179,8 @@ public class BranchServiceImpl implements BranchService {
 
     private BranchResponse toResponse(Branch branch) {
         Staff manager = branch.getManager();
+        Account managerAcc = (manager != null) ? manager.getAccount() : null;
+
         return BranchResponse.builder()
                 .branchId(branch.getBranchId())
                 .branchName(branch.getBranchName())
@@ -192,8 +191,8 @@ public class BranchServiceImpl implements BranchService {
                 .status(branch.getStatus())
                 .managerId(manager != null ? manager.getStaffId() : null)
                 .managerFullName(manager != null ? manager.getFullName() : null)
-                .managerUsername(manager != null && manager.getAccount() != null ? manager.getAccount().getUsername() : null)
-                .managerEmail(manager != null ? manager.getEmail() : null)
+                .managerUsername(managerAcc != null ? managerAcc.getUsername() : null)
+                .managerEmail(managerAcc != null ? managerAcc.getEmail() : null)
                 .managerPhone(manager != null ? manager.getPhone() : null)
                 .build();
     }

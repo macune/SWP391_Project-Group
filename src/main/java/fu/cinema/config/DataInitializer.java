@@ -7,7 +7,6 @@ import fu.cinema.entity.Staff;
 import fu.cinema.enums.AccountStatus;
 import fu.cinema.enums.BranchStatus;
 import fu.cinema.enums.Role;
-import fu.cinema.enums.StaffStatus;
 import fu.cinema.repository.AccountRepository;
 import fu.cinema.repository.BranchRepository;
 import lombok.RequiredArgsConstructor;
@@ -58,11 +57,9 @@ public class DataInitializer implements CommandLineRunner {
 
             Staff adminProfile = Staff.builder()
                     .account(adminAcc)
-                    .branch(null) // Admin toàn hệ thống không thuộc chi nhánh lẻ
+                    .branch(null)
                     .fullName("Quản Trị Viên Hệ Thống")
-                    .email("admin@cineflow.vn")
                     .phone("0900000001")
-                    .status(StaffStatus.ACTIVE)
                     .build();
 
             adminAcc.setStaff(adminProfile);
@@ -83,9 +80,7 @@ public class DataInitializer implements CommandLineRunner {
                     .account(managerAcc)
                     .branch(defaultBranch)
                     .fullName("Nguyễn Quản Lý Rạp")
-                    .email("manager@cineflow.vn")
                     .phone("0900000002")
-                    .status(StaffStatus.ACTIVE)
                     .build();
 
             managerAcc.setStaff(managerProfile);
@@ -106,9 +101,7 @@ public class DataInitializer implements CommandLineRunner {
                     .account(staffAcc)
                     .branch(defaultBranch)
                     .fullName("Trần Nhân Viên Quầy Vé")
-                    .email("staff@cineflow.vn")
                     .phone("0900000003")
-                    .status(StaffStatus.ACTIVE)
                     .build();
 
             staffAcc.setStaff(staffProfile);

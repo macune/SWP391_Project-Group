@@ -84,10 +84,10 @@ public class MovieServiceImpl implements MovieService {
 
         movie.setTitle(request.getTitle().trim());
         movie.setDescription(request.getDescription());
-        movie.setDuration(request.getDuration());
-        movie.setReleaseDate(request.getReleaseDate());
-        movie.setLanguage(request.getLanguage())
+        movie.setDuration(request.getDuration())
         ;
+        movie.setReleaseDate(request.getReleaseDate());
+        movie.setLanguage(request.getLanguage());
         movie.setGenre(request.getGenre());
         movie.setAgeRating(request.getAgeRating());
         movie.setPosterUrl(request.getPosterUrl());

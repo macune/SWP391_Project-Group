@@ -1,6 +1,5 @@
 package fu.cinema.entity;
 
-import fu.cinema.enums.StaffStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,20 +22,12 @@ public class Staff {
     private Account account;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branch_id") // Nullable cho Admin
+    @JoinColumn(name = "branch_id")
     private Branch branch;
 
-    @Column(name = "full_name", nullable = false, columnDefinition = "NVARCHAR(255)")
+    @Column(name = "full_name", nullable = false, columnDefinition = "NVARCHAR(100)")
     private String fullName;
-
-    @Column(name = "email", nullable = false, unique = true, length = 255)
-    private String email;
 
     @Column(name = "phone", nullable = false, length = 20)
     private String phone;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
-    @Builder.Default
-    private StaffStatus status = StaffStatus.ACTIVE;
 }

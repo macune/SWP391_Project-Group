@@ -88,16 +88,15 @@ CREATE TABLE dbo.branches (
 GO
 
 -- 4. Bảng STAFF_MANAGER (Shared Primary Key với ACCOUNT)
-CREATE TABLE dbo.staff_manager (
-                                   staff_id BIGINT PRIMARY KEY, -- Không dùng IDENTITY, lấy trực tiếp từ account_id
-                                   branch_id BIGINT NULL, -- NULL cho Admin, có giá trị cho Manager/Staff chi nhánh
-                                   full_name NVARCHAR(255) NOT NULL,
-                                   email VARCHAR(255) NOT NULL UNIQUE,
-                                   phone VARCHAR(20) NOT NULL,
-                                   status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ENUM: ACTIVE, INACTIVE
-                                   CONSTRAINT FK_StaffManager_Accounts FOREIGN KEY (staff_id) REFERENCES dbo.accounts(account_id) ON DELETE CASCADE,
-                                   CONSTRAINT FK_StaffManager_Branches FOREIGN KEY (branch_id) REFERENCES dbo.branches(branch_id)
+CCREATE TABLE dbo.staff_manager (
+                                staff_id BIGINT PRIMARY KEY,
+                                branch_id BIGINT NULL,
+                                full_name NVARCHAR(100) NOT NULL,
+                                phone VARCHAR(20) NOT NULL,
+                                CONSTRAINT FK_Staff_Account FOREIGN KEY (staff_id) REFERENCES dbo.accounts(account_id) ON DELETE CASCADE,
+                                CONSTRAINT FK_Staff_Branch FOREIGN KEY (branch_id) REFERENCES dbo.branches(branch_id)
 );
+GO
 GO
 
 -- 5. Bảng HALL (Phòng chiếu)
@@ -291,10 +290,10 @@ SET IDENTITY_INSERT dbo.accounts OFF;
 GO
 
 -- 4.3. Tạo hồ sơ Staff/Manager/Admin trong bảng staff_manager (Shared PK với account_id = 1, 2, 3)
-INSERT INTO dbo.staff_manager (staff_id, branch_id, full_name, email, phone, status) VALUES
-(1, NULL, N'Quản Trị Viên Hệ Thống', 'admin@cineflow.vn',   '0900000001', 'ACTIVE'),
-(2, 1,    N'Nguyễn Quản Lý Rạp',     'manager@cineflow.vn', '0900000002', 'ACTIVE'),
-(3, 1,    N'Trần Nhân Viên Quầy Vé', 'staff@cineflow.vn',   '0900000003', 'ACTIVE');
+INSERT INTO dbo.staff_manager (staff_id, branch_id, full_name, phone) VALUES
+(1, NULL, N'Quản Trị Viên Hệ Thống', '0900000001'),
+(2, 1,    N'Nguyễn Quản Lý Rạp',     '0900000002'),
+(3, 1,    N'Trần Nhân Viên Quầy Vé', '0900000003');
 GO
 
 -- 4.4. Tạo hồ sơ Customer trong bảng customers (Shared PK với account_id = 4)

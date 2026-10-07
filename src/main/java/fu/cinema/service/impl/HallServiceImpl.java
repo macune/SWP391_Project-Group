@@ -103,7 +103,6 @@ public class HallServiceImpl implements HallService {
             existing.setStatus(request.getStatus());
         }
 
-        // Nếu Manager thay đổi Số hàng hoặc Số ghế mỗi hàng -> Khởi tạo lại lưới ghế mới
         List<Seat> currentSeats = seatRepository.findByHallHallIdOrderByRowCodeAscNumberAsc(existing.getHallId());
         int currentRows = (int) currentSeats.stream().map(Seat::getRowCode).distinct().count();
         int currentCols = currentSeats.stream().mapToInt(Seat::getNumber).max().orElse(0);
@@ -127,7 +126,6 @@ public class HallServiceImpl implements HallService {
         if (!hallRepository.existsById(hallId)) {
             throw new IllegalArgumentException("Không tìm thấy phòng chiếu để xóa!");
         }
-        // Nhờ ON DELETE CASCADE ở bảng seats, xóa hall sẽ tự động xóa sạch ghế của phòng đó
         seatRepository.deleteByHallHallId(hallId);
         hallRepository.deleteById(hallId);
     }
@@ -174,7 +172,6 @@ public class HallServiceImpl implements HallService {
 
         seatRepository.saveAll(seats);
 
-        // Cập nhật lại sức chứa khả dụng thực tế (trừ các ghế BROKEN nếu muốn, hoặc giữ tổng ghế)
         int activeSeats = (int) seats.stream()
                 .filter(s -> s.getStatus() == SeatStatus.ACTIVE)
                 .count();
@@ -185,7 +182,7 @@ public class HallServiceImpl implements HallService {
     private void generateStandardSeats(Hall hall, int totalRows, int seatsPerRow) {
         List<Seat> newSeats = new ArrayList<>(totalRows * seatsPerRow);
         for (int r = 0; r < totalRows; r++) {
-            String rowCode = String.valueOf((char) ('A' + r)); // A, B, C, D...
+            String rowCode = String.valueOf((char) ('A' + r));
             for (int num = 1; num <= seatsPerRow; num++) {
                 Seat seat = Seat.builder()
                         .hall(hall)

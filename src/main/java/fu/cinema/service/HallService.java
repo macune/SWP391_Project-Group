@@ -23,9 +23,7 @@ public interface HallService {
 
     void deleteHall(Long hallId);
 
-    // Lấy sơ đồ ghế gom nhóm sẵn theo từng hàng (A -> [A1, A2...], B -> [B1, B2...])
     Map<String, List<SeatResponse>> getSeatMapByHall(Long hallId);
 
-    // Cập nhật hàng loạt loại ghế và trạng thái ghế từ giao diện thiết kế
     void updateSeatMatrix(Long hallId, List<SeatUpdateItem> seatUpdates);
 }

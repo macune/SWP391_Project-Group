@@ -5,13 +5,16 @@
           ~{::title},
           ~{layout/sidebar :: manager-sidebar},
           ~{::content},
-          ~{::link},
+          ~{},
           ~{::actorJs}
       )}">
 
 <head>
-    <title th:fragment="title">Quản lý Bắp nước | CineFlow Manager</title>
-    <link rel="stylesheet" th:href="@{/css/manager.css}">
+
+    <title th:fragment="title">
+        F&B Management
+    </title>
+
 </head>
 
 <body>
@@ -113,7 +116,6 @@
                class="btn btn-outline-cine">
                 Reset
             </a>
-
         </div>
 
     </form>
@@ -317,17 +319,19 @@
                     </a>
 
                 </div>
+
+                <div th:if="${errorMessage}"
+                     class="alert alert-danger"
+                     role="alert">
+
+                    <i class="fa-solid fa-circle-exclamation me-2"></i>
+                    <span th:text="${errorMessage}"></span>
+
+                </div>
                 <!-- BODY -->
 
                 <div class="modal-body">
-                    <div th:if="${errorMessage}"
-                         class="alert alert-danger"
-                         role="alert">
 
-                        <i class="fa-solid fa-circle-exclamation me-2"></i>
-                        <span th:text="${errorMessage}"></span>
-
-                    </div>
                     <!-- ========================= -->
                     <!-- CREATE + EDIT FORM -->
                     <!-- ========================= -->
@@ -360,7 +364,6 @@
 
 
                         <!-- CATEGORY -->
-
                         <div class="mb-3">
 
                             <label class="form-label">
@@ -460,8 +463,6 @@
                                 Hủy
 
                             </a>
-
-
                             <button type="submit"
                                     class="btn btn-cine">
 
