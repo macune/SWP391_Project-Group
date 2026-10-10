@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: manager-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#dummy-css},
+          actorJs = ~{::#dummy-js}
+      )}">
+<!-- Lưu ý: sidebar đổi thành manager-sidebar tùy theo tên fragment của bạn -->
+
+<head>
+    <title>Quản Lý Kho | CineFlow Manager</title>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+
+    <!-- Tiêu đề trang -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 text-cine-primary">
+                <i class="fa-solid fa-boxes-stacked me-2"></i>Quản Lý Tồn Kho (F&B)
+            </h4>
+            <p class="small text-muted mb-0">
+                Quản lý: <strong sec:authentication="name">manager</strong> | Chi nhánh:
+                <span id="current-branch-name" class="fw-bold text-dark">Đang tải...</span>
+            </p>
+        </div>
+        <!-- Nút mở Modal nhập hàng -->
+        <button class="btn btn-cine px-4 py-2" data-bs-toggle="modal" data-bs-target="#importStockModal">
+            <i class="fa-solid fa-plus me-2"></i>Nhập Kho F&B
+        </button>
+    </div>
+
+    <!-- Bảng danh sách tồn kho -->
+    <div class="card border-0 shadow-sm p-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light text-secondary">
+                <tr>
+                    <th scope="col" width="5%">#</th>
+                    <th scope="col" width="15%">Mã Món (ID)</th>
+                    <th scope="col" width="30%">Tên Bắp / Nước</th>
+                    <th scope="col" width="15%">Phân Loại</th>
+                    <th scope="col" width="15%">Số Lượng Tồn</th>
+                    <th scope="col" width="20%">Cập Nhật Cuối</th>
+                </tr>
+                </thead>
+                <tbody id="inventory-table-body">
+                <!-- Dữ liệu từ API sẽ được Javascript render vào đây -->
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">Đang tải dữ liệu kho...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Nhập Hàng -->
+    <div class="modal fade" id="importStockModal" tabindex="-1" aria-labelledby="importStockModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="importStockModalLabel">Nhập Nguyên Liệu F&B</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Cảnh báo lỗi -->
+                    <div id="import-alert" class="alert alert-danger d-none" role="alert"></div>
+
+                    <form id="form-import-stock">
+                        <!-- Chọn Món (Thường lấy danh sách từ 1 API khác, ở đây dùng tạm input ID để bạn test chức năng nhập kho trước) -->
+                        <div class="mb-3">
+                            <label for="itemIdInput" class="form-label fw-bold">Mã món Bắp/Nước (Item ID):</label>
+                            <input type="number" class="form-control" id="itemIdInput" placeholder="Ví dụ: 1" required min="1">
+                            <div class="form-text">Nhập ID của món Bắp/Nước cần nhập kho.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="quantityInput" class="form-label fw-bold">Số lượng nhập thêm:</label>
+                            <input type="number" class="form-control" id="quantityInput" placeholder="Nhập số lượng..." required min="1">
+                        </div>
+
+                        <button type="submit" class="btn btn-cine w-100" id="btn-submit-import">Xác nhận nhập kho</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Khối Script -->
+<th:block id="dummy-css"></th:block>
+<th:block id="dummy-js">
+    <script th:inline="javascript">
+        // ----------------------------------------------------
+        // CẤU HÌNH BAN ĐẦU
+        // ----------------------------------------------------
+        // Lấy branchId của Manager đang đăng nhập (Giả định là 1 để test. Khi tích hợp thật, bạn lấy qua session/JWT)
+        const currentBranchId = 1;
+
+        // ----------------------------------------------------
+        // 1. GỌI API LẤY DANH SÁCH TỒN KHO
+        // ----------------------------------------------------
+        function loadInventory() {
+            const tableBody = document.getElementById('inventory-table-body');
+
+            fetch(`/api/stocks/branch/${currentBranchId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Lỗi khi tải dữ liệu");
+                    return response.json();
+                })
+                .then(data => {
+                    tableBody.innerHTML = ''; // Xóa chữ "Đang tải..."
+
+                    if (data.length === 0) {
+                        tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Kho hiện tại đang trống. Hãy nhập hàng!</td></tr>`;
+                        return;
+                    }
+
+                    // Lấy tên chi nhánh hiển thị lên Header
+                    document.getElementById('current-branch-name').innerText = data[0].branchName;
+
+                    // Vẽ từng dòng dữ liệu
+                    data.forEach((stock, index) => {
+                        // Format ngày giờ
+                        let dateStr = "Chưa cập nhật";
+                        if(stock.lastUpdated) {
+                            const d = new Date(stock.lastUpdated);
+                            dateStr = d.toLocaleDateString('vi-VN') + " " + d.toLocaleTimeString('vi-VN');
+                        }
+
+                        // Tô đỏ nếu sắp hết hàng (< 10)
+                        let qtyBadge = `<span class="badge bg-success px-3 py-2 fs-6">${stock.quantity}</span>`;
+                        if(stock.quantity < 10) {
+                            qtyBadge = `<span class="badge bg-danger px-3 py-2 fs-6">${stock.quantity} (Sắp hết)</span>`;
+                        }
+
+                        const row = `
+                            <tr>
+                                <td class="fw-bold text-muted">${index + 1}</td>
+                                <td>${stock.itemId}</td>
+                                <td class="fw-bold">${stock.itemName}</td>
+                                <td><span class="badge bg-secondary">${stock.itemCategory}</span></td>
+                                <td>${qtyBadge}</td>
+                                <td class="small text-muted">${dateStr}</td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                })
+                .catch(error => {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Lỗi: ${error.message}</td></tr>`;
+                });
+        }
+
+        // ----------------------------------------------------
+        // 2. XỬ LÝ SỰ KIỆN KHI BẤM "XÁC NHẬN NHẬP KHO"
+        // ----------------------------------------------------
+        document.getElementById('form-import-stock').addEventListener('submit', function(e) {
+            e.preventDefault(); // Ngăn chặn load lại trang
+
+            const btnSubmit = document.getElementById('btn-submit-import');
+            const alertBox = document.getElementById('import-alert');
+            const itemId = document.getElementById('itemIdInput').value;
+            const quantity = document.getElementById('quantityInput').value;
+
+            // Đổi trạng thái nút
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Đang xử lý...';
+            alertBox.classList.add('d-none');
+
+            // Cấu trúc DTO (BranchStockRequest)
+            const requestBody = {
+                branchId: currentBranchId,
+                itemId: parseInt(itemId),
+                quantityToAdd: parseInt(quantity)
+            };
+
+            // Gọi API POST
+            fetch('/api/stocks/import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Thêm Header Authorization chứa Token JWT vào đây nếu dự án yêu cầu
+                    // 'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify(requestBody)
+            })
+                .then(async response => {
+                    const isJson = response.headers.get('content-type')?.includes('application/json');
+                    const data = isJson ? await response.json() : await response.text();
+
+                    if (!response.ok) {
+                        throw new Error(data || "Lỗi máy chủ khi nhập kho!");
+                    }
+
+                    // Thành công
+                    alert("Nhập kho thành công!");
+
+                    // Đóng Modal (dùng Bootstrap JS)
+                    const modalEl = document.getElementById('importStockModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    modal.hide();
+
+                    // Reset form
+                    document.getElementById('form-import-stock').reset();
+
+                    // Gọi tải lại bảng dữ liệu kho
+                    loadInventory();
+                })
+                .catch(error => {
+                    alertBox.innerText = error.message;
+                    alertBox.classList.remove('d-none');
+                })
+                .finally(() => {
+                    // Khôi phục nút bấm
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerText = 'Xác nhận nhập kho';
+                });
+        });
+
+        // Chạy hàm load dữ liệu kho ngay khi trang vừa tải xong
+        document.addEventListener('DOMContentLoaded', loadInventory);
+
+    </script>
+</th:block>
+
+</body>
+</html>

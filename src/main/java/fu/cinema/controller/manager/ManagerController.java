@@ -84,6 +84,7 @@ public class ManagerController {
         }
     }
 
+
     // 5. Xóa sản phẩm Bắp nước
     @PostMapping("/fnb-items/delete/{id}")
     public String deleteFnbItem(@PathVariable Long id, RedirectAttributes redirectAttributes) {
@@ -93,5 +94,10 @@ public class ManagerController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/manager/fnb-items";
+    }
+
+    @GetMapping("/inventory")
+    public String getInventoryPage() {
+        return "manager/inventory-management"; // Trả về file HTML inventory-management.html trong thư mục manager
     }
 }

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: customer-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#dummy-css},
+          actorJs = ~{::#dummy-js}
+      )}">
+<head>
+    <title>Ưu Đãi & Khuyến Mãi | CineFlow</title>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+    <div class="mb-4 pb-2 border-bottom border-cine">
+        <h4 class="fw-bold mb-1 text-cine-primary">Ưu Đãi Của Tôi</h4>
+        <p class="small text-muted mb-0">Xin chào thành viên <strong sec:authentication="name">customer</strong>!</p>
+    </div>
+
+    <!-- Danh sách Khuyến mãi hiển thị dạng thẻ (Card) -->
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        <div class="col" th:each="c : ${coupons}">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title fw-bold text-cine-hot mb-0" th:text="${c.code}">CINEFLOW</h5>
+                        <span class="badge bg-danger">Hót</span>
+                    </div>
+                    <p class="card-text mb-1">
+                        <strong>Giảm giá:</strong> <span class="text-danger fw-bold" th:text="${c.discountPercentage} + '%'"></span>
+                    </p>
+                    <p class="card-text mb-1">
+                        <strong>Tối đa:</strong> <span th:text="${c.maxDiscountAmount != null ? c.maxDiscountAmount + ' VNĐ' : 'Không giới hạn'}"></span>
+                    </p>
+                    <p class="card-text small text-muted">
+                        <em>Hạn sử dụng: <span th:text="${#temporals.format(c.expiryDate, 'dd/MM/yyyy HH:mm')}"></span></em>
+                    </p>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0">
+                    <button class="btn btn-sm btn-outline-cine w-100" onclick="alert('Đã sao chép mã!')">Sao chép mã</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hiển thị khi không có mã nào -->
+        <div class="col-12 text-center py-5" th:if="${#lists.isEmpty(coupons)}">
+            <i class="fa-solid fa-gift fa-3x text-muted mb-3"></i>
+            <h5 class="text-secondary">Hiện chưa có chương trình khuyến mãi nào.</h5>
+        </div>
+    </div>
+</div>
+
+<th:block id="dummy-css"></th:block>
+<th:block id="dummy-js"></th:block>
+</body>
+</html>
