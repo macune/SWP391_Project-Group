@@ -1,24 +1,107 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/layout :: master(
           title = ~{::title},
           sidebar = ~{layout/sidebar :: manager-sidebar},
           content = ~{::#page-content},
-          actorCss = ~{::link},
-          actorJs = ~{::script}
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
       )}">
 <head>
     <title>Quản lý lịch chiếu | CineFlow Manager</title>
-    <link rel="stylesheet" th:href="@{/css/manager.css}">
+
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/manager.css}">
+    </th:block>
 </head>
 <body>
 
 <div id="page-content" class="container-fluid">
+
+
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0">Lịch chiếu rạp - Chi nhánh CineFlow Hà Nội</h4>
-        <button class="btn btn-cine btn-sm px-3 py-2">
-            <i class="fa-solid fa-plus me-1"></i>Tạo suất chiếu mới
-        </button>
+        <h4 class="fw-bold mb-0">
+            Lịch chiếu rạp
+        </h4>
+
+        <a th:href="@{/manager/showtimes/create}"
+           class="btn-create-showtime">
+            <i class="fa-solid fa-plus me-1"></i>
+            Tạo suất chiếu mới
+        </a>
+    </div>
+    <!-- Filter -->
+    <form th:action="@{/manager/showtimes}"
+          method="get"
+          class="row g-3 align-items-end">
+
+        <!-- Phòng chiếu -->
+        <div class="col-md-3">
+            <label for="hallId" class="form-label">Phòng chiếu</label>
+            <select id="hallId" name="hallId" class="form-select">
+                <option value="">Tất cả phòng</option>
+                <option th:each="hall : ${halls}"
+                        th:value="${hall.hallId}"
+                        th:text="${hall.hallName}"
+                        th:selected="${hallId != null
+                        and hallId.equals(hall.hallId)}">
+                </option>
+            </select>
+        </div>
+
+        <!-- Ngày cụ thể -->
+        <div class="col-md-3">
+            <label for="showDate" class="form-label">Ngày chiếu</label>
+            <input type="date"
+                   id="showDate"
+                   name="showDate"
+                   class="form-control"
+                   th:value="${showDate != null
+                   ? showDate.toString() : ''}">
+        </div>
+
+        <!-- Tháng -->
+        <div class="col-md-2">
+            <label for="month" class="form-label">Tháng</label>
+            <select id="month" name="month" class="form-select">
+                <option value="">Tất cả</option>
+                <option th:each="m : ${#numbers.sequence(1, 12)}"
+                        th:value="${m}"
+                        th:text="${'Tháng ' + m}"
+                        th:selected="${month != null and month == m}">
+                </option>
+            </select>
+        </div>
+
+        <!-- Năm -->
+        <div class="col-md-2">
+            <label for="year" class="form-label">Năm</label>
+            <select id="year" name="year" class="form-select">
+                <option value="">Tất cả</option>
+                <option th:each="y : ${#numbers.sequence(2025, 2035)}"
+                        th:value="${y}"
+                        th:text="${y}"
+                        th:selected="${year != null and year == y}">
+                </option>
+            </select>
+        </div>
+
+        <!-- Buttons -->
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-cine">
+                <i class="fa-solid fa-filter me-1"></i>Lọc
+            </button>
+            <a th:href="@{/manager/showtimes}"
+               class="btn btn-outline-secondary">
+                Đặt lại
+            </a>
+        </div>
+
+    </form>
+    <div th:if="${successMessage}"
+         class="alert alert-success"
+         th:text="${successMessage}">
     </div>
 
     <div class="card border-0 shadow-sm">
@@ -31,22 +114,62 @@
                     <th>Giờ chiếu</th>
                     <th>Ghế đã đặt</th>
                     <th>Trạng thái</th>
+                    <th>Thao tác</th>
                 </tr>
                 </thead>
+
                 <tbody>
-                <tr>
-                    <td class="ps-3">Phòng 01 (IMAX)</td>
-                    <td class="fw-semibold text-cine-primary">Dune: Hành Tinh Cát 2</td>
-                    <td>19:30 - 22:15</td>
-                    <td>85 / 120</td>
-                    <td><span class="badge bg-cine-soft">Đang mở bán</span></td>
+                <tr th:each="item : ${showtimes}">
+                    <td class="ps-3"
+                        th:text="${item.hall.hallName}">
+                    </td>
+
+                    <td class="fw-semibold text-cine-primary"
+                        th:text="${item.movie.title}">
+                    </td>
+
+                    <td>
+                        <span th:text="${#temporals.format(item.startTime, 'dd/MM/yyyy HH:mm')}"></span>
+                        -
+                        <span th:text="${#temporals.format(item.endTime, 'dd/MM/yyyy HH:mm')}"></span>
+                    </td>
+
+                    <td>--</td>
+
+                    <td>
+                        <span class="badge bg-cine-soft"
+                              th:text="${item.status}">
+                        </span>
+                    </td>
+                    <td>
+                        <form th:action="@{/manager/showtimes/{id}/cancel(id=${item.showtimeId})}"
+                              method="post">
+                            <button type="submit"
+                                    class="btn btn-danger"
+                                    th:if="${item.status.name() == 'SCHEDULED'}">
+                                Hủy suất chiếu
+                            </button>
+                        </form>
+
+                        <span th:if="${item.status.name() != 'SCHEDULED'}">
+                            --
+                        </span>
+                    </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(showtimes)}">
+                    <td colspan="6" class="text-center py-4">
+                        Chưa có suất chiếu nào.
+                    </td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+        <th:block id="actorJs">
+            <script th:src="@{/js/manager.js}"></script>
+        </th:block>
 
-<script th:src="@{/js/manager.js}"></script>
 </body>
 </html>

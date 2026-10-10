@@ -17,11 +17,7 @@ public class ManagerController {
 
     private final FnBItemService fnbItemService;
 
-    // 1. Trang mặc định khi Manager đăng nhập: Xếp lịch chiếu rạp
-    @GetMapping({"", "/", "/showtimes"})
-    public String showtimeSchedulePage() {
-        return "manager/showtime-schedule";
-    }
+
 
     // 2. Danh sách & Tìm kiếm Bắp nước (Khớp 100% với fnb-items.html)
     @GetMapping("/fnb-items")

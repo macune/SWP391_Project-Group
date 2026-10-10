@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: manager-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title>Tạo suất chiếu | CineFlow Manager</title>
+
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/manager.css}">
+    </th:block>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+<th:block th:fragment="content">
+    <div class="showtime-form">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Tạo suất chiếu</h2>
+            <p class="text-cine-pastel mb-0">
+                Chọn phim, phòng chiếu và thời gian bắt đầu
+            </p>
+        </div>
+
+        <a th:href="@{/manager/showtimes}"
+           class="btn btn-outline-cine">
+            Quay lại lịch chiếu
+        </a>
+    </div>
+
+    <!-- Success message -->
+    <div th:if="${successMessage}"
+         class="alert alert-success"
+         role="alert"
+         th:text="${successMessage}">
+    </div>
+
+    <!-- Error message -->
+    <div th:if="${errorMessage}"
+         class="alert alert-danger"
+         role="alert"
+         th:text="${errorMessage}">
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+
+            <form th:action="@{/manager/showtimes/create}"
+                  th:object="${showtime}"
+                  method="post">
+
+                <!-- Movie -->
+                <div class="mb-3">
+                    <label for="movieId" class="form-label">
+                        Phim <span class="text-danger">*</span>
+                    </label>
+
+                    <select id="movieId"
+                            th:field="*{movieId}"
+                            class="form-select"
+                            required>
+
+                        <option value="">-- Chọn phim --</option>
+
+                        <option th:each="movie : ${movies}"
+                                th:value="${movie.movieId}"
+                                th:text="${movie.title
+                                    + ' (' + movie.duration + ' phút)'}">
+                        </option>
+                    </select>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('movieId')}"
+                         th:errors="*{movieId}">
+                    </div>
+                </div>
+
+                <!-- Hall -->
+                <div class="mb-3">
+                    <label for="hallId" class="form-label">
+                        Phòng chiếu <span class="text-danger">*</span>
+                    </label>
+
+                    <select id="hallId"
+                            th:field="*{hallId}"
+                            class="form-select"
+                            required>
+
+                        <option value="">-- Chọn phòng chiếu --</option>
+
+                        <option th:each="hall : ${halls}"
+                                th:value="${hall.hallId}"
+                                th:text="${hall.hallName
+                                    + ' - ' + hall.branch.branchName}">
+                        </option>
+                    </select>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('hallId')}"
+                         th:errors="*{hallId}">
+                    </div>
+                </div>
+
+                <!-- Showtime date -->
+                <div class="mb-3">
+                    <label for="showDate" class="form-label">
+                        Ngày chiếu <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="date"
+                           id="showDate"
+                           th:field="*{showDate}"
+                           th:attr="min=${#temporals.format(earliestDateTime, 'yyyy-MM-dd')}"
+                           class="form-control"
+                           required>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('showDate')}"
+                         th:errors="*{showDate}">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Các ngày chiếu bổ sung</label>
+
+                    <div id="duplicate-dates">
+                        <input type="date"
+                               name="duplicateDates"
+                               class="form-control mb-2">
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            onclick="addDateInput()">
+                        + Thêm ngày chiếu
+                    </button>
+
+                    <small class="text-muted d-block mt-2">
+                        Các ngày bổ sung sẽ sử dụng cùng phim, phòng chiếu,
+                        giờ bắt đầu và giá vé với ngày chính.
+                    </small>
+                </div>
+
+                <!-- Start time -->
+                <div class="mb-3">
+                    <label for="startTime" class="form-label">
+                        Giờ bắt đầu <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="time"
+                           id="startTime"
+                           th:field="*{startTime}"
+                           class="form-control"
+                           required>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('startTime')}"
+                         th:errors="*{startTime}">
+                    </div>
+                </div>
+
+                <!-- Base price -->
+                <div class="mb-4">
+                    <label for="basePrice" class="form-label">
+                        Giá vé cơ bản (VND)
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="number"
+                           id="basePrice"
+                           th:field="*{basePrice}"
+                           class="form-control"
+                           min="0.01"
+                           step="0.01"
+                           placeholder="Ví dụ: 80000"
+                           required>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('basePrice')}"
+                         th:errors="*{basePrice}">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a th:href="@{/manager/showtimes}"
+                       class="btn btn-outline-secondary">
+                        Hủy
+                    </a>
+
+                    <button type="submit" class="btn btn-cine">
+                        <i class="fa-solid fa-calendar-plus me-1"></i>
+                        Tạo suất chiếu
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+    </div>
+
+</th:block>
+
+    <th:block id="actorJs">
+        <script>
+            function addDateInput() {
+                const container = document.getElementById('duplicate-dates');
+
+                if (!container) {
+                    console.error('Không tìm thấy duplicate-dates');
+                    return;
+                }
+
+                const input = document.createElement('input');
+                input.type = 'date';
+                input.name = 'duplicateDates';
+                input.className = 'form-control mb-2';
+
+                container.appendChild(input);
+            }
+        </script>
+    </th:block>
+</div>
+</body>
+</html>
