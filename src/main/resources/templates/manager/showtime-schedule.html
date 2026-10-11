@@ -13,6 +13,8 @@
 
     <th:block id="actorCss">
         <link rel="stylesheet" th:href="@{/css/manager.css}">
+        <link rel="stylesheet"
+              href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     </th:block>
 </head>
 <body>
@@ -34,10 +36,10 @@
     <!-- Filter -->
     <form th:action="@{/manager/showtimes}"
           method="get"
-          class="row g-3 align-items-end">
+          class="row g-2 align-items-end showtime-filter">
 
         <!-- Phòng chiếu -->
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label for="hallId" class="form-label">Phòng chiếu</label>
             <select id="hallId" name="hallId" class="form-select">
                 <option value="">Tất cả phòng</option>
@@ -51,14 +53,16 @@
         </div>
 
         <!-- Ngày cụ thể -->
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label for="showDate" class="form-label">Ngày chiếu</label>
-            <input type="date"
+            <input type="text"
                    id="showDate"
                    name="showDate"
                    class="form-control"
+                   placeholder="dd/mm/yyyy"
+                   autocomplete="off"
                    th:value="${showDate != null
-                   ? showDate.toString() : ''}">
+               ? #temporals.format(showDate, 'dd/MM/yyyy') : ''}">
         </div>
 
         <!-- Tháng -->
@@ -86,6 +90,23 @@
                 </option>
             </select>
         </div>
+        <!-- Filter by status -->
+        <div class="col-md-2">
+            <label for="status" class="form-label">Trạng thái suất chiếu</label>
+
+            <select id="status" name="status" class="form-select">
+                <option value="">Tất cả trạng thái</option>
+
+                <option th:each="st : ${statuses}"
+                        th:value="${st.name()}"
+                        th:text="${st.name() == 'SCHEDULED' ? 'Đã lên lịch'
+                    : st.name() == 'SHOWING' ? 'Đang chiếu'
+                    : st.name() == 'COMPLETED' ? 'Đã kết thúc'
+                    : 'Đã hủy'}"
+                        th:selected="${status != null and status == st}">
+                </option>
+            </select>
+        </div>
 
         <!-- Buttons -->
         <div class="col-md-2 d-flex gap-2">
@@ -103,7 +124,10 @@
          class="alert alert-success"
          th:text="${successMessage}">
     </div>
-
+    <div th:if="${errorMessage}"
+         class="alert alert-danger"
+         th:text="${errorMessage}">
+    </div>
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <table class="table table-hover table-cine align-middle mb-0">
@@ -111,7 +135,8 @@
                 <tr>
                     <th class="ps-3">Phòng chiếu</th>
                     <th>Tên phim</th>
-                    <th>Giờ chiếu</th>
+                    <th>Giờ bắt đầu</th>
+                    <th>Giờ kết thúc</th>
                     <th>Ghế đã đặt</th>
                     <th>Trạng thái</th>
                     <th>Thao tác</th>
@@ -128,37 +153,58 @@
                         th:text="${item.movie.title}">
                     </td>
 
-                    <td>
-                        <span th:text="${#temporals.format(item.startTime, 'dd/MM/yyyy HH:mm')}"></span>
-                        -
-                        <span th:text="${#temporals.format(item.endTime, 'dd/MM/yyyy HH:mm')}"></span>
+                    <td th:text="${#temporals.format(item.startTime, 'dd/MM/yyyy HH:mm')}">
+                    </td>
+
+                    <td th:text="${#temporals.format(item.endTime, 'dd/MM/yyyy HH:mm')}">
                     </td>
 
                     <td>--</td>
 
                     <td>
-                        <span class="badge bg-cine-soft"
-                              th:text="${item.status}">
-                        </span>
+    <span class="status-badge"
+          th:classappend="${item.status.name() == 'SCHEDULED' ? ' status-scheduled'
+              : item.status.name() == 'SHOWING' ? ' status-showing'
+              : item.status.name() == 'COMPLETED' ? ' status-completed'
+              : ' status-cancelled'}"
+          th:text="${item.status.name() == 'SCHEDULED' ? 'Đã lên lịch'
+              : item.status.name() == 'SHOWING' ? 'Đang chiếu'
+              : item.status.name() == 'COMPLETED' ? 'Đã kết thúc'
+              : 'Đã hủy'}">
+    </span>
                     </td>
                     <td>
-                        <form th:action="@{/manager/showtimes/{id}/cancel(id=${item.showtimeId})}"
-                              method="post">
-                            <button type="submit"
-                                    class="btn btn-danger"
-                                    th:if="${item.status.name() == 'SCHEDULED'}">
-                                Hủy suất chiếu
-                            </button>
-                        </form>
+                        <div class="d-flex gap-2 flex-wrap">
 
-                        <span th:if="${item.status.name() != 'SCHEDULED'}">
-                            --
-                        </span>
+                            <!-- Edit -->
+                            <a th:if="${item.status.name() == 'SCHEDULED'}"
+                               th:href="@{/manager/showtimes/{id}/edit(id=${item.showtimeId})}"
+                               class="btn-edit-showtime">
+                                <i class="fa-solid fa-pen"></i>
+                                Edit
+                            </a>
+
+                            <form th:if="${item.status.name() == 'SCHEDULED'}"
+                                  th:action="@{/manager/showtimes/{id}/cancel(id=${item.showtimeId})}"
+                                  method="post">
+                                <button type="submit" class="btn-cancel-showtime">
+                                    <i class="fa-solid fa-ban"></i>
+                                    Hủy suất chiếu
+                                </button>
+                            </form>
+
+                            <span th:if="${item.status.name() != 'SCHEDULED'}"
+                                  class="text-muted small">
+                                    <i class="fa-solid fa-lock me-1"></i>
+                                    Không thể chỉnh sửa
+                            </span>
+
+                        </div>
                     </td>
                 </tr>
 
                 <tr th:if="${#lists.isEmpty(showtimes)}">
-                    <td colspan="6" class="text-center py-4">
+                    <td colspan="7" class="text-center py-4">
                         Chưa có suất chiếu nào.
                     </td>
                 </tr>
@@ -169,6 +215,32 @@
 </div>
         <th:block id="actorJs">
             <script th:src="@{/js/manager.js}"></script>
+            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+            <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
+
+            <script>
+                flatpickr("#showDate", {
+                    dateFormat: "d/m/Y",
+                    allowInput: true,
+                    locale: {
+                        ...flatpickr.l10ns.vn,
+                        months: {
+                            shorthand: [
+                                "Th1", "Th2", "Th3", "Th4",
+                                "Th5", "Th6", "Th7", "Th8",
+                                "Th9", "Th10", "Th11", "Th12"
+                            ],
+                            longhand: [
+                                "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4",
+                                "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8",
+                                "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
+                            ]
+                        }
+                    },
+                    monthSelectorType: "dropdown",
+                    yearSelectorType: "dropdown"
+                });
+            </script>
         </th:block>
 
 </body>

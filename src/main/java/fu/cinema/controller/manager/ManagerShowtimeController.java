@@ -6,6 +6,8 @@ import fu.cinema.entity.Hall;
 import fu.cinema.entity.Movie;
 import fu.cinema.entity.Showtime;
 import fu.cinema.entity.Staff;
+import fu.cinema.enums.MovieStatus;
+import fu.cinema.enums.ShowtimeStatus;
 import fu.cinema.exception.ShowtimeConflictException;
 import fu.cinema.repository.HallRepository;
 import fu.cinema.repository.MovieRepository;
@@ -45,7 +47,12 @@ public class ManagerShowtimeController {
         Long branchId = getCurrentManagerBranchId();
         model.addAttribute("today", LocalDate.now().toString());
         model.addAttribute("showtime", new ShowtimeRequest());
-        model.addAttribute("movies", movieRepository.findAll());
+        model.addAttribute(
+                "movies",
+                movieRepository.findAll().stream()
+                        .filter(movie -> movie.getStatus() != MovieStatus.ENDED)
+                        .toList()
+        );
         model.addAttribute(
                 "halls",
                 hallRepository.findByBranchBranchId(branchId)
@@ -58,8 +65,9 @@ public class ManagerShowtimeController {
     @GetMapping
     public String showSchedule(
             @RequestParam(required = false) Long hallId,
+            @RequestParam(required = false) ShowtimeStatus status,
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @DateTimeFormat(pattern = "dd/MM/yyyy")
             LocalDate showDate,
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year,
@@ -72,7 +80,11 @@ public class ManagerShowtimeController {
 
         List<Showtime> showtimes = showtimeRepository
                 .findByHall_Branch_BranchIdOrderByStartTimeAsc(branchId);
-
+        if (status != null) {
+            showtimes = showtimes.stream()
+                    .filter(s -> s.getStatus() == status)
+                    .toList();
+        }
         if (hallId != null) {
             showtimes = showtimes.stream()
                     .filter(s -> s.getHall().getHallId().equals(hallId))
@@ -103,7 +115,8 @@ public class ManagerShowtimeController {
         model.addAttribute("month", month);
         model.addAttribute("year", year);
         model.addAttribute("showtimes", showtimes);
-
+        model.addAttribute("status", status);
+        model.addAttribute("statuses", ShowtimeStatus.values());
         return "manager/showtime-schedule";
     }
 
@@ -126,7 +139,7 @@ public class ManagerShowtimeController {
 
             redirectAttributes.addFlashAttribute(
                     "successMessage",
-                    "Showtime created successfully!"
+                    "Đã tạo thành công suất chiếu!"
             );
 
             return "redirect:/manager/showtimes";
@@ -139,7 +152,12 @@ public class ManagerShowtimeController {
     }
 
     private void loadFormData(Model model, Long branchId) {
-        model.addAttribute("movies", movieRepository.findAll());
+        model.addAttribute(
+                "movies",
+                movieRepository.findAll().stream()
+                        .filter(movie -> movie.getStatus() != MovieStatus.ENDED)
+                        .toList()
+        );
         model.addAttribute(
                 "earliestDateTime",
                 LocalDateTime.now().plusHours(24)
@@ -178,7 +196,7 @@ public class ManagerShowtimeController {
 
             redirectAttributes.addFlashAttribute(
                     "successMessage",
-                    "Showtime cancelled successfully!"
+                    "Đã hủy thành công suất chiếu!"
             );
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute(
@@ -188,6 +206,98 @@ public class ManagerShowtimeController {
         }
 
         return "redirect:/manager/showtimes";
+    }
+    @GetMapping("/{id}/edit")
+    public String showEditForm(
+            @PathVariable Long id,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        Long branchId = getCurrentManagerBranchId();
+
+        try {
+            Showtime showtime = showtimeRepository.findById(id)
+                    .orElseThrow(() ->
+                            new IllegalArgumentException("Không tìm thấy suất chiếu."));
+
+            if (showtime.getHall().getBranch() == null
+                    || !showtime.getHall().getBranch()
+                    .getBranchId().equals(branchId)) {
+                throw new IllegalArgumentException(
+                        "Bạn không có quyền sửa suất chiếu này."
+                );
+            }
+
+            if (showtime.getStatus() != ShowtimeStatus.SCHEDULED) {
+                throw new IllegalArgumentException(
+                        "Chỉ có thể sửa suất chiếu đã lên lịch."
+                );
+            }
+
+            ShowtimeRequest request = new ShowtimeRequest();
+            request.setMovieId(showtime.getMovie().getMovieId());
+            request.setHallId(showtime.getHall().getHallId());
+            request.setShowDate(showtime.getStartTime().toLocalDate());
+            request.setStartTime(showtime.getStartTime().toLocalTime());
+            request.setBasePrice(showtime.getBasePrice());
+
+            model.addAttribute("showtime", request);
+            model.addAttribute("showtimeId", id);
+            model.addAttribute("movies", movieRepository.findAll());
+            model.addAttribute(
+                    "halls",
+                    hallRepository.findByBranchBranchId(branchId)
+            );
+
+            return "manager/edit-showtime";
+
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage", ex.getMessage()
+            );
+            return "redirect:/manager/showtimes";
+        }
+    }
+    @PostMapping("/{id}/edit")
+    public String updateShowtime(
+            @PathVariable Long id,
+            @Valid @ModelAttribute("showtime") ShowtimeRequest request,
+            BindingResult result,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        Long branchId = getCurrentManagerBranchId();
+
+        if (result.hasErrors()) {
+            model.addAttribute("showtimeId", id);
+            model.addAttribute("movies", movieRepository.findAll());
+            model.addAttribute(
+                    "halls",
+                    hallRepository.findByBranchBranchId(branchId)
+            );
+            return "manager/edit-showtime";
+        }
+
+        try {
+            showtimeService.updateShowtime(id, request, branchId);
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Cập nhật suất chiếu thành công!"
+            );
+
+            return "redirect:/manager/showtimes";
+
+        } catch (ShowtimeConflictException | IllegalArgumentException ex) {
+            model.addAttribute("errorMessage", ex.getMessage());
+            model.addAttribute("showtimeId", id);
+            model.addAttribute("movies", movieRepository.findAll());
+            model.addAttribute(
+                    "halls",
+                    hallRepository.findByBranchBranchId(branchId)
+            );
+            return "manager/edit-showtime";
+        }
     }
 
 }

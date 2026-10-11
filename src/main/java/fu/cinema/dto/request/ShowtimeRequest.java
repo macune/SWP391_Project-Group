@@ -22,7 +22,7 @@ public class ShowtimeRequest {
     private Long hallId;
 
     @NotNull(message = "Please select a showtime date")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
     private LocalDate showDate;
 
     @NotNull(message = "Please select a start time")
@@ -35,5 +35,6 @@ public class ShowtimeRequest {
     private BigDecimal basePrice;
 
     // Các ngày muốn duplicate suất chiếu
-    private List<LocalDate> duplicateDates;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private List<LocalDate> DuplicateDates;
 }

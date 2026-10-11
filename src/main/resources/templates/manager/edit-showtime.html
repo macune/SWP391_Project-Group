@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: manager-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title>Chỉnh sửa suất chiếu | CineFlow Manager</title>
+
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/manager.css}">
+    </th:block>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Chỉnh sửa suất chiếu</h4>
+            <p class="text-muted mb-0">
+                Cập nhật thông tin lịch chiếu
+            </p>
+        </div>
+
+        <a th:href="@{/manager/showtimes}"
+           class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i>
+            Quay lại
+        </a>
+    </div>
+
+    <div th:if="${errorMessage}"
+         class="alert alert-danger"
+         th:text="${errorMessage}">
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <form th:action="@{/manager/showtimes/{id}/edit(id=${showtimeId})}"
+                  th:object="${showtime}"
+                  method="post">
+
+                <!-- Movie -->
+                <div class="mb-3">
+                    <label for="movieId" class="form-label">
+                        Phim <span class="text-danger">*</span>
+                    </label>
+
+                    <select id="movieId"
+                            th:field="*{movieId}"
+                            class="form-select"
+                            required>
+                        <option value="">-- Chọn phim --</option>
+                        <option th:each="movie : ${movies}"
+                                th:if="${movie.status.name() != 'ENDED'}"
+                                th:value="${movie.movieId}"
+                                th:text="${movie.title}">
+                        </option>
+                    </select>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('movieId')}"
+                         th:errors="*{movieId}">
+                    </div>
+                </div>
+
+                <!-- Hall -->
+                <div class="mb-3">
+                    <label for="hallId" class="form-label">
+                        Phòng chiếu <span class="text-danger">*</span>
+                    </label>
+
+                    <select id="hallId"
+                            th:field="*{hallId}"
+                            class="form-select"
+                            required>
+                        <option value="">-- Chọn phòng chiếu --</option>
+                        <option th:each="hall : ${halls}"
+                                th:value="${hall.hallId}"
+                                th:text="${hall.hallName}"
+                                th:if="${hall.status.name() == 'ACTIVE'}">
+                        </option>
+                    </select>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('hallId')}"
+                         th:errors="*{hallId}">
+                    </div>
+                </div>
+
+                <!-- Date -->
+                <div class="mb-3">
+                    <label for="showDate" class="form-label">
+                        Ngày chiếu <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="date"
+                           id="showDate"
+                           name="showDate"
+                           class="form-control"
+                           th:value="${showtime.showDate != null
+               ? #temporals.format(showtime.showDate, 'yyyy-MM-dd')
+               : ''}"
+                           required>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('showDate')}"
+                         th:errors="*{showDate}">
+                    </div>
+                </div>
+
+                <!-- Start time -->
+                <div class="mb-3">
+                    <label for="startTime" class="form-label">
+                        Giờ bắt đầu <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="time"
+                           id="startTime"
+                           th:field="*{startTime}"
+                           class="form-control"
+                           required>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('startTime')}"
+                         th:errors="*{startTime}">
+                    </div>
+
+                    <small class="text-muted">
+                        Giờ kết thúc sẽ được tính theo thời lượng phim.
+                    </small>
+                </div>
+
+                <!-- Price -->
+                <div class="mb-4">
+                    <label for="basePrice" class="form-label">
+                        Giá vé cơ bản (VND)
+                        <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="number"
+                           id="basePrice"
+                           th:field="*{basePrice}"
+                           class="form-control"
+                           min="0.01"
+                           step="0.01"
+                           required>
+
+                    <div class="text-danger small"
+                         th:if="${#fields.hasErrors('basePrice')}"
+                         th:errors="*{basePrice}">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a th:href="@{/manager/showtimes}"
+                       class="btn btn-outline-secondary">
+                        Hủy
+                    </a>
+
+                    <button type="submit" class="btn btn-cine">
+                        <i class="fa-solid fa-floppy-disk me-1"></i>
+                        Lưu thay đổi
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<th:block id="actorJs">
+    <script th:src="@{/js/manager.js}"></script>
+</th:block>
+
+</body>
+</html>

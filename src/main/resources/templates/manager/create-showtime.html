@@ -13,6 +13,8 @@
 
     <th:block id="actorCss">
         <link rel="stylesheet" th:href="@{/css/manager.css}">
+        <link rel="stylesheet"
+              href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     </th:block>
 </head>
 <body>
@@ -113,12 +115,16 @@
                         Ngày chiếu <span class="text-danger">*</span>
                     </label>
 
-                    <input type="date"
+                    <input type="text"
                            id="showDate"
-                           th:field="*{showDate}"
-                           th:attr="min=${#temporals.format(earliestDateTime, 'yyyy-MM-dd')}"
+                           name="showDate"
                            class="form-control"
+                           placeholder="dd/mm/yyyy"
+                           autocomplete="off"
+                           th:value="${showtime.showDate != null
+           ? #temporals.format(showtime.showDate, 'dd/MM/yyyy') : ''}"
                            required>
+
 
                     <div class="text-danger small"
                          th:if="${#fields.hasErrors('showDate')}"
@@ -130,9 +136,11 @@
                     <label class="form-label">Các ngày chiếu bổ sung</label>
 
                     <div id="duplicate-dates">
-                        <input type="date"
+                        <input type="text"
                                name="duplicateDates"
-                               class="form-control mb-2">
+                               class="form-control mb-2 duplicate-date"
+                               placeholder="dd/mm/yyyy"
+                               autocomplete="off">
                     </div>
 
                     <button type="button"
@@ -205,27 +213,89 @@
     </div>
     </div>
 
-</th:block>
 
     <th:block id="actorJs">
+        <script th:src="@{/js/manager.js}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
         <script>
-            function addDateInput() {
-                const container = document.getElementById('duplicate-dates');
+            (function () {
 
-                if (!container) {
-                    console.error('Không tìm thấy duplicate-dates');
-                    return;
+function initDatePicker(input) {
+    if (!input) return;
+
+    if (input._flatpickr) {
+        input._flatpickr.destroy();
+    }
+
+    flatpickr(input, {
+        dateFormat: "d/m/Y",
+        allowInput: true,
+        clickOpens: true,
+        locale: {
+            ...flatpickr.l10ns.vn,
+            firstDayOfWeek: 1,
+            months: {
+                shorthand: [
+                    "Th1", "Th2", "Th3", "Th4",
+                    "Th5", "Th6", "Th7", "Th8",
+                    "Th9", "Th10", "Th11", "Th12"
+                ],
+                longhand: [
+                    "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4",
+                    "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8",
+                    "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
+                ]
+            }
+        },
+        monthSelectorType: "dropdown"
+    });
+}
+
+
+                function initPage() {
+                    initDatePicker(document.getElementById("showDate"));
+
+                    document.querySelectorAll(".duplicate-date")
+                        .forEach(initDatePicker);
                 }
 
-                const input = document.createElement('input');
-                input.type = 'date';
-                input.name = 'duplicateDates';
-                input.className = 'form-control mb-2';
+                window.addDateInput = function () {
+                    const container =
+                        document.getElementById("duplicate-dates");
 
-                container.appendChild(input);
-            }
+                    if (!container) return;
+
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.name = "duplicateDates";
+                    input.className =
+                        "form-control mb-2 duplicate-date";
+                    input.placeholder = "dd/mm/yyyy";
+                    input.autocomplete = "off";
+
+                    container.appendChild(input);
+                    initDatePicker(input);
+                };
+
+                if (typeof window.flatpickr === "function") {
+                    initPage();
+                } else {
+                    const script = document.createElement("script");
+                    script.src =
+                        "https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js";
+
+                    script.onload = initPage;
+                    script.onerror = function () {
+                        console.error("Không tải được thư viện Flatpickr");
+                    };
+
+                    document.head.appendChild(script);
+                }
+            })();
         </script>
     </th:block>
+</th:block>
 </div>
 </body>
 </html>

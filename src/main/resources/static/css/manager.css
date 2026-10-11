@@ -184,3 +184,133 @@
     background: #fff1ee;
     color: #7d3936;
 }
+.flatpickr-current-month {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+.flatpickr-current-month .cur-month {
+    font-weight: 600;
+}
+
+.flatpickr-current-month input.cur-year {
+    font-weight: 600;
+    min-width: 65px;
+}
+/* Showtime status badges */
+/* Showtime status badges - equal size */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    min-width: 100px;
+    height: 26px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-scheduled {
+    background-color: #dcecff;
+    color: #1d4ed8;
+}
+
+.status-showing {
+    background-color: #d1fae5;
+    color: #047857;
+}
+
+.status-completed {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+.status-cancelled {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+/* Showtime filter - compact layout */
+.showtime-filter {
+    margin-bottom: 12px;
+}
+
+.showtime-filter .form-label {
+    font-size: 0.82rem;
+    margin-bottom: 4px;
+}
+
+.showtime-filter .form-control,
+.showtime-filter .form-select {
+    height: 36px;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+}
+
+.showtime-filter .btn {
+    height: 36px;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+.showtime-table th:nth-child(3),
+.showtime-table td:nth-child(3),
+.showtime-table th:nth-child(4),
+.showtime-table td:nth-child(4) {
+    min-width: 145px;
+    white-space: nowrap;
+}
+/* Action buttons */
+.btn-edit-showtime,
+.btn-cancel-showtime {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 130px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+/* Edit - xanh dương */
+.btn-edit-showtime {
+    background-color: #e8f1ff;
+    color: #2563eb;
+    border-color: #c7dcff;
+}
+
+.btn-edit-showtime:hover {
+    background-color: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+/* Cancel - đỏ nhẹ */
+.btn-cancel-showtime {
+    background-color: #fff0f0;
+    color: #dc3545;
+    border-color: #ffd1d5;
+}
+
+.btn-cancel-showtime:hover {
+    background-color: #dc3545;
+    color: #ffffff;
+    border-color: #dc3545;
+}
+
+/* Icon */
+.btn-edit-showtime i,
+.btn-cancel-showtime i {
+    font-size: 12px;
+}
+
