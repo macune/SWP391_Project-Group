@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,19 +23,19 @@ public class BranchStockServiceImpl implements BranchStockService {
 
     private final BranchStockRepository branchStockRepository;
     private final BranchRepository branchRepository;
-    private final FnBItemRepository fnBItemRepository;
+    private final FnBItemRepository fnbItemRepository;
 
     @Override
     public List<BranchStockResponse> getStockByBranch(Long branchId) {
-        List<BranchStock> stocks = branchStockRepository.findByBranch_BranchId(branchId);
+        List<BranchStock> stocks = branchStockRepository.findByBranchId(branchId);
 
         return stocks.stream().map(stock -> BranchStockResponse.builder()
                 .id(stock.getId())
                 .branchId(stock.getBranch().getBranchId())
                 .branchName(stock.getBranch().getBranchName())
-                .itemId(stock.getFnbItem().getItemId())
-                .itemName(stock.getFnbItem().getName())
-                .itemCategory(stock.getFnbItem().getCategory().name())
+                .itemId(stock.getItem().getItemId())
+                .itemName(stock.getItem().getName())
+                .itemCategory(stock.getItem().getCategory().name())
                 .quantity(stock.getQuantity())
                 .lastUpdated(stock.getLastUpdated())
                 .build()).collect(Collectors.toList());
@@ -43,28 +44,45 @@ public class BranchStockServiceImpl implements BranchStockService {
     @Override
     @Transactional
     public void importStock(BranchStockRequest request) {
-        // Tìm xem món này ở chi nhánh này đã có bản ghi tồn kho chưa
         BranchStock stock = branchStockRepository
-                .findByBranch_BranchIdAndFnbItem_ItemId(request.getBranchId(), request.getItemId())
+                .findByBranchIdAndItemId(request.getBranchId(), request.getItemId())
                 .orElse(null);
 
         if (stock != null) {
-            // Nếu đã có trong kho -> Cộng dồn số lượng
             stock.setQuantity(stock.getQuantity() + request.getQuantityToAdd());
+            stock.setLastUpdated(LocalDateTime.now());
             branchStockRepository.save(stock);
         } else {
-            // Nếu là món mới tinh chưa từng có ở chi nhánh này -> Tạo mới
             Branch branch = branchRepository.findById(request.getBranchId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chi nhánh"));
-            FnBItem item = fnBItemRepository.findById(request.getItemId())
+            FnBItem item = fnbItemRepository.findById(request.getItemId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy món Bắp/Nước"));
 
             BranchStock newStock = BranchStock.builder()
                     .branch(branch)
-                    .fnbItem(item)
+                    .item(item)
                     .quantity(request.getQuantityToAdd())
+                    .lastUpdated(LocalDateTime.now())
                     .build();
             branchStockRepository.save(newStock);
         }
+    }
+
+    // --- THÊM LOGIC SỬA VÀ XÓA ---
+
+    @Override
+    @Transactional
+    public void updateStock(Long id, Integer newQuantity) {
+        BranchStock stock = branchStockRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bản ghi tồn kho"));
+        stock.setQuantity(newQuantity);
+        stock.setLastUpdated(LocalDateTime.now());
+        branchStockRepository.save(stock);
+    }
+
+    @Override
+    @Transactional
+    public void deleteStock(Long id) {
+        branchStockRepository.deleteById(id);
     }
 }

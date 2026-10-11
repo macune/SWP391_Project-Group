@@ -1,6 +1,6 @@
 package fu.cinema.controller.customer;
 
-import fu.cinema.service.CouponService;
+import fu.cinema.service.PromotionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequiredArgsConstructor
 public class CustomerController {
 
-    private final CouponService couponService;
+    private final PromotionService promotionService;
 
     //Trang tổng quan
     @GetMapping("/dashboard")
@@ -35,12 +35,13 @@ public class CustomerController {
         return "customer/dashboard";
     }
 
-    // Trang Ưu đãi & Khuyến mãi (Đã gộp logic lấy danh sách mã giảm giá)
+
     @GetMapping("/promotions")
     public String myPromotions(Model model) {
         model.addAttribute("sectionTitle", "Ưu đãi & Khuyến mãi của tôi");
 
-        model.addAttribute("coupons", couponService.getActiveCoupons());
+
+        model.addAttribute("coupons", promotionService.getActivePromotions());
 
         return "customer/promotions";
     }

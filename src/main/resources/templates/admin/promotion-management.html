@@ -8,91 +8,105 @@
           actorJs = ~{::#dummy-js}
       )}">
 <head>
-    <title>Quản Lý Khuyến Mãi | System Admin</title>
+    <title>Quản lý Khuyến Mãi | System Admin</title>
 </head>
 <body>
 
 <div id="page-content" class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-1 text-cine-primary">
-            <i class="fa-solid fa-tags me-2"></i>Danh sách Mã Giảm Giá (Coupon)
-        </h4>
-        <button class="btn btn-cine px-4 py-2" data-bs-toggle="modal" data-bs-target="#couponModal">
-            <i class="fa-solid fa-plus me-2"></i>Tạo mã mới
-        </button>
+    <h4 class="mb-4 fw-bold text-cine-primary">Quản Lý Khuyến Mãi</h4>
+
+    <!-- Hiển thị thông báo thành công hoặc lỗi -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
-    <!-- Thông báo lỗi / thành công -->
-    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <div class="row">
+        <!-- Form Thêm mới / Cập nhật -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-cine-hot text-white">
+                    <h6 class="mb-0">Thêm / Cập nhật Khuyến mãi</h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/admin/promotions/save}" th:object="${coupon}" method="post">
 
-    <div class="card border-0 shadow-sm p-4">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-            <tr>
-                <th>Mã (Code)</th>
-                <th>% Giảm</th>
-                <th>Giảm tối đa (đ)</th>
-                <th>Ngày hết hạn</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="c : ${coupons}">
-                <td class="fw-bold text-primary" th:text="${c.code}"></td>
-                <td th:text="${c.discountPercentage} + '%'"></td>
-                <td th:text="${c.maxDiscountAmount != null ? c.maxDiscountAmount : 'Không giới hạn'}"></td>
-                <td th:text="${#temporals.format(c.expiryDate, 'dd/MM/yyyy HH:mm')}"></td>
-                <td>
-                    <span th:if="${c.isActive}" class="badge bg-success">Đang mở</span>
-                    <span th:unless="${c.isActive}" class="badge bg-danger">Đã khóa</span>
-                </td>
-                <td>
-                    <!-- Form xóa -->
-                    <form th:action="@{/admin/promotions/delete/{id}(id=${c.id})}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa mã này?');">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
-                    </form>
-                </td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(coupons)}">
-                <td colspan="6" class="text-center py-3">Chưa có mã giảm giá nào trên hệ thống.</td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
+                        <!-- TRƯỜNG ẨN: Cực kỳ quan trọng để Spring Boot phân biệt là Thêm Mới hay Cập Nhật -->
+                        <input type="hidden" th:field="*{id}">
 
-    <!-- Modal Thêm Mã -->
-    <div class="modal fade" id="couponModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form th:action="@{/admin/promotions/save}" th:object="${coupon}" method="post">
-                    <div class="modal-header bg-light">
-                        <h5 class="modal-title fw-bold">Tạo Mã Giảm Giá Mới</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Code (Ví dụ: CINEFLOW20):</label>
-                            <input type="text" class="form-control text-uppercase" th:field="*{code}" required>
+                            <label class="form-label">Mã Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" th:field="*{code}" required placeholder="VD: CINEFLOW20">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Phần trăm giảm (1-100):</label>
-                            <input type="number" class="form-control" th:field="*{discountPercentage}" min="1" max="100" required>
+                            <label class="form-label">Phần trăm giảm (%) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" th:field="*{discountPercentage}" required min="1" max="100">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Giảm tối đa (VNĐ):</label>
+                            <label class="form-label">Giảm tối đa (VNĐ)</label>
                             <input type="number" class="form-control" th:field="*{maxDiscountAmount}" placeholder="Để trống nếu không giới hạn">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Hạn sử dụng:</label>
+                            <label class="form-label">Ngày hết hạn <span class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" th:field="*{expiryDate}" required>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-cine w-100">Lưu mã giảm giá</button>
-                    </div>
-                </form>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" th:field="*{isActive}">
+                            <label class="form-check-label">Kích hoạt</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Lưu thông tin</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách -->
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>STT</th>
+                            <th>Mã (Code)</th>
+                            <th>% Giảm</th>
+                            <th>Giảm tối đa (đ)</th>
+                            <th>Ngày hết hạn</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c, stat : ${coupons}">
+                            <!-- STT tự động tăng -->
+                            <td class="fw-bold text-muted" th:text="${stat.count}"></td>
+
+                            <td class="fw-bold text-primary" th:text="${c.code}"></td>
+                            <td th:text="${c.discountPercentage} + '%'"></td>
+                            <td th:text="${c.maxDiscountAmount != null ? c.maxDiscountAmount : 'Không giới hạn'}"></td>
+                            <td th:text="${#temporals.format(c.expiryDate, 'dd/MM/yyyy HH:mm')}"></td>
+                            <td>
+                                <span th:if="${c.isActive}" class="badge bg-success">Đang mở</span>
+                                <span th:unless="${c.isActive}" class="badge bg-danger">Đã khóa</span>
+                            </td>
+                            <td>
+                                <!-- Nút Xóa sử dụng ID khớp với Controller -->
+                                <form th:action="@{/admin/promotions/delete/{id}(id=${c.id})}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa mã khuyến mãi này?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <!-- Hiển thị khi danh sách trống -->
+                        <tr th:if="${#lists.isEmpty(coupons)}">
+                            <td colspan="7" class="text-center py-4 text-muted">Chưa có mã khuyến mãi nào được tạo.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -100,5 +114,6 @@
 
 <th:block id="dummy-css"></th:block>
 <th:block id="dummy-js"></th:block>
+
 </body>
 </html>

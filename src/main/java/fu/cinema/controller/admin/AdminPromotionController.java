@@ -1,14 +1,12 @@
 package fu.cinema.controller.admin;
 
-import fu.cinema.entity.Coupon;
-import fu.cinema.repository.CouponRepository;
+import fu.cinema.entity.Promotion;
+import fu.cinema.repository.PromotionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -16,41 +14,33 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminPromotionController {
 
-    private final CouponRepository couponRepository;
+    private final PromotionRepository promotionRepository;
 
-    //Hiển thị danh sách mã giảm giá
     @GetMapping
     public String viewPromotions(Model model) {
-        List<Coupon> coupons = couponRepository.findAll();
-        model.addAttribute("coupons", coupons);
-
-
+        List<Promotion> promotions = promotionRepository.findAll();
+        model.addAttribute("coupons", promotions);
         if (!model.containsAttribute("coupon")) {
-            model.addAttribute("coupon", new Coupon());
+            model.addAttribute("coupon", new Promotion());
         }
         return "admin/promotion-management";
     }
 
-    //Thêm mới hoặc Cập nhật mã
     @PostMapping("/save")
-    public String savePromotion(@ModelAttribute Coupon coupon, RedirectAttributes redirectAttributes) {
+    public String savePromotion(@ModelAttribute("coupon") Promotion promotion, RedirectAttributes redirectAttributes) {
         try {
-
-            if (coupon.getId() == null) {
-                coupon.setIsActive(true);
-            }
-            couponRepository.save(coupon);
+            promotionRepository.save(promotion);
             redirectAttributes.addFlashAttribute("successMessage", "Đã lưu mã giảm giá thành công!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: Tên mã (Code) có thể đã bị trùng!");
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi lưu mã (Code có thể đã tồn tại)!");
         }
         return "redirect:/admin/promotions";
     }
 
-    // Xóa mã
+    // Đổi lại thành xóa theo ID để khớp với Database
     @PostMapping("/delete/{id}")
     public String deletePromotion(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        couponRepository.deleteById(id);
+        promotionRepository.deleteById(id);
         redirectAttributes.addFlashAttribute("successMessage", "Đã xóa mã giảm giá!");
         return "redirect:/admin/promotions";
     }

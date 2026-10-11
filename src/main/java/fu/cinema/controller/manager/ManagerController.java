@@ -17,13 +17,13 @@ public class ManagerController {
 
     private final FnBItemService fnbItemService;
 
-    // 1. Trang mặc định khi Manager đăng nhập: Xếp lịch chiếu rạp
+    //Trang mặc định khi Manager đăng nhập: Xếp lịch chiếu rạp
     @GetMapping({"", "/", "/showtimes"})
     public String showtimeSchedulePage() {
         return "manager/showtime-schedule";
     }
 
-    // 2. Danh sách & Tìm kiếm Bắp nước (Khớp 100% với fnb-items.html)
+    //Danh sách & Tìm kiếm Bắp nước (Khớp 100% với fnb-items.html)
     @GetMapping("/fnb-items")
     public String fnbItems(
             @RequestParam(required = false) String name,
@@ -39,7 +39,7 @@ public class ManagerController {
         return "manager/fnb-items";
     }
 
-    // 3. Mở Modal Chỉnh sửa sản phẩm Bắp nước
+    //Mở Modal Chỉnh sửa sản phẩm Bắp nước
     @GetMapping("/fnb-items/edit/{id}")
     public String editFnbItem(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
@@ -53,7 +53,7 @@ public class ManagerController {
         }
     }
 
-    // 4. Lưu (Thêm mới hoặc Cập nhật) sản phẩm Bắp nước
+    //Lưu sản phẩm Bắp nước
     @PostMapping("/fnb-items/save")
     public String saveFnbItem(
             @RequestParam(required = false) Long id,
@@ -85,7 +85,7 @@ public class ManagerController {
     }
 
 
-    // 5. Xóa sản phẩm Bắp nước
+    // Xóa sản phẩm Bắp nước
     @PostMapping("/fnb-items/delete/{id}")
     public String deleteFnbItem(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
@@ -96,8 +96,5 @@ public class ManagerController {
         return "redirect:/manager/fnb-items";
     }
 
-    @GetMapping("/inventory")
-    public String getInventoryPage() {
-        return "manager/inventory-management"; // Trả về file HTML inventory-management.html trong thư mục manager
-    }
+
 }
