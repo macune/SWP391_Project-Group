@@ -7,10 +7,14 @@ import fu.cinema.entity.Showtime;
 import fu.cinema.enums.MovieStatus;
 import fu.cinema.repository.MovieRepository;
 import fu.cinema.repository.ShowtimeRepository;
+import fu.cinema.repository.TicketRepository;
 import fu.cinema.service.PublicMovieService;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,10 +23,45 @@ public class PublicMovieServiceImpl implements PublicMovieService {
 
     private final MovieRepository movieRepository;
     private final ShowtimeRepository showtimeRepository;
+    private final TicketRepository ticketRepository;
 
-    public PublicMovieServiceImpl(MovieRepository movieRepository, ShowtimeRepository showtimeRepository) {
+    public PublicMovieServiceImpl(MovieRepository movieRepository, ShowtimeRepository showtimeRepository, TicketRepository ticketRepository) {
         this.movieRepository = movieRepository;
         this.showtimeRepository = showtimeRepository;
+        this.ticketRepository = ticketRepository;
+    }
+
+    @Override
+    public List<ShowtimeResponse> getShowtimes(Long movieId, Long branchId, LocalDate date, String timeSlot) {
+        List<Showtime> showtimes = showtimeRepository.findAvailableShowtimes(movieId, branchId, LocalDateTime.now());
+
+        return showtimes.stream()
+                .filter(s -> date == null || s.getStartTime().toLocalDate().equals(date))
+                .filter(s -> {
+                    if (timeSlot == null || timeSlot.isEmpty()) return true;
+                    int hour = s.getStartTime().getHour();
+                    return switch (timeSlot) {
+                        case "0-3" -> hour >= 0 && hour < 3;
+                        case "3-6" -> hour >= 3 && hour < 6;
+                        case "6-9" -> hour >= 6 && hour < 9;
+                        case "9-12" -> hour >= 9 && hour < 12;
+                        case "12-15" -> hour >= 12 && hour < 15;
+                        case "15-18" -> hour >= 15 && hour < 18;
+                        case "18-21" -> hour >= 18 && hour < 21;
+                        case "21-24" -> hour >= 21 && hour <= 23;
+                        default -> true;
+                    };
+                })
+                .map(this::mapToShowtimeResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MovieResponse> getTop5HighestRevenueMovies() {
+        List<Long> top5Ids = ticketRepository.findTop5MoviesByRevenue(PageRequest.of(0, 5));
+        return movieRepository.findAllById(top5Ids).stream()
+                .map(this::mapToMovieResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -50,13 +89,13 @@ public class PublicMovieServiceImpl implements PublicMovieService {
         return mapToMovieResponse(movie);
     }
 
-    @Override
-    public List<ShowtimeResponse> getShowtimes(Long movieId, Long branchId) {
-        // Lấy các suất chiếu bắt đầu từ thời điểm hiện tại
-        return showtimeRepository.findAvailableShowtimes(movieId, branchId, LocalDateTime.now()).stream()
-                .map(this::mapToShowtimeResponse)
-                .collect(Collectors.toList());
-    }
+//    @Override
+//    public List<ShowtimeResponse> getShowtimes(Long movieId, Long branchId) {
+//        // Lấy các suất chiếu bắt đầu từ thời điểm hiện tại
+//        return showtimeRepository.findAvailableShowtimes(movieId, branchId, LocalDateTime.now()).stream()
+//                .map(this::mapToShowtimeResponse)
+//                .collect(Collectors.toList());
+//    }
 
     private MovieResponse mapToMovieResponse(Movie movie) {
         return MovieResponse.builder()
