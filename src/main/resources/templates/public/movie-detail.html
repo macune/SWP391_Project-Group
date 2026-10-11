@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{},
+          content = ~{::#public-content},
+          actorCss = ~{::link},
+          actorJs = ~{}
+      )}">
+<head>
+    <title th:text="${movie.title} + ' | CineFlow'">Chi Tiết Phim</title>
+    <link rel="stylesheet" href="">
+</head>
+<body>
+
+<div id="public-content" class="container py-4">
+
+    <!-- Nút Quay lại -->
+    <div class="mb-4">
+        <a th:href="@{/movies}" class="text-decoration-none text-cine-muted fw-bold">
+            <i class="fa-solid fa-arrow-left me-1"></i> Về trang chủ
+        </a>
+    </div>
+
+    <!-- Khung thông tin phim -->
+    <div class="card border-cine shadow-sm mb-5 bg-white">
+        <div class="row g-0">
+            <div class="col-md-3 p-3 text-center">
+                <img th:src="${movie.posterUrl != null ? movie.posterUrl : '/img/default-poster.jpg'}" class="img-fluid rounded border border-cine" th:alt="${movie.title}">
+            </div>
+            <div class="col-md-9">
+                <div class="card-body">
+                    <h2 class="card-title fw-bold text-cine-main mb-3" th:text="${movie.title}">Tên Phim</h2>
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-cine-hot fs-6" th:text="${movie.ageRating}">C18</span>
+                        <span class="badge bg-cine-dark text-cine-main border border-cine fs-6"><i class="fa-solid fa-masks-theater me-1"></i><span th:text="${movie.genre}"></span></span>
+                        <span class="badge bg-cine-dark text-cine-main border border-cine fs-6"><i class="fa-regular fa-clock me-1"></i><span th:text="${movie.duration} + ' phút'"></span></span>
+                        <span class="badge bg-cine-dark text-cine-main border border-cine fs-6"><i class="fa-solid fa-language me-1"></i><span th:text="${movie.language}"></span></span>
+                    </div>
+
+                    <p class="card-text text-cine-main" th:text="${movie.description}">Mô tả nội dung phim...</p>
+
+                    <p class="card-text mb-1"><small class="text-cine-muted">Ngày khởi chiếu: <strong th:text="${#temporals.format(movie.releaseDate, 'dd/MM/yyyy')}"></strong></small></p>
+
+                    <div class="mt-3" th:if="${movie.trailerUrl != null}">
+                        <a th:href="${movie.trailerUrl}" target="_blank" class="btn btn-outline-cine">
+                            <i class="fa-brands fa-youtube me-1"></i> Xem Trailer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KHU VỰC CHỌN LỊCH CHIẾU -->
+    <div class="card border-cine shadow-sm bg-cine-main p-4">
+        <h4 class="fw-bold text-cine-primary mb-4 border-bottom border-cine pb-2">
+            <i class="fa-regular fa-calendar-check me-2"></i>Lịch Chiếu
+        </h4>
+
+        <!-- Bộ Lọc Chi Nhánh -->
+        <form class="row g-3 mb-4" th:action="@{/movies/{id}(id=${movie.movieId})}" method="get">
+            <div class="col-md-4">
+                <select name="branchId" class="form-select border-cine" onchange="this.form.submit()">
+                    <option value="">-- Tất cả chi nhánh --</option>
+                    <option th:each="b : ${branches}"
+                            th:value="${b.branchId}"
+                            th:text="${b.branchName}"
+                            th:selected="${b.branchId == selectedBranchId}">
+                    </option>
+                </select>
+            </div>
+        </form>
+
+        <!-- Danh sách suất chiếu theo từng rạp (Đã xử lý group bên view) -->
+        <div th:if="${#lists.isEmpty(showtimes)}" class="alert bg-cine-frame text-cine-hot text-center border-cine">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>Hiện chưa có lịch chiếu nào cho phim này tại rạp bạn chọn.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(showtimes)}">
+            <!-- Thymeleaf: Tạo danh sách các Rạp độc nhất từ danh sách showtimes -->
+            <div th:each="branchName : ${#sets.toSet(showtimes.![branchName])}" class="mb-4">
+                <h5 class="fw-bold text-cine-main mb-3"><i class="fa-solid fa-location-dot text-cine-primary me-2"></i><span th:text="${branchName}"></span></h5>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <th:block th:each="st : ${showtimes}" th:if="${st.branchName == branchName}">
+                        <!-- Nút suất chiếu: Dùng btn-outline-cine chuẩn -->
+                        <!-- @{/booking/seat-selection(showtimeId=${st.showtimeId})} -->
+                        <a th:href="#"
+                           class="btn btn-outline-cine py-2 px-3 fw-bold d-flex flex-column align-items-center">
+                            <span class="fs-5" th:text="${#temporals.format(st.startTime, 'HH:mm')}">14:30</span>
+                            <small class="text-cine-muted fw-normal" th:text="${st.hallName}">Phòng 01</small>
+                        </a>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
