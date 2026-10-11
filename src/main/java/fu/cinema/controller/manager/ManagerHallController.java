@@ -7,6 +7,7 @@ import fu.cinema.dto.response.SeatResponse;
 import fu.cinema.entity.Branch;
 import fu.cinema.enums.HallStatus;
 import fu.cinema.service.HallService;
+import fu.cinema.service.ManagerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -25,17 +27,14 @@ import java.util.Map;
 public class ManagerHallController {
 
     private final HallService hallService;
-
-    // Chi nhánh mẫu để test (CineFlow Hà Nội - ID = 1)
-    private static final Long TEST_BRANCH_ID = 1L;
+    private final ManagerService managerService;
 
     @GetMapping
     public String listHalls(Model model) {
-        Branch currentBranch = hallService.getBranchById(TEST_BRANCH_ID);
-        Long branchId = currentBranch.getBranchId();
-
+        Branch currentBranch = managerService.getCurrentManagerBranch();
         model.addAttribute("currentBranch", currentBranch);
-        model.addAttribute("halls", hallService.getHallsByBranch(branchId));
+        model.addAttribute("statuses", HallStatus.values());
+
         if (!model.containsAttribute("newHall")) {
             model.addAttribute("newHall", HallRequest.builder()
                     .totalRows(8)
@@ -43,7 +42,14 @@ public class ManagerHallController {
                     .status(HallStatus.ACTIVE)
                     .build());
         }
-        model.addAttribute("statuses", HallStatus.values());
+
+        if (currentBranch == null) {
+            model.addAttribute("halls", Collections.emptyList());
+            return "manager/hall-list";
+        }
+
+        Long branchId = currentBranch.getBranchId();
+        model.addAttribute("halls", hallService.getHallsByBranch(branchId));
         return "manager/hall-list";
     }
 
@@ -57,7 +63,11 @@ public class ManagerHallController {
             return "redirect:/manager/halls";
         }
         try {
-            Branch currentBranch = hallService.getBranchById(TEST_BRANCH_ID);
+            Branch currentBranch = managerService.getCurrentManagerBranch();
+            if (currentBranch == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản quản lý của bạn chưa được phân công chi nhánh!");
+                return "redirect:/manager/halls";
+            }
             HallResponse created = hallService.createHallWithSeats(currentBranch.getBranchId(), request);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã tạo phòng '" + created.getHallName() + "' và tự động sinh sơ đồ "
@@ -81,7 +91,11 @@ public class ManagerHallController {
             return "redirect:/manager/halls";
         }
         try {
-            Branch currentBranch = hallService.getBranchById(TEST_BRANCH_ID);
+            Branch currentBranch = managerService.getCurrentManagerBranch();
+            if (currentBranch == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản quản lý của bạn chưa được phân công chi nhánh!");
+                return "redirect:/manager/halls";
+            }
             hallService.updateHall(currentBranch.getBranchId(), request);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật thông tin phòng chiếu thành công!");
         } catch (Exception e) {

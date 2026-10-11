@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: manager-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{}
+      )}">
+<head>
+    <title>Quản lý Nhân viên Chi nhánh | CineFlow</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 text-cine-primary">
+                <i class="fa-solid fa-user-group me-2"></i>Danh sách Nhân viên Chi nhánh
+            </h4>
+            <p class="text-muted small mb-0" th:if="${currentBranch != null}">
+                Quản lý nhân sự tại chi nhánh: <strong class="text-cine-primary" th:text="${currentBranch.branchName}"></strong>
+            </p>
+            <p class="text-danger small mb-0" th:unless="${currentBranch != null}">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> Chưa được phân công chi nhánh quản lý
+            </p>
+        </div>
+        <div>
+            <button th:if="${currentBranch != null}" type="button" class="btn btn-cine px-3 py-2" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+                <i class="fa-solid fa-user-plus me-1"></i> Tạo Nhân viên mới
+            </button>
+            <button th:unless="${currentBranch != null}" type="button" class="btn btn-secondary px-3 py-2" disabled title="Chưa được gán chi nhánh">
+                <i class="fa-solid fa-user-plus me-1"></i> Tạo Nhân viên mới
+            </button>
+        </div>
+    </div>
+
+    <!-- Cảnh báo nếu Manager chưa được gán chi nhánh -->
+    <div th:if="${currentBranch == null}" class="alert alert-warning border-warning d-flex align-items-center mb-4" role="alert">
+        <i class="fa-solid fa-triangle-exclamation fs-4 me-3"></i>
+        <div>
+            <h6 class="alert-heading fw-bold mb-1">Chưa được phân công chi nhánh!</h6>
+            <p class="mb-0 small">Tài khoản Quản lý của bạn hiện chưa được phân công chi nhánh nào. Vui lòng liên hệ Quản trị viên (Admin) để được gán chi nhánh trước khi thực hiện thêm nhân viên hoặc vận hành rạp.</p>
+        </div>
+    </div>
+
+    <!-- Thông báo kết quả -->
+    <div th:if="${successMessage}" class="alert bg-cine-soft border-cine alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert bg-cine-hot text-white alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Thống kê tổng số Nhân viên -->
+    <div class="card border-cine p-3 mb-3 bg-white shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">
+                <i class="fa-solid fa-users me-1"></i>Danh sách nhân sự cấp Nhân viên thuộc chi nhánh
+            </span>
+            <span class="badge bg-cine-dark text-cine-main p-2 fs-6">
+                <span th:if="${currentBranch != null}" th:text="'Chi nhánh: ' + ${currentBranch.branchName} + ' | '"></span>
+                Tổng số Nhân viên: <strong th:text="${#lists.size(staffs)}">0</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách nhân viên -->
+    <div class="card border-cine shadow-sm">
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-cine table-hover align-middle mb-0" id="staffTable">
+                <thead>
+                <tr>
+                    <th class="ps-3">STT</th>
+                    <th>Họ và tên</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Email</th>
+                    <th>Số điện thoại</th>
+                    <th>Chi nhánh</th>
+                    <th>Vai trò</th>
+                    <th>Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(staffs)}">
+                    <td colspan="8" class="text-center py-4 text-muted">Chưa có tài khoản Nhân viên nào trong hệ thống.</td>
+                </tr>
+                <tr th:each="s, iterStat : ${staffs}">
+                    <td class="ps-3 fw-bold" th:text="${iterStat.count}">1</td>
+                    <td>
+                        <span class="fw-semibold text-cine-primary" th:text="${s.fullName}">Nguyễn Văn Staff</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border" th:text="'@' + ${s.username}">@staff</span>
+                    </td>
+                    <td th:text="${s.email}">staff@cineflow.vn</td>
+                    <td th:text="${s.phone}">0912345678</td>
+                    <td>
+                        <span th:if="${s.branchName != null}" class="badge bg-cine-primary" th:text="${s.branchName}">CineFlow Hà Nội</span>
+                        <span th:unless="${s.branchName != null}" class="badge bg-secondary">Chưa phân công</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-cine-soft text-cine-primary fw-bold">STAFF</span>
+                    </td>
+                    <td>
+                        <!-- Nút Sửa: mở modal theo id của staff -->
+                        <button type="button" class="btn btn-sm btn-outline-warning me-1"
+                                data-bs-toggle="modal"
+                                th:data-bs-target="'#editStaffModal-' + ${s.staffId}"
+                                title="Chỉnh sửa thông tin">
+                            <i class="fa-solid fa-pen-to-square"></i> Sửa
+                        </button>
+
+                        <!-- Form Xóa: gửi POST chuẩn HTML kèm xác nhận -->
+                        <form th:action="@{/manager/staffs/delete/{id}(id=${s.staffId})}" method="post" class="d-inline"
+                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa Nhân viên này không? Hành động này không thể hoàn tác!');">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Xóa tài khoản">
+                                <i class="fa-solid fa-trash"></i> Xóa
+                            </button>
+                        </form>
+
+                        <!-- Modal Cập nhật riêng cho Staff này -->
+                        <div class="modal fade" th:id="'editStaffModal-' + ${s.staffId}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content bg-cine-dark border-cine text-start">
+                                    <div class="modal-header border-cine">
+                                        <h5 class="modal-title fw-bold text-cine-primary">
+                                            <i class="fa-solid fa-user-pen me-2"></i>Cập nhật thông tin Nhân viên
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form th:action="@{/manager/staffs/update/{id}(id=${s.staffId})}" method="post">
+                                        <div class="modal-body">
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-medium">Tên đăng nhập <span class="text-danger">*</span></label>
+                                                    <input type="text" name="username" th:value="${s.username}"
+                                                           class="form-control border-cine" minlength="4" maxlength="50" required>
+                                                    <small class="text-muted">Từ 4 đến 50 ký tự, viết liền không dấu</small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-medium">Họ và tên <span class="text-danger">*</span></label>
+                                                    <input type="text" name="fullName" th:value="${s.fullName}"
+                                                           class="form-control border-cine" maxlength="100" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-medium">Email <span class="text-danger">*</span></label>
+                                                    <input type="email" name="email" th:value="${s.email}"
+                                                           class="form-control border-cine" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-medium">Số điện thoại <span class="text-danger">*</span></label>
+                                                    <input type="tel" name="phone" th:value="${s.phone}"
+                                                           class="form-control border-cine" pattern="^(0|\+84)[0-9]{9}$" required>
+                                                    <small class="text-muted">10 chữ số (VD: 0912345678 hoặc +84912345678)</small>
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-medium">Đổi mật khẩu mới (Tùy chọn)</label>
+                                                    <input type="password" name="password" class="form-control border-cine"
+                                                           placeholder="Để trống nếu không đổi" minlength="6" maxlength="32">
+                                                    <small class="text-muted">Từ 6 đến 32 ký tự (chỉ nhập khi cần đổi)</small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-medium">Xác nhận mật khẩu mới</label>
+                                                    <input type="password" name="confirmPassword" class="form-control border-cine"
+                                                           placeholder="Nhập lại mật khẩu nếu đổi" minlength="6" maxlength="32">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-cine">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                                            <button type="submit" class="btn btn-cine px-4">
+                                                <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thay đổi
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Form Thêm Nhân Viên Mới -->
+    <div class="modal fade" id="addStaffModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-cine-dark border-cine">
+                <div class="modal-header border-cine">
+                    <h5 class="modal-title fw-bold text-cine-primary">
+                        <i class="fa-solid fa-user-plus me-2"></i>Tạo tài khoản Nhân viên chi nhánh
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/manager/staffs/create}" th:object="${newStaff}" method="post">
+                    <div class="modal-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Tên đăng nhập <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{username}" class="form-control border-cine"
+                                       placeholder="Ví dụ: staff_caugiay01" minlength="4" maxlength="50" required>
+                                <small class="text-muted">Từ 4 đến 50 ký tự, viết liền không dấu</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Họ và tên <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{fullName}" class="form-control border-cine"
+                                       placeholder="Ví dụ: Trần Thị Nhân Viên" maxlength="100" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Email <span class="text-danger">*</span></label>
+                                <input type="email" th:field="*{email}" class="form-control border-cine"
+                                       placeholder="staff@cineflow.vn" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Số điện thoại <span class="text-danger">*</span></label>
+                                <input type="tel" th:field="*{phone}" class="form-control border-cine"
+                                       placeholder="0912345678" pattern="^(0|\+84)[0-9]{9}$" required>
+                                <small class="text-muted">10 chữ số (VD: 0912345678 hoặc +84912345678)</small>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Mật khẩu khởi tạo <span class="text-danger">*</span></label>
+                                <input type="password" th:field="*{password}" class="form-control border-cine"
+                                       placeholder="Tối thiểu 6 ký tự" minlength="6" maxlength="32" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Xác nhận mật khẩu <span class="text-danger">*</span></label>
+                                <input type="password" th:field="*{confirmPassword}" class="form-control border-cine"
+                                       placeholder="Nhập lại mật khẩu" minlength="6" maxlength="32" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-cine">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-cine px-4">
+                            <i class="fa-solid fa-check me-1"></i> Tạo Nhân viên
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -20,14 +20,31 @@
             <h4 class="fw-bold mb-1 text-cine-primary">
                 <i class="fa-solid fa-couch me-2"></i>Quản lý Phòng chiếu & Sơ đồ ghế
             </h4>
-            <p class="small text-muted mb-0">
+            <p class="small text-muted mb-0" th:if="${currentBranch != null}">
                 Chi nhánh đang quản lý: <strong class="text-cine-primary" th:text="${currentBranch.branchName}">CineFlow Hà Nội</strong>
                 — <span th:text="${currentBranch.address}"></span>
             </p>
+            <p class="small text-danger mb-0" th:unless="${currentBranch != null}">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> Chưa được phân công chi nhánh quản lý
+            </p>
         </div>
-        <button type="button" class="btn btn-cine px-3 py-2" data-bs-toggle="modal" data-bs-target="#addHallModal">
-            <i class="fa-solid fa-plus me-1"></i> Tạo Phòng chiếu & Sinh sơ đồ ghế
-        </button>
+        <div>
+            <button th:if="${currentBranch != null}" type="button" class="btn btn-cine px-3 py-2" data-bs-toggle="modal" data-bs-target="#addHallModal">
+                <i class="fa-solid fa-plus me-1"></i> Tạo Phòng chiếu & Sinh sơ đồ ghế
+            </button>
+            <button th:unless="${currentBranch != null}" type="button" class="btn btn-secondary px-3 py-2" disabled title="Chưa được gán chi nhánh">
+                <i class="fa-solid fa-plus me-1"></i> Tạo Phòng chiếu (Chưa có rạp)
+            </button>
+        </div>
+    </div>
+
+    <!-- Cảnh báo nếu Manager chưa được gán chi nhánh -->
+    <div th:if="${currentBranch == null}" class="alert alert-warning border-warning d-flex align-items-center mb-4" role="alert">
+        <i class="fa-solid fa-triangle-exclamation fs-4 me-3"></i>
+        <div>
+            <h6 class="alert-heading fw-bold mb-1">Chưa được phân công chi nhánh!</h6>
+            <p class="mb-0 small">Tài khoản Quản lý của bạn hiện chưa được phân công chi nhánh nào. Vui lòng liên hệ Quản trị viên (Admin) để được gán chi nhánh trước khi tạo phòng chiếu hoặc vận hành rạp.</p>
+        </div>
     </div>
 
     <!-- Thông báo -->
