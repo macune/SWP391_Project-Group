@@ -1,14 +1,14 @@
 package fu.cinema.service.impl;
 
 import fu.cinema.dto.request.CustomerCreationRequest;
+import fu.cinema.dto.request.ForgotPasswordRequest;
+import fu.cinema.dto.request.ResetPasswordRequest;
+import fu.cinema.dto.response.CustomerResponse;
 import fu.cinema.entity.Account;
 import fu.cinema.entity.Customer;
 import fu.cinema.entity.VerificationToken;
 import fu.cinema.enums.AccountStatus;
-import fu.cinema.exception.CustomerAlreadyExistsException;
-import fu.cinema.exception.EmailTokenExpiredException;
-import fu.cinema.exception.EmailTokenNotFoundException;
-import fu.cinema.exception.ErrorCode;
+import fu.cinema.exception.*;
 import fu.cinema.mapper.CustomerMapper;
 import fu.cinema.repository.AccountRepository;
 import fu.cinema.repository.CustomerRepository;
@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -95,7 +96,7 @@ public class CustomerServiceImpl implements CustomerService {
         VerificationToken verificationToken = VerificationToken.builder()
                 .token(emailToken)
                 .account(savedAccount)
-                .expiryDate(LocalDateTime.now().plusMinutes(30))
+                .expiryDate(LocalDateTime.now().plusMinutes(10))
                 .build();
         verificationTokenRepository.save(verificationToken);
 
@@ -126,6 +127,79 @@ public class CustomerServiceImpl implements CustomerService {
         accountRepository.save(account);
 
         // Xóa token sau khi kích hoạt thành công
+        verificationTokenRepository.delete(verificationToken);
+    }
+
+    //Xử lý yêu cầu quên mật khẩu: tạo token đặt lại mật khẩu và gửi email hướng dẫn
+    @Override
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        // 1. Kiểm tra tài khoản có tồn tại và đang ở trạng thái ACTIVE hay không
+        Account account = accountRepository.findByEmailAndStatus(email, AccountStatus.ACTIVE)
+                .orElseThrow(() -> new AppException("Tài khoản không tồn tại hoặc chưa được kích hoạt."));
+
+        String forgotPasswordToken = UUID.randomUUID().toString();
+
+        // 2. Tìm token hiện có của tài khoản hoặc khởi tạo mới (tránh trùng khóa UNIQUE account_id)
+        VerificationToken verificationToken = account.getVerificationToken();
+        if (verificationToken == null) {
+            verificationToken = new VerificationToken();
+            verificationToken.setAccount(account);
+            account.setVerificationToken(verificationToken);
+        }
+
+        // 3. Cập nhật mã token mới và thời hạn hiệu lực (10 phút)
+        verificationToken.setToken(forgotPasswordToken);
+        verificationToken.setExpiryDate(LocalDateTime.now().plusMinutes(10));
+
+        verificationTokenRepository.save(verificationToken);
+
+        // 4. Gửi email chứa đường dẫn đặt lại mật khẩu
+        emailService.sendResetPasswordEmail(email, forgotPasswordToken);
+    }
+
+    //Xác thực token đặt lại mật khẩu khi người dùng bấm vào đường link trong email
+    @Override
+    @Transactional
+    public void validateResetPasswordToken(String token) {
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
+                .orElseThrow(EmailTokenNotFoundException::new);
+
+        // Kiểm tra nếu token đã hết hạn thì xóa khỏi database và ném ngoại lệ
+        if (verificationToken.isExpired()) {
+            verificationTokenRepository.delete(verificationToken);
+            throw new EmailTokenExpiredException();
+        }
+    }
+
+    //Cập nhật mật khẩu mới cho người dùng sau khi xác thực token thành công
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest resetPasswordRequest) {
+        // 1. Kiểm tra khớp mật khẩu xác nhận
+        if (!resetPasswordRequest.getPassword().equals(resetPasswordRequest.getConfirmPassword())) {
+            throw new PasswordNotMatchException();
+        }
+
+        // 2. Tìm và kiểm tra thời hạn token một lần nữa để đảm bảo tính an toàn
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(resetPasswordRequest.getToken())
+                .orElseThrow(EmailTokenNotFoundException::new);
+
+        if (verificationToken.isExpired()) {
+            verificationTokenRepository.delete(verificationToken);
+            throw new EmailTokenExpiredException();
+        }
+
+        // 3. Mã hóa mật khẩu mới và cập nhật cho tài khoản
+        Account account = verificationToken.getAccount();
+        String passwordHash = passwordEncoder.encode(resetPasswordRequest.getPassword());
+        account.setPasswordHash(passwordHash);
+
+        // 4. Hủy token sau khi đã đổi mật khẩu thành công (chỉ sử dụng 1 lần)
+        account.setVerificationToken(null);
+        accountRepository.save(account);
         verificationTokenRepository.delete(verificationToken);
     }
 }

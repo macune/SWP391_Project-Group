@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: admin-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{}
+      )}">
+<head>
+    <title>Quản lý tài khoản | CineFlow Admin</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 text-cine-primary">
+                <i class="fa-solid fa-users-gear me-2"></i>Danh sách Tài khoản Hệ thống
+            </h4>
+            <p class="text-muted small mb-0">Quản lý và kiểm soát trạng thái hoạt động của toàn bộ tài khoản trong hệ thống CineFlow.</p>
+        </div>
+    </div>
+
+    <!-- Thông báo kết quả -->
+    <div th:if="${successMessage}" class="alert bg-cine-soft border-cine alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert bg-cine-hot text-white alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Tìm kiếm & Thống kê Tài khoản -->
+    <div class="card border-cine p-3 mb-3 bg-white shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center">
+                <i class="fa-solid fa-users text-cine-primary me-2 fs-5"></i>
+                <span class="text-muted fw-medium me-2">Tổng số Tài khoản:</span>
+                <span class="badge bg-cine-dark text-cine-main px-3 py-2 fs-6">
+                    <strong th:text="${#lists.size(accounts)}">0</strong>
+                </span>
+            </div>
+
+            <form th:action="@{/admin/accounts}" method="get" class="d-flex" style="width: 400px; max-width: 100%;">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-light border-cine text-muted">
+                        <i class="fa-solid fa-at"></i>
+                    </span>
+                    <input type="text" name="keyword" th:value="${keyword}"
+                           class="form-control border-cine"
+                           placeholder="Tìm theo tên đăng nhập...">
+                    <button type="submit" class="btn btn-cine px-3">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i>Tìm
+                    </button>
+                    <a th:if="${keyword != null and !keyword.isEmpty()}"
+                       th:href="@{/admin/accounts}"
+                       class="btn btn-outline-secondary border-cine" title="Xóa bộ lọc">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách tài khoản -->
+    <div class="card border-cine shadow-sm">
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-cine table-hover align-middle mb-0" id="accountTable">
+                <thead>
+                <tr>
+                    <th class="ps-3">STT</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(accounts)}">
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        <span th:if="${keyword != null and !keyword.isEmpty()}">
+                            Không tìm thấy tài khoản nào khớp với từ khóa "<strong class="text-dark" th:text="${keyword}"></strong>".
+                        </span>
+                        <span th:unless="${keyword != null and !keyword.isEmpty()}">
+                            Chưa có tài khoản nào trong hệ thống.
+                        </span>
+                    </td>
+                </tr>
+                <tr th:each="a, iterStat : ${accounts}">
+                    <td class="ps-3 fw-bold" th:text="${iterStat.count}">1</td>
+                    <td>
+                        <span class="fw-semibold text-cine-primary" th:text="'@' + ${a.username}">@admin</span>
+                        <span th:if="${#authentication != null and #authentication.name == a.username}"
+                              class="badge bg-secondary-subtle text-secondary border ms-1"
+                              title="Tài khoản của bạn">
+                            <i class="fa-solid fa-user-check me-1"></i>Bạn
+                        </span>
+                    </td>
+                    <td th:text="${a.email}">admin@cineflow.vn</td>
+                    <td>
+                        <!-- Badge Vai trò -->
+                        <span th:if="${a.role != null and a.role.name() == 'ADMIN'}" class="badge bg-danger">
+                            <i class="fa-solid fa-shield-halved me-1"></i>ADMIN
+                        </span>
+                        <span th:if="${a.role != null and a.role.name() == 'MANAGER'}" class="badge bg-warning text-dark">
+                            <i class="fa-solid fa-user-tie me-1"></i>MANAGER
+                        </span>
+                        <span th:if="${a.role != null and a.role.name() == 'STAFF'}" class="badge bg-info text-dark">
+                            <i class="fa-solid fa-id-badge me-1"></i>STAFF
+                        </span>
+                        <span th:if="${a.role != null and a.role.name() == 'CUSTOMER'}" class="badge bg-primary">
+                            <i class="fa-solid fa-user me-1"></i>CUSTOMER
+                        </span>
+                    </td>
+                    <td>
+                        <!-- Badge Trạng thái -->
+                        <span th:if="${a.status != null and a.status.name() == 'ACTIVE'}" class="badge bg-success">
+                            <i class="fa-solid fa-circle-check me-1"></i>Hoạt động
+                        </span>
+                        <span th:if="${a.status != null and a.status.name() == 'LOCKED'}" class="badge bg-danger">
+                            <i class="fa-solid fa-lock me-1"></i>Bị khóa
+                        </span>
+                        <span th:if="${a.status != null and a.status.name() == 'INACTIVE'}" class="badge bg-secondary">
+                            <i class="fa-solid fa-clock me-1"></i>Chưa kích hoạt
+                        </span>
+                        <span th:if="${a.status != null and a.status.name() == 'DELETED'}" class="badge bg-dark">
+                            <i class="fa-solid fa-user-xmark me-1"></i>Đã xóa
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <!-- Nếu là tài khoản đang đăng nhập: Không cho phép đổi trạng thái -->
+                        <button th:if="${#authentication != null and #authentication.name == a.username}"
+                                type="button" class="btn btn-sm btn-secondary" disabled
+                                title="Không thể tự thay đổi trạng thái tài khoản của chính mình">
+                            <i class="fa-solid fa-user-shield me-1"></i> Đang đăng nhập
+                        </button>
+
+                        <!-- Nếu là tài khoản khác: Cho phép đổi trạng thái thông qua modal -->
+                        <th:block th:unless="${#authentication != null and #authentication.name == a.username}">
+                            <!-- Nút mở modal Cập nhật Trạng thái -->
+                            <button type="button" class="btn btn-sm btn-outline-warning"
+                                    data-bs-toggle="modal"
+                                    th:data-bs-target="'#statusModal-' + ${a.accountId}"
+                                    title="Đổi trạng thái tài khoản">
+                                <i class="fa-solid fa-sliders me-1"></i> Đổi trạng thái
+                            </button>
+
+                            <!-- Modal Cập nhật Trạng thái cho riêng Tài khoản này -->
+                            <div class="modal fade" th:id="'statusModal-' + ${a.accountId}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content bg-cine-dark border-cine text-start">
+                                        <div class="modal-header border-cine">
+                                            <h5 class="modal-title fw-bold text-cine-primary">
+                                                <i class="fa-solid fa-user-gear me-2"></i>Cập nhật trạng thái
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form th:action="@{/admin/accounts/update-status/{id}(id=${a.accountId})}" method="post">
+                                            <div class="modal-body">
+                                                <!-- Khung xem thông tin tài khoản -->
+                                                <div class="p-3 mb-3 rounded bg-light border">
+                                                    <div class="fw-bold text-dark fs-6">
+                                                        Tài khoản: <span class="text-cine-primary" th:text="'@' + ${a.username}">@user</span>
+                                                    </div>
+                                                    <div class="small text-muted mt-1">
+                                                        <span>Email: <strong class="text-dark" th:text="${a.email}">user@gmail.com</strong></span>
+                                                        <span class="mx-1">•</span>
+                                                        <span>Vai trò: <strong class="text-dark" th:text="${a.role}">CUSTOMER</strong></span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Dropdown lựa chọn trạng thái mới -->
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-medium">Trạng thái mới <span class="text-danger">*</span></label>
+                                                    <select name="status" class="form-select border-cine" required>
+                                                        <option value="ACTIVE" th:selected="${a.status != null and a.status.name() == 'ACTIVE'}">
+                                                            🟢 Hoạt động (ACTIVE)
+                                                        </option>
+                                                        <option value="LOCKED" th:selected="${a.status != null and a.status.name() == 'LOCKED'}">
+                                                            🔴 Tạm khóa tài khoản (LOCKED)
+                                                        </option>
+                                                        <option value="DELETED" th:selected="${a.status != null and a.status.name() == 'DELETED'}">
+                                                            ⚫ Xóa tài khoản (DELETED)
+                                                        </option>
+                                                    </select>
+                                                    <div class="form-text small text-muted mt-2">
+                                                        <i class="fa-solid fa-circle-info me-1"></i>
+                                                        Tài khoản có trạng thái <strong>LOCKED</strong> hoặc <strong>DELETED</strong> sẽ không thể đăng nhập vào hệ thống.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-cine">
+                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                <button type="submit" class="btn btn-cine px-4">
+                                                    <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thay đổi
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </th:block>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

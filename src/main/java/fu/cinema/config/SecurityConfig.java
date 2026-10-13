@@ -67,7 +67,7 @@ public class SecurityConfig {
                         // 1. ACTOR GUEST / PUBLIC (Trang chủ, Auth, Báo lỗi, Static resources)
                         .requestMatchers(
                                 "/", "/home", "/login", "/register", "/logout", "/verify-email", "/access-denied",
-                                "/css/**", "/js/**", "/vendor/**", "/webjars/**", "/images/**", "/error"
+                                "/css/**", "/js/**", "/vendor/**", "/webjars/**", "/images/**", "/error", "/forgot-password", "/reset-password"
                         ).permitAll()
 
                         // 2. ACTOR SYSTEM ADMIN (Quản trị hệ thống, Chi nhánh, Kho phim hệ thống)

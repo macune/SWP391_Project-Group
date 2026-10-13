@@ -16,7 +16,8 @@ public enum ErrorCode {
     BRANCH_NOT_FOUND("Không tìm thấy thông tin chi nhánh trong hệ thống."),
     PASSWORD_NOT_MATCH("Mật khẩu chưa khớp."),
     STAFF_NOT_FOUND("Không tìm thấy thông tin nhân viên trong hệ thống."),
-    ACCOUNT_HAS_DELETED("Tài khoản không tồn tại hoặc đã bị vô hiệu hóa");
+    ACCOUNT_HAS_DELETED("Tài khoản không tồn tại hoặc đã bị vô hiệu hóa"),
+    ACCOUNT_NOT_FOUND("Không tìm thấy tài khoản.");
     private final String message;
 
     ErrorCode(String message) {
