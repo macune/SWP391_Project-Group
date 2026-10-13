@@ -12,8 +12,12 @@ public enum ErrorCode {
     CUSTOMER_NOT_FOUND("Không tìm thấy thông tin khách hàng trong hệ thống."),
     EMAIL_TOKEN_NOT_FOUND("Liên kết xác thực không hợp lệ hoặc không tồn tại!"),
     EMAIL_TOKEN_EXPIRED("Liên kết xác thực đã hết hạn. Vui lòng thử lại!"),
-    UNCATEGORIZED_ERROR("Đã xảy ra sự cố trong hệ thống. Vui lòng thử lại sau!");
-
+    UNCATEGORIZED_ERROR("Đã xảy ra sự cố trong hệ thống. Vui lòng thử lại sau!"),
+    BRANCH_NOT_FOUND("Không tìm thấy thông tin chi nhánh trong hệ thống."),
+    PASSWORD_NOT_MATCH("Mật khẩu chưa khớp."),
+    STAFF_NOT_FOUND("Không tìm thấy thông tin nhân viên trong hệ thống."),
+    ACCOUNT_HAS_DELETED("Tài khoản không tồn tại hoặc đã bị vô hiệu hóa"),
+    ACCOUNT_NOT_FOUND("Không tìm thấy tài khoản.");
     private final String message;
 
     ErrorCode(String message) {

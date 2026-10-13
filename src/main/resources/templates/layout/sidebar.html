@@ -19,6 +19,16 @@
             </a>
         </li>
         <li class="nav-item">
+            <a th:href="@{/admin/managers}" class="nav-link">
+                <i class="fa-solid fa-user-tie me-2"></i>Quản lý Quản lý Rạp
+            </a>
+        </li>
+        <li class="nav-item">
+            <a th:href="@{/admin/accounts}" class="nav-link">
+                <i class="fa-solid fa-users me-2"></i>Quản lý Tài Khoản
+            </a>
+        </li>
+        <li class="nav-item">
             <a th:href="@{/movies}" class="nav-link">
                 <i class="fa-solid fa-film me-2"></i>Kho Phim Hệ thống
             </a>
@@ -34,8 +44,14 @@
 
 <!-- 2. SIDEBAR DÀNH CHO ACTOR: BRANCH MANAGER -->
 <aside th:fragment="manager-sidebar" class="app-sidebar text-white p-3 flex-shrink-0">
-    <div class="mb-3 pb-2 border-bottom border-cine">
-        <span class="badge bg-cine-primary w-100 py-2">CINEFLOW - MANAGER</span>
+    <div class="mb-3 pb-2 border-bottom border-cine text-center">
+        <span class="badge bg-cine-primary w-100 py-2 mb-1">CINEFLOW - MANAGER</span>
+        <div th:if="${currentBranch != null}">
+            <span class="badge bg-cine-soft text-cine-primary w-100 text-truncate" th:text="'📍 ' + ${currentBranch.branchName}"></span>
+        </div>
+        <div th:unless="${currentBranch != null}">
+            <span class="badge bg-warning text-dark w-100">⚠️ Chưa gán chi nhánh</span>
+        </div>
     </div>
     <ul class="nav nav-pills flex-column gap-1">
         <li class="nav-item">
@@ -49,7 +65,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a th:href="@{/manager/staffs}" class="nav-link">
                 <i class="fa-solid fa-user-group me-2"></i>Nhân viên chi nhánh
             </a>
         </li>

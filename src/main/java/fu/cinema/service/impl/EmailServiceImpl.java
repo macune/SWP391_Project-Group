@@ -55,4 +55,44 @@ public class EmailServiceImpl implements EmailService {
             log.error("Gửi email xác thực thất bại tới {}: {}", toEmail, e.getMessage(), e);
         }
     }
+
+    /**
+     * Gửi email chứa đường dẫn đặt lại mật khẩu với thời hạn 10 phút
+     */
+    @Override
+    @Async
+    public void sendResetPasswordEmail(String toEmail, String token) {
+        String confirmationUrl = "http://localhost:8080/reset-password?token=" + token;
+
+        try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            // Cấu hình người gửi, người nhận, tiêu đề email
+            String fromEmail = environment.getProperty("spring.mail.username");
+            if (fromEmail == null || fromEmail.isBlank()) {
+                fromEmail = "trinhhoangduc111@gmail.com";
+            }
+            helper.setFrom(fromEmail, "CineFlow Cinema");
+            helper.setTo(toEmail);
+            helper.setSubject("Đặt lại mật khẩu tài khoản CineFlow");
+
+            String htmlContent = "<div style='font-family: Arial, sans-serif; padding: 20px;'>"
+                    + "<h2 style='color: #e50914;'>Yêu cầu đặt lại mật khẩu CineFlow</h2>"
+                    + "<p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Vui lòng bấm vào nút bên dưới để tiến hành đổi mật khẩu mới:</p>"
+                    + "<p style='margin: 25px 0;'>"
+                    + "   <a href='" + confirmationUrl + "' style='background-color: #e50914; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold;'>Đặt Lại Mật Khẩu</a>"
+                    + "</p>"
+                    + "<p>Đường dẫn này có hiệu lực trong vòng <strong>10 phút</strong>.</p>"
+                    + "<p style='color: #888; font-size: 13px;'>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>"
+                    + "</div>";
+
+            helper.setText(htmlContent, true);
+            log.info("Đang gửi email đặt lại mật khẩu tới: {}", toEmail);
+            javaMailSender.send(mimeMessage);
+            log.info("Đã gửi email đặt lại mật khẩu thành công tới: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Gửi email đặt lại mật khẩu thất bại tới {}: {}", toEmail, e.getMessage(), e);
+        }
+    }
 }

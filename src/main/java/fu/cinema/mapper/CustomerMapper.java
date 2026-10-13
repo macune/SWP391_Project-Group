@@ -1,6 +1,7 @@
 package fu.cinema.mapper;
 
 import fu.cinema.dto.request.CustomerCreationRequest;
+import fu.cinema.dto.response.CustomerResponse;
 import fu.cinema.entity.Account;
 import fu.cinema.entity.Customer;
 import org.mapstruct.Mapper;
@@ -23,4 +24,9 @@ public interface CustomerMapper {
     @Mapping(target = "account", ignore = true)
     @Mapping(target = "emailVerified", constant = "false")
     Customer toCustomer(CustomerCreationRequest request);
+
+    @Mapping(source = "account.username", target = "username")
+    @Mapping(source = "account.email", target = "email")
+    @Mapping(source = "account.status", target = "status")
+    CustomerResponse toCustomerResponse(Customer customer);
 }

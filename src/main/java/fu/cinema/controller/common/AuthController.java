@@ -1,7 +1,9 @@
 package fu.cinema.controller.common;
 
 import fu.cinema.dto.request.CustomerCreationRequest;
+import fu.cinema.dto.request.ForgotPasswordRequest;
 import fu.cinema.dto.request.LoginRequest;
+import fu.cinema.dto.request.ResetPasswordRequest;
 import fu.cinema.exception.AppException;
 import fu.cinema.exception.CustomerAlreadyExistsException;
 import fu.cinema.exception.ErrorCode;
@@ -15,6 +17,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.Banner;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -30,12 +33,7 @@ import org.springframework.security.web.authentication.logout.SecurityContextLog
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Slf4j
@@ -214,5 +212,71 @@ public class AuthController {
         model.addAttribute("errorTitle", "Truy cập bị từ chối (403)");
         model.addAttribute("errorMessage", "Tài khoản của bạn không có quyền truy cập vào khu vực này!");
         return "common/error";
+    }
+
+    // 8. Hiển thị giao diện Quên mật khẩu
+    @GetMapping("/forgot-password")
+    public String forgotPassword(Model model) {
+        if (!model.containsAttribute("forgotPasswordRequest")) {
+            model.addAttribute("forgotPasswordRequest", new ForgotPasswordRequest());
+        }
+        return "common/forgot-password";
+    }
+
+    // 9. Xử lý yêu cầu gửi email đặt lại mật khẩu
+    @PostMapping("/forgot-password")
+    public String forgotPassword(@Valid @ModelAttribute("forgotPasswordRequest") ForgotPasswordRequest request,
+                                 BindingResult bindingResult,
+                                 Model model,
+                                 RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            return "common/forgot-password";
+        }
+
+        try {
+            customerService.forgotPassword(request);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã gửi liên kết đặt lại mật khẩu. Vui lòng kiểm tra email của bạn.");
+            return "redirect:/forgot-password";
+        } catch (AppException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/forgot-password";
+        }
+    }
+
+    // 10. Xác thực token từ link email và hiển thị form đặt lại mật khẩu
+    @GetMapping("/reset-password")
+    public String resetPassword(@RequestParam("token") String token, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            customerService.validateResetPasswordToken(token);
+            if (!model.containsAttribute("resetPasswordRequest")) {
+                ResetPasswordRequest resetPasswordRequest = new ResetPasswordRequest();
+                resetPasswordRequest.setToken(token);
+                model.addAttribute("resetPasswordRequest", resetPasswordRequest);
+            }
+            return "common/reset-password";
+        } catch (AppException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/forgot-password";
+        }
+    }
+
+    // 11. Xử lý cập nhật mật khẩu mới
+    @PostMapping("/reset-password")
+    public String resetPassword(@Valid @ModelAttribute("resetPasswordRequest") ResetPasswordRequest resetPasswordRequest,
+                                BindingResult bindingResult,
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            return "common/reset-password";
+        }
+
+        try {
+            customerService.resetPassword(resetPasswordRequest);
+            redirectAttributes.addFlashAttribute("successMessage", "Đổi mật khẩu thành công. Mời bạn đăng nhập lại.");
+            return "redirect:/login";
+        } catch (AppException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            return "common/reset-password";
+        }
     }
 }

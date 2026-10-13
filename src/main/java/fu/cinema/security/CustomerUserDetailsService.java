@@ -23,6 +23,7 @@ public class CustomerUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
         Account account = accountRepository.findByUsername(identifier)
                 .or(() -> accountRepository.findByEmail(identifier))
+                .filter(acc -> acc.getStatus()!=AccountStatus.DELETED)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với tài khoản/email: " + identifier));
 
         boolean enabled = account.getStatus() == AccountStatus.ACTIVE;
