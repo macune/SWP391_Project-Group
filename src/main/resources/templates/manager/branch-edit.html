@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(~{::title}, ~{layout/sidebar :: manager-sidebar}, ~{::#content}, ~{::#actorCss}, ~{::#actorJs})}">
+<head>
+    <title>Cài Đặt Chi Nhánh | CineFlow Manager</title>
+    <th:block id="actorCss"><link rel="stylesheet" th:href="@{/css/manager.css}"></th:block>
+</head>
+<body>
+
+<div id="content" class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold mb-0 text-cine-primary">🏢 Cập Nhật Chi Nhánh Của Bạn</h4>
+            </div>
+
+            <!-- Khối thông báo -->
+            <div th:if="${successMessage}" class="alert bg-cine-soft border-cine alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert bg-cine-hot text-white alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Form Cập Nhật -->
+            <div class="card shadow-sm border-cine bg-white">
+                <div class="card-header py-3 bg-cine-frame border-bottom border-cine">
+                    <h5 class="mb-0 fw-bold text-cine-main"><i class="fa-solid fa-building-circle-check me-2"></i>Cài đặt thông tin liên hệ & giờ giấc</h5>
+                </div>
+
+                <div class="card-body p-4 text-cine-main">
+                    <form th:action="@{/manager/branch-settings/edit}" th:object="${branchRequest}" method="POST">
+                        <input type="hidden" th:field="*{branchId}">
+                        <input type="hidden" th:field="*{status}"> <!-- Manager không được quyền tự Close/Bảo trì chi nhánh -->
+
+                        <div class="mb-4">
+                            <label class="form-label fw-medium text-cine-main">Tên chi nhánh <span class="text-cine-hot">*</span></label>
+                            <input type="text" th:field="*{branchName}" class="form-control border-cine shadow-sm" required />
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Tỉnh/Thành phố <span class="text-cine-hot">*</span></label>
+                                <select id="citySelect" class="form-select border-cine shadow-sm" required onchange="loadWards()">
+                                    <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Quận/Huyện <span class="text-cine-hot">*</span></label>
+                                <select id="wardSelect" class="form-select border-cine shadow-sm" required onchange="updateAddress()">
+                                    <option value="">-- Chọn Quận/Huyện --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <input type="hidden" id="finalAddress" th:field="*{address}" required>
+                        <div class="mb-4">
+                            <label class="form-label fw-medium text-cine-muted small"><i class="fa-solid fa-location-dot me-1"></i>Địa chỉ chi tiết:</label>
+                            <input type="text" id="displayAddress" class="form-control border-cine bg-light text-muted" th:value="*{address}">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-medium text-cine-main">Đường dây nóng (Hotline) <span class="text-cine-hot">*</span></label>
+                            <input type="text" th:field="*{hotline}" class="form-control border-cine shadow-sm" placeholder="Ví dụ: 19001001" required />
+                        </div>
+
+                        <div class="row g-3 mb-4 pb-4 border-bottom border-cine">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium text-cine-main">Giờ mở cửa <span class="text-cine-hot">*</span></label>
+                                <input type="time" th:field="*{openingTime}" class="form-control border-cine shadow-sm" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium text-cine-main">Giờ đóng cửa <span class="text-cine-hot">*</span></label>
+                                <input type="time" th:field="*{closingTime}" class="form-control border-cine shadow-sm" required />
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <a th:href="@{/manager/showtimes}" class="btn btn-outline-secondary me-2 px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-cine px-5 fw-bold shadow-sm">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>Lưu Thay Đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<th:block id="actorJs">
+    <script>
+        let locationData = [];
+        const currentFullAddress = document.getElementById('finalAddress').value;
+
+        fetch('/js/locations.json')
+            .then(response => response.json())
+            .then(data => {
+                locationData = data;
+                const citySelect = document.getElementById('citySelect');
+                const wardSelect = document.getElementById('wardSelect');
+
+                data.forEach((city, index) => {
+                    let option = document.createElement('option');
+                    option.value = index;
+                    option.text = city.name;
+                    citySelect.appendChild(option);
+                });
+
+                // Auto-fill nếu chi nhánh đã có địa chỉ chuẩn (Quận, Tỉnh)
+                if (currentFullAddress && currentFullAddress.includes(',')) {
+                    const parts = currentFullAddress.split(',').map(s => s.trim());
+                    const ward = parts[0];
+                    const city = parts[1];
+
+                    const cityIndex = locationData.findIndex(item => item.name.toLowerCase() === city.toLowerCase());
+                    if (cityIndex !== -1) {
+                        citySelect.value = cityIndex;
+                        loadWards(); // Tự tải danh sách quận
+                        setTimeout(() => {
+                            wardSelect.value = ward; // Gán Quận sau khi render xong
+                        }, 50);
+                    }
+                }
+            });
+
+        function loadWards() {
+            const cityIndex = document.getElementById('citySelect').value;
+            const wardSelect = document.getElementById('wardSelect');
+            wardSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+
+            if (cityIndex !== "") {
+                const wards = locationData[cityIndex].wards;
+                wards.forEach(ward => {
+                    let option = document.createElement('option');
+                    option.value = ward;
+                    option.text = ward;
+                    wardSelect.appendChild(option);
+                });
+            }
+            updateAddress();
+        }
+
+        function updateAddress() {
+            const citySelect = document.getElementById('citySelect');
+            const wardSelect = document.getElementById('wardSelect');
+            const displayAddress = document.getElementById('displayAddress');
+            const finalAddress = document.getElementById('finalAddress');
+
+            if (citySelect.value !== "" && wardSelect.value !== "") {
+                const cityName = citySelect.options[citySelect.selectedIndex].text;
+                const wardName = wardSelect.value;
+                const fullStr = wardName + ", " + cityName;
+                finalAddress.value = fullStr;
+                displayAddress.value = fullStr;
+            } else {
+                finalAddress.value = "";
+                displayAddress.value = "";
+            }
+        }
+    </script>
+</th:block>
+</body>
+</html>

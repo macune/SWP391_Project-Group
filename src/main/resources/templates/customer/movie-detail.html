@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(~{::title}, ~{layout/sidebar :: customer-sidebar}, ~{::#page-content}, ~{::#actorCss}, ~{::#actorJs})}">
+<head>
+    <title th:text="${movie.title} + ' | CineFlow'">Chi Tiết Phim</title>
+    <th:block id="actorCss"><link rel="stylesheet" th:href="@{/css/customer.css}"></th:block>
+</head>
+<body>
+<div id="page-content" class="container-fluid py-4">
+
+    <div class="mb-4">
+        <a th:href="@{/customer/list-movies}" class="text-decoration-none text-cine-primary fw-bold">
+            <i class="fa-solid fa-arrow-left me-1"></i> Về danh sách phim
+        </a>
+    </div>
+
+    <!-- Thông tin phim -->
+    <div class="card border-cine shadow-sm mb-5 bg-white rounded-3">
+        <div class="row g-0 p-3">
+            <div class="col-md-3">
+                <img th:src="${movie.posterUrl != null and !movie.posterUrl.isEmpty() ? movie.posterUrl : '/images/posters/default-poster.jpg'}" class="img-fluid rounded border border-cine" style="width: 100%;">
+            </div>
+            <div class="col-md-9 ps-md-4 mt-3 mt-md-0">
+                <h2 class="fw-bold text-cine-main mb-3" th:text="${movie.title}">Tên Phim</h2>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <span class="badge bg-cine-hot fs-6" th:text="${movie.ageRating}">P</span>
+                    <span class="badge bg-cine-soft text-cine-main border border-cine fs-6 py-2 px-3"><i class="fa-solid fa-masks-theater me-2 text-cine-primary"></i><span th:text="${movie.genre}"></span></span>
+                    <span class="badge bg-cine-soft text-cine-main border border-cine fs-6 py-2 px-3"><i class="fa-regular fa-clock me-2 text-cine-primary"></i><span th:text="${movie.duration} + ' phút'"></span></span>
+                    <span class="badge bg-cine-soft text-cine-main border border-cine fs-6 py-2 px-3"><i class="fa-solid fa-language me-2 text-cine-primary"></i><span th:text="${movie.language}"></span></span>
+                </div>
+                <p class="text-cine-main" th:text="${movie.description}" style="line-height: 1.6;">Mô tả...</p>
+                <p class="mb-4"><span class="text-cine-muted">Ngày khởi chiếu:</span> <strong class="text-cine-main" th:text="${#temporals.format(movie.releaseDate, 'dd/MM/yyyy')}"></strong></p>
+
+                <div th:if="${movie.trailerUrl != null and !movie.trailerUrl.isEmpty()}">
+                    <a th:href="${movie.trailerUrl}" target="_blank" class="btn btn-outline-cine px-4 fw-bold">
+                        <i class="fa-brands fa-youtube me-2"></i>Xem Trailer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lịch Chiếu -->
+    <div class="card border-cine shadow-sm bg-cine-main p-4" th:if="${movie.status.name() == 'NOW_SHOWING'}">
+        <h4 class="fw-bold text-cine-primary mb-4 border-bottom border-cine pb-2">
+            <i class="fa-regular fa-calendar-check me-2"></i>Lịch Chiếu
+        </h4>
+
+        <!-- Form Filter Customer -->
+        <form class="row g-3 mb-4" th:action="@{/customer/movie-detail/{id}(id=${movie.movieId})}" method="get">
+            <div class="col-md-4">
+                <input type="date" name="date" class="form-control border-cine" th:value="${selectedDate}" onchange="this.form.submit()">
+            </div>
+            <div class="col-md-4">
+                <select name="branchId" class="form-select border-cine" onchange="this.form.submit()">
+                    <option value="">-- Tất cả chi nhánh --</option>
+                    <option th:each="b : ${branches}" th:value="${b.branchId}" th:text="${b.branchName}" th:selected="${b.branchId == selectedBranchId}"></option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select name="timeSlot" class="form-select border-cine" onchange="this.form.submit()">
+                    <option value="">-- Tất cả khung giờ --</option>
+                    <option value="0-3" th:selected="${selectedTimeSlot == '0-3'}">00:00 - 03:00</option>
+                    <option value="3-6" th:selected="${selectedTimeSlot == '3-6'}">03:00 - 06:00</option>
+                    <option value="6-9" th:selected="${selectedTimeSlot == '6-9'}">06:00 - 09:00</option>
+                    <option value="9-12" th:selected="${selectedTimeSlot == '9-12'}">09:00 - 12:00</option>
+                    <option value="12-15" th:selected="${selectedTimeSlot == '12-15'}">12:00 - 15:00</option>
+                    <option value="15-18" th:selected="${selectedTimeSlot == '15-18'}">15:00 - 18:00</option>
+                    <option value="18-21" th:selected="${selectedTimeSlot == '18-21'}">18:00 - 21:00</option>
+                    <option value="21-24" th:selected="${selectedTimeSlot == '21-24'}">21:00 - 24:00</option>
+                </select>
+            </div>
+        </form>
+
+        <div th:if="${#lists.isEmpty(showtimes)}" class="alert bg-cine-frame text-cine-hot text-center border-cine">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>Không có suất chiếu nào phù hợp với tìm kiếm của bạn.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(showtimes)}">
+            <div th:each="branchName : ${#sets.toSet(showtimes.![branchName])}" class="mb-4">
+                <h5 class="fw-bold text-cine-main mb-3"><i class="fa-solid fa-location-dot text-cine-primary me-2"></i><span th:text="${branchName}"></span></h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <th:block th:each="st : ${showtimes}" th:if="${st.branchName == branchName}">
+                        <!-- CUSTOMER: Bấm vào suất -> Sang trang mua vé -->
+                        <a th:href="@{/booking/seat-selection(showtimeId=${st.showtimeId})}" class="btn btn-outline-cine py-2 px-3 text-decoration-none">
+                            <span class="fs-5 fw-bold d-block" th:text="${#temporals.format(st.startTime, 'HH:mm')} + ' - ' + ${#temporals.format(st.endTime, 'HH:mm')}">14:30 - 16:30</span>
+                            <small class="text-cine-muted d-block mt-1"><i class="fa-solid fa-couch me-1"></i><span th:text="${st.hallName}"></span></small>
+                        </a>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<th:block id="actorJs"><script th:src="@{/js/customer.js}"></script></th:block>
+</body>
+</html>
