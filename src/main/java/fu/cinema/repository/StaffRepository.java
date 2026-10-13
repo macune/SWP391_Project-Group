@@ -13,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface StaffRepository extends JpaRepository<Staff, Long> {
     List<Staff> findByBranchBranchId(Long branchId);
+    Optional<Staff> findByAccount_Username(String username);
     Optional<Staff> findByPhone(String phone);
 
     @EntityGraph(attributePaths = {"account", "branch"})
