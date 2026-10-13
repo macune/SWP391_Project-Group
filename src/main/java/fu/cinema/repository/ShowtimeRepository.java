@@ -12,31 +12,25 @@ import java.util.List;
 
 @Repository
 public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
-public interface ShowtimeRepository
-        extends JpaRepository<Showtime, Long> {
 
-    List<Showtime>
-    findByHall_HallIdAndStartTimeLessThanAndEndTimeGreaterThanAndStatusNot(
+    List<Showtime> findByHall_HallIdAndStartTimeLessThanAndEndTimeGreaterThanAndStatusNot(
             Long hallId,
             LocalDateTime endTime,
             LocalDateTime startTime,
             ShowtimeStatus status
     );
-    List<Showtime> findByHall_Branch_BranchIdOrderByStartTimeAsc(
-            Long branchId);
-    List<Showtime> findByHall_HallIdAndStatusNot(
-            Long hallId,
-            ShowtimeStatus status
-    );
-    List<Showtime>
-    findByHall_HallIdAndShowtimeIdNotAndStartTimeLessThanAndEndTimeGreaterThanAndStatusNot(
+
+    List<Showtime> findByHall_Branch_BranchIdOrderByStartTimeAsc(Long branchId);
+
+    List<Showtime> findByHall_HallIdAndStatusNot(Long hallId, ShowtimeStatus status);
+
+    List<Showtime> findByHall_HallIdAndShowtimeIdNotAndStartTimeLessThanAndEndTimeGreaterThanAndStatusNot(
             Long hallId,
             Long showtimeId,
             LocalDateTime endTime,
             LocalDateTime startTime,
             ShowtimeStatus status
     );
-}
 
     @Query("SELECT s FROM Showtime s " +
             "WHERE s.movie.movieId = :movieId " +
@@ -47,5 +41,11 @@ public interface ShowtimeRepository
             @Param("movieId") Long movieId,
             @Param("branchId") Long branchId,
             @Param("now") LocalDateTime now
+    );
+
+    List<Showtime> findByMovie_MovieIdAndStartTimeAfterAndStatusNotOrderByStartTimeAsc(
+            Long movieId,
+            LocalDateTime now,
+            ShowtimeStatus status
     );
 }

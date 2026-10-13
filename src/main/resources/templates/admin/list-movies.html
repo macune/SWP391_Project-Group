@@ -21,7 +21,7 @@
         </h2>
 
         <!-- THANH TÌM KIẾM -->
-        <form th:action="@{/movies}" method="GET" class="d-flex w-50 mx-4">
+        <form th:action="@{/admin/movies}" method="GET" class="d-flex w-50 mx-4">
             <div class="input-group shadow-sm">
                 <input type="text" name="keyword" th:value="${keyword}"
                        class="form-control"
@@ -31,14 +31,14 @@
                     <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm
                 </button>
 
-                <a th:if="${keyword != null and !keyword.isEmpty()}" th:href="@{/movies}"
+                <a th:if="${keyword != null and !keyword.isEmpty()}" th:href="@{/admin/movies}"
                    class="btn btn-outline-danger" title="Xóa tìm kiếm">
                     <i class="fa-solid fa-xmark"></i>
                 </a>
             </div>
         </form>
 
-        <a th:href="@{/movies/add}" class="btn text-white px-4 fw-medium shadow-sm flex-shrink-0" style="background-color: #c95d63;">
+        <a th:href="@{/admin/movies/add}" class="btn text-white px-4 fw-medium shadow-sm flex-shrink-0" style="background-color: #c95d63;">
             <i class="fa-solid fa-plus me-2"></i>Thêm Phim Mới
         </a>
     </div>
@@ -100,8 +100,8 @@
                         <span class="badge rounded-pill bg-danger" th:if="${movie.status.name() == 'ENDED'}">Ngừng chiếu</span>
                     </td>
                     <td class="text-center">
-                        <a th:href="@{/movies/edit/{id}(id=${movie.movieId})}" class="btn btn-sm btn-outline-info me-1" title="Sửa"><i class="fa-solid fa-pen"></i></a>
-                        <a th:href="@{/movies/delete/{id}(id=${movie.movieId})}" class="btn btn-sm btn-outline-danger" title="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa phim này?');"><i class="fa-solid fa-trash"></i></a>
+                        <a th:href="@{/admin/movies/edit/{id}(id=${movie.movieId})}" class="btn btn-sm btn-outline-info me-1" title="Sửa"><i class="fa-solid fa-pen"></i></a>
+                        <a th:href="@{/admin/movies/delete/{id}(id=${movie.movieId})}" class="btn btn-sm btn-outline-danger" title="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa phim này?');"><i class="fa-solid fa-trash"></i></a>
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(movies)}">

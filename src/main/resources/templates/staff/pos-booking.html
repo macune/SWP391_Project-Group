@@ -41,30 +41,39 @@
             <div class="card border-0 shadow-sm p-4">
                 <h6 class="fw-bold text-cine-primary mb-3">2. Menu Bắp Nước</h6>
                 <div class="row row-cols-1 row-cols-md-3 g-3">
-                    <!-- Vòng lặp lấy dữ liệu -->
-                    <div class="col" th:each="item : ${menuItems}">
+                    <!-- Vòng lặp lấy dữ liệu từ DTO BranchStockResponse -->
+                    <div class="col" th:each="stock : ${menuItems}">
                         <div class="card h-100 border-cine shadow-sm rounded-3">
                             <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 120px;">
-                                <i class="fa-solid fa-utensils text-secondary fs-1 opacity-50"></i>
+                                <img th:if="${stock.imageUrl != null and !stock.imageUrl.isEmpty()}"
+                                     th:src="${stock.imageUrl}"
+                                     class="img-fluid" style="max-height: 100px; object-fit: contain;">
+                                <i th:unless="${stock.imageUrl != null and !stock.imageUrl.isEmpty()}"
+                                   class="fa-solid fa-utensils text-secondary fs-1 opacity-50"></i>
                             </div>
 
                             <div class="card-body p-3 text-center d-flex flex-column">
-                                <h6 class="card-title fw-bold text-dark mb-1 fs-6" th:text="${item.name}">Tên món</h6>
-                                <span class="badge bg-secondary mb-2 align-self-center px-2 py-1" style="font-size: 0.7rem;" th:text="${item.category}">FOOD</span>
+                                <h6 class="card-title fw-bold text-dark mb-1 fs-6" th:text="${stock.itemName}">Tên món</h6>
+                                <span class="badge bg-secondary mb-2 align-self-center px-2 py-1" style="font-size: 0.7rem;" th:text="${stock.itemCategory}">FOOD</span>
 
                                 <div class="mt-auto">
-                                    <p class="text-danger fw-bold mb-2" th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
+                                    <!-- HIỂN THỊ SỐ LƯỢNG HÀNG TRONG KHO (Kèm cảnh báo đỏ nếu <= 10) -->
+                                    <div class="small text-muted mb-1">
+                                        Kho: <span class="fw-bold" th:classappend="${stock.quantity <= 10 ? 'text-danger' : 'text-success'}" th:text="${stock.quantity}">0</span>
+                                    </div>
 
+                                    <p class="text-danger fw-bold mb-2" th:text="${#numbers.formatDecimal(stock.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
 
-                                    <button th:if="${item.isAvailable}"
+                                    <button th:if="${stock.quantity > 0 and stock.isAvailable}"
                                             class="btn btn-sm btn-cine w-100 fw-bold shadow-sm btn-add-fnb"
-                                            th:data-id="${item.id}"
-                                            th:data-name="${item.name}"
-                                            th:data-price="${item.price}"
+                                            th:data-id="${stock.itemId}"
+                                            th:data-name="${stock.itemName}"
+                                            th:data-price="${stock.price}"
                                             onclick="addToCart(this)">
                                         <i class="fa-solid fa-plus me-1"></i>Thêm
                                     </button>
-                                    <button th:unless="${item.isAvailable}" class="btn btn-sm btn-secondary w-100 disabled shadow-sm">
+
+                                    <button th:unless="${stock.quantity > 0 and stock.isAvailable}" class="btn btn-sm btn-secondary w-100 disabled shadow-sm">
                                         Hết hàng
                                     </button>
                                 </div>
@@ -96,7 +105,6 @@
     </div>
 </div>
 
-<!-- KHAI BÁO CÁC DUMMY FRAGMENT ĐỂ TRÁNH LỖI THYMELEAF PARSER VÀ GỌI JS -->
 <th:block id="dummy-css"></th:block>
 <th:block id="dummy-js">
     <script th:src="@{/js/staff.js}"></script>

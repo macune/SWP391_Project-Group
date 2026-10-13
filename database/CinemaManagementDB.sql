@@ -88,7 +88,7 @@ CREATE TABLE dbo.branches (
 GO
 
 -- 4. Bảng STAFF_MANAGER (Shared Primary Key với ACCOUNT)
-CCREATE TABLE dbo.staff_manager (
+CREATE TABLE dbo.staff_manager (
                                 staff_id BIGINT PRIMARY KEY,
                                 branch_id BIGINT NULL,
                                 full_name NVARCHAR(100) NOT NULL,

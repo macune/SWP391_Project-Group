@@ -29,10 +29,7 @@ public class BranchServiceImpl implements BranchService {
     @Override
     @Transactional(readOnly = true)
     public List<BranchResponse> getAllBranches() {
-        return branchRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return branchRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     @Override
@@ -66,8 +63,7 @@ public class BranchServiceImpl implements BranchService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh!"));
 
         String cleanName = request.getBranchName().trim();
-        if (!existing.getBranchName().equalsIgnoreCase(cleanName) &&
-                branchRepository.existsByBranchName(cleanName)) {
+        if (!existing.getBranchName().equalsIgnoreCase(cleanName) && branchRepository.existsByBranchName(cleanName)) {
             throw new IllegalArgumentException("Tên chi nhánh '" + cleanName + "' đã tồn tại!");
         }
 
@@ -76,9 +72,7 @@ public class BranchServiceImpl implements BranchService {
         existing.setHotline(request.getHotline().trim());
         existing.setOpeningTime(request.getOpeningTime());
         existing.setClosingTime(request.getClosingTime());
-        if (request.getStatus() != null) {
-            existing.setStatus(request.getStatus());
-        }
+        if (request.getStatus() != null) existing.setStatus(request.getStatus());
 
         return toResponse(branchRepository.save(existing));
     }
@@ -88,7 +82,10 @@ public class BranchServiceImpl implements BranchService {
         Branch existing = branchRepository.findById(branchId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh để xóa!"));
 
-        // Nếu còn nhân sự đang gán vào chi nhánh thì gỡ chi nhánh hoặc thu hồi Manager trước khi xóa
+        // Đóng cửa chi nhánh thay vì xóa cứng (Soft Delete)
+        existing.setStatus(BranchStatus.CLOSED);
+
+        // Gỡ Manager và các Staff khỏi chi nhánh
         List<Staff> staffInBranch = staffRepository.findByBranchBranchId(branchId);
         for (Staff s : staffInBranch) {
             if (s.getAccount() != null && s.getAccount().getRole() == Role.MANAGER) {
@@ -103,21 +100,16 @@ public class BranchServiceImpl implements BranchService {
             }
         }
         staffRepository.flush();
-        branchRepository.delete(existing);
+        branchRepository.save(existing);
     }
 
     @Override
     public void assignManager(Long branchId, Long accountId) {
-        Branch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh!"));
-        Account newAccount = accountRepository.findById(accountId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản người dùng!"));
+        Branch branch = branchRepository.findById(branchId).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh!"));
+        Account newAccount = accountRepository.findById(accountId).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản người dùng!"));
 
-        if (newAccount.getRole() != Role.CUSTOMER) {
-            throw new IllegalArgumentException("Chỉ có thể chọn tài khoản Khách hàng (CUSTOMER) để bổ nhiệm làm Manager!");
-        }
+        if (newAccount.getRole() != Role.CUSTOMER) throw new IllegalArgumentException("Chỉ có thể chọn tài khoản Khách hàng (CUSTOMER) để bổ nhiệm làm Manager!");
 
-        // 1. Nếu chi nhánh đã có Manager cũ -> Thu hồi quyền về CUSTOMER và xóa hồ sơ Staff cũ
         List<Staff> existingStaffList = staffRepository.findByBranchBranchId(branchId);
         for (Staff s : existingStaffList) {
             if (s.getAccount() != null && s.getAccount().getRole() == Role.MANAGER) {
@@ -130,9 +122,7 @@ public class BranchServiceImpl implements BranchService {
         }
         staffRepository.flush();
 
-        // 2. Nâng quyền cho User mới (Không còn setEmail và setStatus trên Staff)
         newAccount.setRole(Role.MANAGER);
-
         Staff staff = newAccount.getStaff();
         if (staff == null) {
             staff = new Staff();
@@ -148,15 +138,12 @@ public class BranchServiceImpl implements BranchService {
             staff.setFullName(newAccount.getUsername());
             staff.setPhone("0900000000");
         }
-
         accountRepository.save(newAccount);
     }
 
     @Override
     public void removeManager(Long branchId) {
-        if (!branchRepository.existsById(branchId)) {
-            throw new IllegalArgumentException("Không tìm thấy chi nhánh!");
-        }
+        if (!branchRepository.existsById(branchId)) throw new IllegalArgumentException("Không tìm thấy chi nhánh!");
 
         List<Staff> existingStaffList = staffRepository.findByBranchBranchId(branchId);
         boolean found = false;
@@ -170,10 +157,7 @@ public class BranchServiceImpl implements BranchService {
                 found = true;
             }
         }
-
-        if (!found) {
-            throw new IllegalArgumentException("Chi nhánh này hiện chưa có Manager để gỡ!");
-        }
+        if (!found) throw new IllegalArgumentException("Chi nhánh này hiện chưa có Manager để gỡ!");
         staffRepository.flush();
     }
 

@@ -5,7 +5,7 @@
           sidebar = ~{layout/sidebar :: admin-sidebar},
           content = ~{::#page-content},
           actorCss = ~{::#dummy-css},
-          actorJs = ~{::#dummy-js}
+          actorJs = ~{::#page-js}
       )}">
 <head>
     <title>Quản lý Khuyến Mãi | System Admin</title>
@@ -16,93 +16,166 @@
     <h4 class="mb-4 fw-bold text-cine-primary">Quản Lý Khuyến Mãi</h4>
 
     <!-- Hiển thị thông báo thành công hoặc lỗi -->
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <span th:text="${successMessage}"></span>
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-        <span th:text="${errorMessage}"></span>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
     <div class="row">
-        <!-- Form Thêm mới / Cập nhật -->
+        <!-- FORM THÊM MỚI / CẬP NHẬT -->
         <div class="col-md-4 mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-cine-hot text-white">
-                    <h6 class="mb-0">Thêm / Cập nhật Khuyến mãi</h6>
+            <div class="card shadow-sm border-cine">
+                <div class="card-header bg-cine-hot text-white border-bottom-0">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fa-solid fa-ticket me-2"></i>
+                        <span th:text="${coupon.id != null ? 'Cập nhật Khuyến mãi' : 'Thêm Khuyến mãi mới'}"></span>
+                    </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body bg-light">
                     <form th:action="@{/admin/promotions/save}" th:object="${coupon}" method="post">
 
-                        <!-- TRƯỜNG ẨN: Cực kỳ quan trọng để Spring Boot phân biệt là Thêm Mới hay Cập Nhật -->
+                        <!-- TRƯỜNG ẨN ID -->
                         <input type="hidden" th:field="*{id}">
 
                         <div class="mb-3">
-                            <label class="form-label">Mã Code <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" th:field="*{code}" required placeholder="VD: CINEFLOW20">
+                            <label class="form-label fw-medium">Mã Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control border-cine" th:field="*{code}" required placeholder="VD: CINEFLOW20">
                         </div>
+
+                        <!-- CHỌN LOẠI KHUYẾN MÃI -->
                         <div class="mb-3">
-                            <label class="form-label">Phần trăm giảm (%) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" th:field="*{discountPercentage}" required min="1" max="100">
+                            <label class="form-label fw-medium">Loại khuyến mãi <span class="text-danger">*</span></label>
+                            <select class="form-select border-cine" th:field="*{discountType}" id="discountType" required onchange="changeDiscountLabel()">
+                                <option value="PERCENTAGE">Giảm theo Phần trăm (%)</option>
+                                <option value="FIXED_AMOUNT">Giảm thẳng số tiền (VNĐ)</option>
+                            </select>
                         </div>
+
                         <div class="mb-3">
-                            <label class="form-label">Giảm tối đa (VNĐ)</label>
-                            <input type="number" class="form-control" th:field="*{maxDiscountAmount}" placeholder="Để trống nếu không giới hạn">
+                            <label class="form-label fw-medium" id="discountValueLabel">Phần trăm giảm (%) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control border-cine" th:field="*{discountPercentage}" required min="1">
                         </div>
+
+                        <!-- KHỐI GIẢM TỐI ĐA -->
+                        <div class="mb-3" id="maxDiscountContainer">
+                            <label class="form-label fw-medium">Giảm tối đa (VNĐ)</label>
+                            <input type="number" class="form-control border-cine" th:field="*{maxDiscountAmount}" id="maxDiscountInput" placeholder="Để trống nếu không giới hạn">
+                        </div>
+
                         <div class="mb-3">
-                            <label class="form-label">Ngày hết hạn <span class="text-danger">*</span></label>
-                            <input type="datetime-local" class="form-control" th:field="*{expiryDate}" required>
+                            <label class="form-label fw-medium">Ngày bắt đầu <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control border-cine" name="validFrom" id="validFrom"
+                                   th:value="${coupon.validFrom != null ? #temporals.format(coupon.validFrom, 'yyyy-MM-dd''T''HH:mm') : ''}" required>
                         </div>
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" th:field="*{isActive}">
-                            <label class="form-check-label">Kích hoạt</label>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Ngày kết thúc <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control border-cine" name="expiryDate" id="expiryDate"
+                                   th:value="${coupon.expiryDate != null ? #temporals.format(coupon.expiryDate, 'yyyy-MM-dd''T''HH:mm') : ''}" required>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Lưu thông tin</button>
+
+                        <!-- CHỌN TRẠNG THÁI TRỰC QUAN -->
+                        <div class="mb-4">
+                            <label class="form-label fw-medium">Trạng thái <span class="text-danger">*</span></label>
+                            <select class="form-select border-cine" th:field="*{status}" required>
+                                <option value="ACTIVE">Đang mở (ACTIVE)</option>
+                                <option value="DISABLED">Đã khóa (DISABLED)</option>
+                                <option value="EXPIRED">Hết hạn (EXPIRED)</option>
+                            </select>
+                        </div>
+
+                        <!-- NÚT LƯU THAY ĐỔI -->
+                        <button type="submit" class="btn btn-cine w-100 fw-bold py-2">
+                            <i class="fa-solid fa-floppy-disk me-2"></i>
+                            <span th:text="${coupon.id != null ? 'Lưu thay đổi' : 'Lưu thông tin mới'}">Lưu</span>
+                        </button>
+
+                        <!-- NÚT HỦY -->
+                        <a th:if="${coupon.id != null}" th:href="@{/admin/promotions}" class="btn btn-outline-secondary w-100 fw-bold py-2 mt-2">
+                            <i class="fa-solid fa-xmark me-2"></i>Hủy cập nhật
+                        </a>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- Danh sách -->
+        <!-- DANH SÁCH KHUYẾN MÃI -->
         <div class="col-md-8">
-            <div class="card shadow-sm border-0">
+
+            <!-- THANH TÌM KIẾM -->
+            <div class="card shadow-sm border-cine mb-3">
+                <div class="card-body py-2">
+                    <form th:action="@{/admin/promotions}" method="get" class="d-flex align-items-center">
+                        <label class="fw-bold me-2 text-nowrap">Tìm kiếm:</label>
+                        <div class="input-group">
+                            <input type="text" name="keyword" th:value="${keyword}" class="form-control border-cine" placeholder="Nhập mã code cần tìm...">
+                            <button type="submit" class="btn btn-cine"><i class="fa-solid fa-magnifying-glass"></i></button>
+                            <a th:href="@{/admin/promotions}" th:if="${keyword != null}" class="btn btn-outline-secondary">Xóa lọc</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- BẢNG DỮ LIỆU -->
+            <div class="card shadow-sm border-cine">
                 <div class="card-body p-0 table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+                        <thead class="table-light border-bottom border-cine">
                         <tr>
-                            <th>STT</th>
+                            <th class="text-center ps-3">STT</th>
                             <th>Mã (Code)</th>
-                            <th>% Giảm</th>
+                            <th>Mức giảm</th>
                             <th>Giảm tối đa (đ)</th>
-                            <th>Ngày hết hạn</th>
+                            <th>Hết hạn</th>
                             <th>Trạng thái</th>
-                            <th>Thao tác</th>
+                            <th class="text-center">Thao tác</th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr th:each="c, stat : ${coupons}">
-                            <!-- STT tự động tăng -->
-                            <td class="fw-bold text-muted" th:text="${stat.count}"></td>
+                            <td class="fw-bold text-muted text-center ps-3" th:text="${stat.count}"></td>
 
-                            <td class="fw-bold text-primary" th:text="${c.code}"></td>
-                            <td th:text="${c.discountPercentage} + '%'"></td>
-                            <td th:text="${c.maxDiscountAmount != null ? c.maxDiscountAmount : 'Không giới hạn'}"></td>
-                            <td th:text="${#temporals.format(c.expiryDate, 'dd/MM/yyyy HH:mm')}"></td>
-                            <td>
-                                <span th:if="${c.isActive}" class="badge bg-success">Đang mở</span>
-                                <span th:unless="${c.isActive}" class="badge bg-danger">Đã khóa</span>
+                            <td class="fw-bold text-cine-primary" th:text="${c.code}"></td>
+
+                            <td class="fw-semibold">
+                                <span th:if="${c.discountType == 'PERCENTAGE'}" th:text="${c.discountPercentage} + '%'"></span>
+                                <span th:if="${c.discountType == 'FIXED_AMOUNT'}" th:text="${#numbers.formatDecimal(c.discountPercentage, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
                             </td>
+
                             <td>
-                                <!-- Nút Xóa sử dụng ID khớp với Controller -->
+                                <span th:if="${c.maxDiscountAmount != null and c.maxDiscountAmount > 0}" th:text="${#numbers.formatDecimal(c.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')}"></span>
+                                <span th:unless="${c.maxDiscountAmount != null and c.maxDiscountAmount > 0}" class="text-muted small">--</span>
+                            </td>
+
+                            <td th:text="${#temporals.format(c.expiryDate, 'dd/MM/yyyy HH:mm')}"></td>
+
+                            <!-- HIỂN THỊ BADGE TRẠNG THÁI -->
+                            <td>
+                                <span th:if="${c.status.name() == 'ACTIVE'}" class="badge bg-success">Đang mở</span>
+                                <span th:if="${c.status.name() == 'DISABLED'}" class="badge bg-secondary">Đã khóa</span>
+                                <span th:if="${c.status.name() == 'EXPIRED'}" class="badge bg-warning text-dark">Hết hạn</span>
+                            </td>
+
+                            <td class="text-center text-nowrap">
+                                <!-- NÚT SỬA -->
+                                <a th:href="@{/admin/promotions/edit/{id}(id=${c.id})}" class="btn btn-sm btn-outline-primary me-1" title="Sửa">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+
+                                <!-- NÚT XÓA -->
                                 <form th:action="@{/admin/promotions/delete/{id}(id=${c.id})}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa mã khuyến mãi này?');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="fa-solid fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>
-                        <!-- Hiển thị khi danh sách trống -->
                         <tr th:if="${#lists.isEmpty(coupons)}">
-                            <td colspan="7" class="text-center py-4 text-muted">Chưa có mã khuyến mãi nào được tạo.</td>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                Chưa có mã khuyến mãi nào được tạo.
+                            </td>
                         </tr>
                         </tbody>
                     </table>
@@ -113,7 +186,29 @@
 </div>
 
 <th:block id="dummy-css"></th:block>
-<th:block id="dummy-js"></th:block>
+<th:block id="page-js">
+    <script>
+        function changeDiscountLabel() {
+            var type = document.getElementById("discountType").value;
+            var label = document.getElementById("discountValueLabel");
+            var maxDiscountContainer = document.getElementById("maxDiscountContainer");
+            var maxDiscountInput = document.getElementById("maxDiscountInput");
+
+            if (type === "PERCENTAGE") {
+                label.innerHTML = 'Phần trăm giảm (%) <span class="text-danger">*</span>';
+                maxDiscountContainer.style.display = "block";
+            } else {
+                label.innerHTML = 'Số tiền giảm (VNĐ) <span class="text-danger">*</span>';
+                maxDiscountContainer.style.display = "none";
+                maxDiscountInput.value = "";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            changeDiscountLabel();
+        });
+    </script>
+</th:block>
 
 </body>
 </html>

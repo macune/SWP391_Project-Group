@@ -1,32 +1,40 @@
 package fu.cinema.controller.staff;
 
-import fu.cinema.service.FnBItemService;
-import org.springframework.beans.factory.annotation.Autowired;
+import fu.cinema.entity.Account;
+import fu.cinema.repository.AccountRepository;
+import fu.cinema.service.BranchStockService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model; // Nhớ import Model
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequestMapping("/staff")
+@RequiredArgsConstructor
 public class StaffController {
 
-    // 1. Tiêm Service vào Controller
-    @Autowired
-    private FnBItemService fnBItemService;
+    private final BranchStockService branchStockService;
+    private final AccountRepository accountRepository;
 
-    // 2. Màn hình Bán vé & Bắp nước tại quầy (POS)
     @GetMapping("/pos")
     public String posBookingPage(Model model) {
-        // 3. Gọi hàm lấy tất cả món F&B và đẩy vào biến "menuItems"
-        model.addAttribute("menuItems", fnBItemService.GetAllItems());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Account staffAcc = accountRepository.findByUsername(auth.getName())
+                .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
+
+        Long branchId = staffAcc.getStaff().getBranch().getBranchId();
+
+        model.addAttribute("menuItems", branchStockService.getStockByBranch(branchId));
 
         return "staff/pos-booking";
     }
 
-    // 2. Màn hình Soát vé QR... (Giữ nguyên)
     @GetMapping("/check-in")
     public String checkInPage() {
-        return "staff/pos-booking";
+        // Redirect về trang pos để đảm bảo Model được load đầy đủ dữ liệu bắp nước
+        return "redirect:/staff/pos";
     }
 }

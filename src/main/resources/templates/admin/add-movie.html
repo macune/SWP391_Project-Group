@@ -18,7 +18,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <!-- Nút quay lại -->
-            <a th:href="@{/movies}" class="text-decoration-none mb-3 d-inline-block" style="color: #c95d63;">
+            <a th:href="@{/admin/movies}" class="text-decoration-none mb-3 d-inline-block" style="color: #c95d63;">
                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
             </a>
 
@@ -36,7 +36,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
 
-                    <form th:action="@{/movies/add}" th:object="${movieRequest}" method="POST">
+                    <form th:action="@{/admin/movies/add}" th:object="${movieRequest}" method="POST">
 
                         <div class="row mb-3">
                             <div class="col-md-8">
@@ -133,7 +133,7 @@
                             <p class="text-dark mb-3" th:text="${duplicateWarning}"></p>
                             <hr class="border-warning">
                             <div class="d-flex justify-content-end">
-                                <a th:href="@{/movies}" class="btn btn-outline-dark me-2 px-4">Hủy bỏ</a>
+                                <a th:href="@{/admin/movies}" class="btn btn-outline-dark me-2 px-4">Hủy bỏ</a>
                                 <button type="submit" name="confirmDuplicate" value="true" class="btn btn-warning fw-bold text-dark px-4 shadow">
                                     <i class="fa-solid fa-check-double me-2"></i>Vẫn Thêm Phim
                                 </button>
@@ -141,7 +141,7 @@
                         </div>
 
                         <div class="text-end pt-3 mt-4" style="border-top: 1px solid #c95d63;" th:if="${duplicateWarning == null}">
-                            <a th:href="@{/movies}" class="btn btn-outline-secondary me-2 px-4">Hủy bỏ</a>
+                            <a th:href="@{/admin/movies}" class="btn btn-outline-secondary me-2 px-4">Hủy bỏ</a>
                             <button type="submit" class="btn text-white px-5 fw-bold shadow-sm" style="background-color: #c95d63;">
                                 <i class="fa-solid fa-floppy-disk me-2"></i>Lưu Phim Mới
                             </button>

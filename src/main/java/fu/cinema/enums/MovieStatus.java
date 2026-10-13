@@ -1,7 +1,8 @@
 package fu.cinema.enums;
 
 public enum MovieStatus {
-    COMING_SOON,
     NOW_SHOWING,
-    ENDED
+    COMING_SOON,
+    ENDED,
+    STOPPED
 }

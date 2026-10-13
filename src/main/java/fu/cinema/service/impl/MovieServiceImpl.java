@@ -102,11 +102,12 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     public void deleteMovie(Long id) {
-        if (movieRepository.existsById(id)) {
-            movieRepository.deleteById(id);
-        } else {
-            throw new IllegalArgumentException("Không thể xóa. Không tìm thấy phim với ID: " + id);
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phim với ID: " + id));
+        if (!movie.getShowtimes().isEmpty()) {
+            throw new IllegalArgumentException("Không thể xóa phim này vì đã có lịch chiếu! Vui lòng đổi trạng thái thành NGỪNG CHIẾU (ENDED).");
         }
+        movieRepository.deleteById(id);
     }
 
     @Override

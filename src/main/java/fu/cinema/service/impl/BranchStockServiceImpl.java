@@ -38,6 +38,9 @@ public class BranchStockServiceImpl implements BranchStockService {
                 .itemCategory(stock.getItem().getCategory().name())
                 .quantity(stock.getQuantity())
                 .lastUpdated(stock.getLastUpdated())
+                .price(stock.getItem().getPrice())
+                .imageUrl(stock.getItem().getImageUrl())
+                .isAvailable(stock.getItem().getIsAvailable())
                 .build()).collect(Collectors.toList());
     }
 

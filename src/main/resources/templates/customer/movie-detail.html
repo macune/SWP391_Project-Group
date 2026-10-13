@@ -81,10 +81,36 @@
                 <h5 class="fw-bold text-cine-main mb-3"><i class="fa-solid fa-location-dot text-cine-primary me-2"></i><span th:text="${branchName}"></span></h5>
                 <div class="d-flex flex-wrap gap-2">
                     <th:block th:each="st : ${showtimes}" th:if="${st.branchName == branchName}">
-                        <!-- CUSTOMER: Bấm vào suất -> Sang trang mua vé -->
-                        <a th:href="@{/booking/seat-selection(showtimeId=${st.showtimeId})}" class="btn btn-outline-cine py-2 px-3 text-decoration-none">
-                            <span class="fs-5 fw-bold d-block" th:text="${#temporals.format(st.startTime, 'HH:mm')} + ' - ' + ${#temporals.format(st.endTime, 'HH:mm')}">14:30 - 16:30</span>
-                            <small class="text-cine-muted d-block mt-1"><i class="fa-solid fa-couch me-1"></i><span th:text="${st.hallName}"></span></small>
+                        <!-- Thêm class position-relative và mt-2 để nhãn Suất chiếu sớm không bị lẹm -->
+                        <a th:href="@{/booking/seat-selection(showtimeId=${st.showtimeId})}"
+                           class="btn btn-outline-cine m-1 text-center p-2 position-relative mt-3"
+                           style="min-width: 120px; text-decoration: none;">
+
+                            <!-- BADGE SUẤT CHIẾU SỚM: Hiển thị nếu ngày chiếu < ngày khởi chiếu -->
+                            <div th:if="${st.startTime.toLocalDate().isBefore(movie.releaseDate)}"
+                                 class="badge bg-warning text-dark position-absolute top-0 start-50 translate-middle rounded-pill shadow-sm"
+                                 style="font-size: 0.65rem; white-space: nowrap;">
+                                <i class="fa-solid fa-star me-1 text-danger"></i>Chiếu sớm
+                            </div>
+
+                            <!-- Ngày chiếu -->
+                            <div class="small fw-bold text-muted mb-1 mt-1">
+                                <i class="fa-regular fa-calendar me-1"></i>
+                                <span th:text="${#temporals.format(st.startTime, 'dd/MM/yyyy')}"></span>
+                            </div>
+
+                            <!-- Giờ chiếu -->
+                            <div class="fw-bold fs-5 mb-1 text-cine-primary">
+                                <span th:text="${#temporals.format(st.startTime, 'HH:mm')}"></span> -
+                                <span th:text="${#temporals.format(st.endTime, 'HH:mm')}"></span>
+                            </div>
+
+                            <!-- Hiển thị Ghế trống / Tổng ghế -->
+                            <div class="small text-secondary" style="font-size: 0.8rem;">
+                                <i class="fa-solid fa-couch me-1"></i>Ghế:
+                                <span class="fw-bold" th:classappend="${st.availableSeats <= 10 ? 'text-danger' : 'text-success'}"
+                                      th:text="${st.availableSeats}"></span> / <span th:text="${st.hallCapacity}"></span>
+                            </div>
                         </a>
                     </th:block>
                 </div>

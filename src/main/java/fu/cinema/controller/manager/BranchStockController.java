@@ -57,10 +57,11 @@ public class BranchStockController {
     @GetMapping
     public String viewInventory(Model model) {
         Long managerBranchId = getCurrentManagerBranchId();
-
         model.addAttribute("stocks", branchStockService.getStockByBranch(managerBranchId));
 
-        List<FnBItem> fnbItems = fnbItemRepository.findAll();
+        List<FnBItem> fnbItems = fnbItemRepository.findAll().stream()
+                .filter(FnBItem::getIsAvailable)
+                .toList();
         model.addAttribute("fnbItems", fnbItems);
 
         if (!model.containsAttribute("stockRequest")) {

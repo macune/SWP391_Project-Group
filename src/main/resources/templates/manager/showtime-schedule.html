@@ -159,7 +159,10 @@
                     <td th:text="${#temporals.format(item.endTime, 'dd/MM/yyyy HH:mm')}">
                     </td>
 
-                    <td>--</td>
+                    <td class="text-center">
+                        <span class="fw-bold text-cine-primary" th:text="${#lists.size(item.tickets)}">0</span> /
+                        <span class="text-muted small" th:text="${item.hall.capacity}">96</span>
+                    </td>
 
                     <td>
     <span class="status-badge"

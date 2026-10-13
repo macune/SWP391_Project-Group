@@ -40,9 +40,7 @@ public class CustomerController {
     public String myPromotions(Model model) {
         model.addAttribute("sectionTitle", "Ưu đãi & Khuyến mãi của tôi");
 
-
         model.addAttribute("coupons", promotionService.getActivePromotions());
-
         return "customer/promotions";
     }
 

@@ -71,7 +71,7 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // 2. ACTOR SYSTEM ADMIN (Quản trị hệ thống, Chi nhánh, Kho phim hệ thống)
-                        .requestMatchers("/admin/**", "/movies/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         // 3. ACTOR BRANCH MANAGER (Quản lý rạp, Phòng chiếu, Lịch chiếu, Bắp nước)
                         .requestMatchers("/manager/**", "/api/fnb-items/**").hasAnyRole("ADMIN", "MANAGER")

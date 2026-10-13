@@ -5,6 +5,7 @@ import fu.cinema.dto.response.ShowtimeResponse;
 import fu.cinema.entity.Movie;
 import fu.cinema.entity.Showtime;
 import fu.cinema.enums.MovieStatus;
+import fu.cinema.enums.ShowtimeStatus;
 import fu.cinema.repository.MovieRepository;
 import fu.cinema.repository.ShowtimeRepository;
 import fu.cinema.repository.TicketRepository;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +36,7 @@ public class PublicMovieServiceImpl implements PublicMovieService {
         List<Showtime> showtimes = showtimeRepository.findAvailableShowtimes(movieId, branchId, LocalDateTime.now());
 
         return showtimes.stream()
+                .filter(s -> s.getStatus() != ShowtimeStatus.CANCELLED)
                 .filter(s -> date == null || s.getStartTime().toLocalDate().equals(date))
                 .filter(s -> {
                     if (timeSlot == null || timeSlot.isEmpty()) return true;
@@ -89,14 +90,6 @@ public class PublicMovieServiceImpl implements PublicMovieService {
         return mapToMovieResponse(movie);
     }
 
-//    @Override
-//    public List<ShowtimeResponse> getShowtimes(Long movieId, Long branchId) {
-//        // Lấy các suất chiếu bắt đầu từ thời điểm hiện tại
-//        return showtimeRepository.findAvailableShowtimes(movieId, branchId, LocalDateTime.now()).stream()
-//                .map(this::mapToShowtimeResponse)
-//                .collect(Collectors.toList());
-//    }
-
     private MovieResponse mapToMovieResponse(Movie movie) {
         return MovieResponse.builder()
                 .movieId(movie.getMovieId())
@@ -114,12 +107,19 @@ public class PublicMovieServiceImpl implements PublicMovieService {
     }
 
     private ShowtimeResponse mapToShowtimeResponse(Showtime s) {
+        int totalSeats = s.getHall().getCapacity();
+        int bookedTickets = 0;
+        int availableSeats = totalSeats - bookedTickets;
+
         return ShowtimeResponse.builder()
                 .showtimeId(s.getShowtimeId())
                 .movieId(s.getMovie().getMovieId())
                 .movieTitle(s.getMovie().getTitle())
                 .hallId(s.getHall().getHallId())
                 .hallName(s.getHall().getHallName())
+                // 2. Map thêm thông tin sức chứa và số ghế còn trống
+                .hallCapacity(totalSeats)
+                .availableSeats(availableSeats)
                 .branchId(s.getHall().getBranch().getBranchId())
                 .branchName(s.getHall().getBranch().getBranchName())
                 .startTime(s.getStartTime())

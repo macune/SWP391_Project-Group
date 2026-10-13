@@ -4,12 +4,14 @@ import fu.cinema.dto.request.MovieRequest;
 import fu.cinema.dto.response.MovieResponse;
 import fu.cinema.service.MovieService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@RequestMapping("/movies")
+@RequestMapping("/admin/movies")
+@PreAuthorize("hasRole('ADMIN')")
 public class MovieController {
 
     @Autowired
@@ -18,9 +20,8 @@ public class MovieController {
     @GetMapping
     public String listMovies(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
         model.addAttribute("movies", movieService.getAllMovies(keyword));
-
         model.addAttribute("keyword", keyword);
-        return "admin/list-movies";
+        return "admin/list-movies"; // Giữ nguyên view name
     }
 
     @GetMapping("/add")
@@ -35,15 +36,13 @@ public class MovieController {
     public String processAddMovie(@ModelAttribute("movieRequest") MovieRequest request,
                                   @RequestParam(required = false, name = "confirmDuplicate") Boolean confirmDuplicate,
                                   Model model) {
-   
         if (!Boolean.TRUE.equals(confirmDuplicate) && movieService.checkDuplicateTitle(request.getTitle())) {
             model.addAttribute("duplicateWarning", "Phim '" + request.getTitle() + "' đã tồn tại trong hệ thống! Bạn có chắc chắn muốn thêm một bản ghi mới với tên trùng lặp không?");
             model.addAttribute("movieRequest", request);
             return "admin/add-movie";
         }
-
         movieService.addMovie(request);
-        return "redirect:/movies?success";
+        return "redirect:/admin/movies?success=true";
     }
 
     @GetMapping("/edit/{id}")
@@ -71,12 +70,12 @@ public class MovieController {
     @PostMapping("/edit/{id}")
     public String processEditMovie(@PathVariable("id") Long id, @ModelAttribute("movieRequest") MovieRequest request) {
         movieService.updateMovie(id, request);
-        return "redirect:/movies?success";
+        return "redirect:/admin/movies?success=true";
     }
 
     @GetMapping("/delete/{id}")
     public String deleteMovie(@PathVariable("id") Long id) {
         movieService.deleteMovie(id);
-        return "redirect:/movies";
+        return "redirect:/admin/movies";
     }
 }

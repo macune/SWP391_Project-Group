@@ -22,4 +22,6 @@ public class ShowtimeResponse {
     private LocalDateTime endTime;
     private BigDecimal basePrice;
     private ShowtimeStatus status;
+    private Integer hallCapacity;
+    private Integer availableSeats;
 }

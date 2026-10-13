@@ -1,6 +1,7 @@
 package fu.cinema.service.impl;
 
 import fu.cinema.entity.Promotion;
+import fu.cinema.enums.PromotionStatus;
 import fu.cinema.repository.PromotionRepository;
 import fu.cinema.service.PromotionService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,11 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public List<Promotion> getActivePromotions() {
-        return promotionRepository.findByIsActiveTrueAndExpiryDateAfter(LocalDateTime.now());
+        // Sửa điều kiện cũ (p.isActive = true) thành lọc theo status và thời gian hiệu lực
+        return promotionRepository.findByStatusAndExpiryDateAfter(
+                PromotionStatus.ACTIVE,
+                LocalDateTime.now()
+        );
     }
 
     @Override

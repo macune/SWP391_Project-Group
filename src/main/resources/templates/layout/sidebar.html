@@ -29,11 +29,15 @@
             </a>
         </li>
         <li class="nav-item">
-            <a th:href="@{/movies}" class="nav-link">
+            <a th:href="@{/admin/movies}" class="nav-link">
                 <i class="fa-solid fa-film me-2"></i>Kho Phim Hệ thống
             </a>
         </li>
-        <!-- Menu Quản lý Khuyến Mãi vừa được thêm vào -->
+        <li class="nav-item">
+            <a th:href="@{/admin/fnb-items}" class="nav-link">
+                <i class="fa-solid fa-burger me-2"></i>Quản lý Bắp nước
+            </a>
+        </li>
         <li class="nav-item">
             <a th:href="@{/admin/promotions}" class="nav-link">
                 <i class="fa-solid fa-tags me-2"></i>Quản lý Khuyến Mãi
@@ -70,12 +74,6 @@
             </a>
         </li>
         <li class="nav-item">
-            <a th:href="@{/manager/fnb-items}" class="nav-link">
-                <i class="fa-solid fa-burger me-2"></i>Quản lý Bắp nước
-            </a>
-        </li>
-        <!-- Menu Quản lý Tồn Kho vừa được thêm vào -->
-        <li class="nav-item">
             <a th:href="@{/manager/inventory}" class="nav-link">
                 <i class="fa-solid fa-boxes-stacked me-2"></i>Quản lý Tồn Kho
             </a>
@@ -88,7 +86,7 @@
     </ul>
 </aside>
 
-<!-- 3. SIDEBAR DÀNH CHO ACTOR: STAFF -->
+<!-- Phần STAFF và CUSTOMER giữ nguyên như cũ -->
 <aside th:fragment="staff-sidebar" class="app-sidebar text-white p-3 flex-shrink-0">
     <div class="mb-3 pb-2 border-bottom border-cine">
         <span class="badge bg-cine-soft w-100 py-2 fw-bold">CINEFLOW - POS STAFF</span>
@@ -107,7 +105,6 @@
     </ul>
 </aside>
 
-<!-- 4. SIDEBAR DÀNH CHO ACTOR: CUSTOMER (TRANG CÁ NHÂN & LỊCH SỬ ĐẶT VÉ) -->
 <aside th:fragment="customer-sidebar" class="app-sidebar text-white p-3 flex-shrink-0">
     <div class="mb-3 pb-2 border-bottom border-cine">
         <span class="badge bg-cine-primary w-100 py-2">THÀNH VIÊN CINEFLOW</span>

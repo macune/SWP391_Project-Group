@@ -2,11 +2,11 @@
 <html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/layout :: master(
-          ~{::title},
-          ~{layout/sidebar :: manager-sidebar},
-          ~{::content},
-          ~{},
-          ~{::actorJs}
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: admin-sidebar},
+          content = ~{::content},
+          actorCss = ~{},
+          actorJs = ~{::actorJs}
       )}">
 
 <head>
@@ -52,7 +52,7 @@
 
     </div>
 
-    <form th:action="@{/manager/fnb-items}"
+    <form th:action="@{/admin/fnb-items}"
           method="get"
           class="row g-3 mb-4">
 
@@ -112,16 +112,24 @@
                 Tìm kiếm
             </button>
 
-            <a th:href="@{/manager/fnb-items}"
+            <a th:href="@{/admin/fnb-items}"
                class="btn btn-outline-cine">
                 Reset
             </a>
         </div>
 
     </form>
-    <!-- ========================= -->
-    <!-- TABLE -->
-    <!-- ========================= -->
+
+    <!-- THÔNG BÁO XÓA LỖI / THÀNH CÔNG NGOÀI MODAL -->
+    <div th:if="${globalError}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${globalError}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 
     <div class="card shadow-sm">
 
@@ -231,7 +239,7 @@
 
                         <!-- EDIT -->
 
-                        <a th:href="@{/manager/fnb-items/edit/{id}(id=${item.id})}"
+                        <a th:href="@{/admin/fnb-items/edit/{id}(id=${item.id})}"
                            class="btn btn-sm btn-outline-cine">
 
                             Edit
@@ -241,7 +249,7 @@
 
                         <!-- DELETE -->
 
-                        <form th:action="@{/manager/fnb-items/delete/{id}(id=${item.id})}"
+                        <form th:action="@{/admin/fnb-items/delete/{id}(id=${item.id})}"
                               method="post"
                               style="display:inline;">
 
@@ -313,7 +321,7 @@
                     </h5>
 
 
-                    <a th:href="@{/manager/fnb-items}"
+                    <a th:href="@{/admin/fnb-items}"
                        class="btn-close">
 
                     </a>
@@ -336,7 +344,7 @@
                     <!-- CREATE + EDIT FORM -->
                     <!-- ========================= -->
 
-                    <form th:action="@{/manager/fnb-items/save}"
+                    <form th:action="@{/admin/fnb-items/save}"
                           th:object="${item}"
                           method="post">
 
@@ -457,7 +465,7 @@
 
                         <div class="text-end">
 
-                            <a th:href="@{/manager/fnb-items}"
+                            <a th:href="@{/admin/fnb-items}"
                                class="btn btn-outline-cine">
 
                                 Hủy

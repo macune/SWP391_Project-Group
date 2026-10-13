@@ -13,7 +13,7 @@
 <div id="content" class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <a th:href="@{/movies}" class="text-decoration-none mb-3 d-inline-block" style="color: #c95d63;">
+            <a th:href="@{/admin/movies}" class="text-decoration-none mb-3 d-inline-block" style="color: #c95d63;">
                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại danh sách
             </a>
 
@@ -31,7 +31,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
 
-                    <form th:action="@{/movies/edit/{id}(id=${movieId})}" th:object="${movieRequest}" method="POST">
+                    <form th:action="@{/admin/movies/edit/{id}(id=${movieId})}" th:object="${movieRequest}" method="POST">
 
                         <div class="row mb-3">
                             <div class="col-md-8">
@@ -120,7 +120,7 @@
                         </div>
 
                         <div class="text-end pt-3 mt-4" style="border-top: 1px solid #c95d63;">
-                            <a th:href="@{/movies}" class="btn btn-outline-secondary me-2 px-4">Hủy bỏ</a>
+                            <a th:href="@{/admin/movies}" class="btn btn-outline-secondary me-2 px-4">Hủy bỏ</a>
                             <button type="submit" class="btn text-white px-5 fw-bold shadow-sm" style="background-color: #c95d63;">
                                 <i class="fa-solid fa-floppy-disk me-2"></i>Cập Nhật
                             </button>

@@ -81,7 +81,7 @@ public class HallServiceImpl implements HallService {
 
         Hall savedHall = hallRepository.save(hall);
 
-        // Tự động sinh ma trận ghế (Mặc định 100% là STANDARD và ACTIVE)
+        // Tự động sinh ma trận ghế mặc định (100% STANDARD & ACTIVE) cho phòng mới tạo
         generateStandardSeats(savedHall, rows, cols);
 
         return toResponse(savedHall);
@@ -103,29 +103,87 @@ public class HallServiceImpl implements HallService {
             existing.setStatus(request.getStatus());
         }
 
-        List<Seat> currentSeats = seatRepository.findByHallHallIdOrderByRowCodeAscNumberAsc(existing.getHallId());
-        int currentRows = (int) currentSeats.stream().map(Seat::getRowCode).distinct().count();
-        int currentCols = currentSeats.stream().mapToInt(Seat::getNumber).max().orElse(0);
-
+        // Cập nhật ma trận ghế THÔNG MINH khi thay đổi số hàng / số ghế trên hàng
         if (request.getTotalRows() != null && request.getSeatsPerRow() != null) {
             int newRows = request.getTotalRows();
             int newCols = request.getSeatsPerRow();
-            if (newRows != currentRows || newCols != currentCols) {
-                seatRepository.deleteByHallHallId(existing.getHallId());
-                seatRepository.flush();
-                existing.setCapacity(newRows * newCols);
-                generateStandardSeats(existing, newRows, newCols);
-            }
+
+            adjustSeatsMatrix(existing, newRows, newCols);
         }
 
         return toResponse(hallRepository.save(existing));
     }
 
+    /**
+     * Thuật toán điều chỉnh ma trận ghế thông minh:
+     * 1. Ghế cũ nằm trong phạm vi (newRows x newCols) -> Giữ nguyên loại ghế (VIP, SWEETBOX, BROKEN...) & trạng thái.
+     * 2. Vị trí mới mở rộng -> Tạo ghế mới (loại mặc định STANDARD & ACTIVE).
+     * 3. Ghế cũ vượt quá kích thước mới -> Xóa bỏ.
+     */
+    private void adjustSeatsMatrix(Hall hall, int newRows, int newCols) {
+        List<Seat> existingSeats = seatRepository.findByHallHallIdOrderByRowCodeAscNumberAsc(hall.getHallId());
+
+        // Đánh chỉ mục ghế hiện có theo tọa độ "HÀNG_SỐGHẾ" (Ví dụ: "A_1", "B_5")
+        Map<String, Seat> seatMap = existingSeats.stream()
+                .collect(Collectors.toMap(
+                        s -> s.getRowCode() + "_" + s.getNumber(),
+                        Function.identity()
+                ));
+
+        List<Seat> seatsToSave = new ArrayList<>();
+        List<Seat> seatsToDelete = new ArrayList<>();
+
+        // Duyệt ma trận theo kích thước mới
+        for (int r = 0; r < newRows; r++) {
+            String rowCode = String.valueOf((char) ('A' + r));
+            for (int num = 1; num <= newCols; num++) {
+                String key = rowCode + "_" + num;
+                if (seatMap.containsKey(key)) {
+                    // Đã có ghế cũ ở vị trí này -> Giữ nguyên cài đặt (Bảo lưu VIP, BROKEN...)
+                    seatsToSave.add(seatMap.get(key));
+                    seatMap.remove(key); // Đánh dấu đã giữ lại
+                } else {
+                    // Vị trí mở rộng chưa có ghế -> Sinh ghế mới mặc định STANDARD
+                    Seat newSeat = Seat.builder()
+                            .hall(hall)
+                            .rowCode(rowCode)
+                            .number(num)
+                            .type(SeatType.STANDARD)
+                            .status(SeatStatus.ACTIVE)
+                            .build();
+                    seatsToSave.add(newSeat);
+                }
+            }
+        }
+
+        // Các ghế còn lại trong seatMap là ghế dôi ra ngoài kích thước mới -> Xóa bớt
+        seatsToDelete.addAll(seatMap.values());
+
+        if (!seatsToDelete.isEmpty()) {
+            seatRepository.deleteAll(seatsToDelete);
+            seatRepository.flush();
+        }
+
+        if (!seatsToSave.isEmpty()) {
+            seatRepository.saveAll(seatsToSave);
+        }
+
+        // Cập nhật lại sức chứa phòng chiếu dựa trên số ghế ACTIVE
+        int activeSeats = (int) seatsToSave.stream()
+                .filter(s -> s.getStatus() == SeatStatus.ACTIVE)
+                .count();
+        hall.setCapacity(activeSeats);
+    }
+
     @Override
     public void deleteHall(Long hallId) {
-        if (!hallRepository.existsById(hallId)) {
-            throw new IllegalArgumentException("Không tìm thấy phòng chiếu để xóa!");
+        Hall hall = hallRepository.findById(hallId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phòng chiếu để xóa!"));
+
+        if (!hall.getShowtimes().isEmpty()) {
+            throw new IllegalArgumentException("Không thể xóa phòng chiếu đang chứa suất chiếu! Vui lòng hủy các suất chiếu trước.");
         }
+
         seatRepository.deleteByHallHallId(hallId);
         hallRepository.deleteById(hallId);
     }

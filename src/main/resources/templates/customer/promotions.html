@@ -21,24 +21,34 @@
     <!-- Danh sách Khuyến mãi hiển thị dạng thẻ (Card) -->
     <div class="row row-cols-1 row-cols-md-2 g-4">
         <div class="col" th:each="c : ${coupons}">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="card-title fw-bold text-cine-hot mb-0" th:text="${c.code}">CINEFLOW</h5>
-                        <span class="badge bg-danger">Hót</span>
+                        <span class="badge bg-danger">Hot</span>
                     </div>
+
+                    <!-- Hiển thị mức giảm linh hoạt theo Loại khuyến mãi -->
                     <p class="card-text mb-1">
-                        <strong>Giảm giá:</strong> <span class="text-danger fw-bold" th:text="${c.discountPercentage} + '%'"></span>
+                        <strong>Mức giảm: </strong>
+                        <span class="text-danger fw-bold" th:if="${c.discountType == 'PERCENTAGE'}" th:text="${c.discountPercentage} + '%'"></span>
+                        <span class="text-danger fw-bold" th:if="${c.discountType == 'FIXED_AMOUNT'}" th:text="${#numbers.formatDecimal(c.discountPercentage, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
                     </p>
-                    <p class="card-text mb-1">
-                        <strong>Tối đa:</strong> <span th:text="${c.maxDiscountAmount != null ? c.maxDiscountAmount + ' VNĐ' : 'Không giới hạn'}"></span>
+
+                    <!-- Hiển thị giảm tối đa nếu có -->
+                    <p class="card-text mb-1 small" th:if="${c.maxDiscountAmount != null and c.maxDiscountAmount > 0}">
+                        <strong>Giảm tối đa:</strong> <span th:text="${#numbers.formatDecimal(c.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
                     </p>
+
                     <p class="card-text small text-muted">
-                        <em>Hạn sử dụng: <span th:text="${#temporals.format(c.expiryDate, 'dd/MM/yyyy HH:mm')}"></span></em>
+                        <i class="fa-regular fa-clock me-1"></i><em>Hạn sử dụng: <span th:text="${#temporals.format(c.expiryDate, 'dd/MM/yyyy HH:mm')}"></span></em>
                     </p>
                 </div>
-                <div class="card-footer bg-white border-top-0 pt-0">
-                    <button class="btn btn-sm btn-outline-cine w-100" onclick="alert('Đã sao chép mã!')">Sao chép mã</button>
+                <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                    <button type="button" class="btn btn-sm btn-outline-danger w-100 fw-bold"
+                            th:onclick="copyCouponCode([[${c.code}]])">
+                        <i class="fa-regular fa-copy me-1"></i>Sao chép mã
+                    </button>
                 </div>
             </div>
         </div>
@@ -46,12 +56,22 @@
         <!-- Hiển thị khi không có mã nào -->
         <div class="col-12 text-center py-5" th:if="${#lists.isEmpty(coupons)}">
             <i class="fa-solid fa-gift fa-3x text-muted mb-3"></i>
-            <h5 class="text-secondary">Hiện chưa có chương trình khuyến mãi nào.</h5>
+            <h5 class="text-secondary">Hiện chưa có chương trình khuyến mãi nào khả dụng.</h5>
         </div>
     </div>
 </div>
 
 <th:block id="dummy-css"></th:block>
-<th:block id="dummy-js"></th:block>
+<th:block id="dummy-js">
+    <script>
+        function copyCouponCode(code) {
+            navigator.clipboard.writeText(code).then(function() {
+                alert("Đã sao chép mã: " + code);
+            }, function(err) {
+                alert("Không thể sao chép mã!");
+            });
+        }
+    </script>
+</th:block>
 </body>
 </html>
