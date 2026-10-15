@@ -62,7 +62,7 @@ public class HomeController {
     public String guestMovieDetail(
             @PathVariable("id") Long movieId,
             @RequestParam(value = "branchId", required = false) Long branchId,
-            @RequestParam(value = "date", required = false) LocalDate date,
+            @RequestParam(value = "date", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(value = "timeSlot", required = false) String timeSlot,
             Model model) {
         try {
@@ -74,6 +74,8 @@ public class HomeController {
             model.addAttribute("selectedDate", date);
             model.addAttribute("selectedTimeSlot", timeSlot);
         } catch (IllegalArgumentException e) {
+            // Nên log lỗi ra console để biết lý do chuyển hướng
+            System.err.println("Lỗi load chi tiết phim: " + e.getMessage());
             return "redirect:/";
         }
         return "common/movie-detail";

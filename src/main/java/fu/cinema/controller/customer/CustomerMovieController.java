@@ -63,7 +63,7 @@ public class CustomerMovieController {
     public String customerMovieDetail(
             @PathVariable("id") Long movieId,
             @RequestParam(value = "branchId", required = false) Long branchId,
-            @RequestParam(value = "date", required = false) LocalDate date,
+            @RequestParam(value = "date", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(value = "timeSlot", required = false) String timeSlot,
             Model model) {
         try {

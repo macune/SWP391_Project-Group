@@ -22,7 +22,7 @@
     <div class="card border-cine shadow-sm mb-5 bg-white rounded-3">
         <div class="row g-0 p-3">
             <div class="col-md-3">
-                <img th:src="${movie.posterUrl != null and !movie.posterUrl.isEmpty() ? movie.posterUrl : '/images/posters/default-poster.jpg'}" class="img-fluid rounded border border-cine" style="width: 100%;">
+                <img th:src="${movie.posterUrl != null and !movie.posterUrl.isEmpty() ? movie.posterUrl : '/images/posters/default-poster.jpg'}" class="img-fluid rounded border border-cine w-100">
             </div>
             <div class="col-md-9 ps-md-4 mt-3 mt-md-0">
                 <h2 class="fw-bold text-cine-main mb-3" th:text="${movie.title}">Tên Phim</h2>
@@ -32,7 +32,7 @@
                     <span class="badge bg-cine-soft text-cine-main border border-cine fs-6 py-2 px-3"><i class="fa-regular fa-clock me-2 text-cine-primary"></i><span th:text="${movie.duration} + ' phút'"></span></span>
                     <span class="badge bg-cine-soft text-cine-main border border-cine fs-6 py-2 px-3"><i class="fa-solid fa-language me-2 text-cine-primary"></i><span th:text="${movie.language}"></span></span>
                 </div>
-                <p class="text-cine-main" th:text="${movie.description}" style="line-height: 1.6;">Mô tả...</p>
+                <p class="text-cine-main" th:text="${movie.description}">Mô tả...</p>
                 <p class="mb-4"><span class="text-cine-muted">Ngày khởi chiếu:</span> <strong class="text-cine-main" th:text="${#temporals.format(movie.releaseDate, 'dd/MM/yyyy')}"></strong></p>
 
                 <div th:if="${movie.trailerUrl != null and !movie.trailerUrl.isEmpty()}">
@@ -53,7 +53,9 @@
         <!-- Bộ Lọc -->
         <form class="row g-3 mb-4" th:action="@{/movie-detail/{id}(id=${movie.movieId})}" method="get">
             <div class="col-md-4">
-                <input type="date" name="date" class="form-control border-cine" th:value="${selectedDate}" onchange="this.form.submit()">
+                <input type="date" name="date" class="form-control border-cine"
+                       th:value="${selectedDate != null ? #temporals.format(selectedDate, 'yyyy-MM-dd') : ''}"
+                       onchange="this.form.submit()">
             </div>
             <div class="col-md-4">
                 <select name="branchId" class="form-select border-cine" onchange="this.form.submit()">
@@ -85,10 +87,28 @@
                 <h5 class="fw-bold text-cine-main mb-3"><i class="fa-solid fa-location-dot text-cine-primary me-2"></i><span th:text="${branchName}"></span></h5>
                 <div class="d-flex flex-wrap gap-2">
                     <th:block th:each="st : ${showtimes}" th:if="${st.branchName == branchName}">
+
                         <!-- GUEST: Bấm vào suất chiếu -> Đăng nhập -->
-                        <a th:href="@{/login}" class="btn btn-outline-cine py-2 px-3 text-decoration-none">
-                            <span class="fs-5 fw-bold d-block" th:text="${#temporals.format(st.startTime, 'HH:mm')} + ' - ' + ${#temporals.format(st.endTime, 'HH:mm')}">14:30 - 16:30</span>
-                            <small class="text-cine-muted d-block mt-1"><i class="fa-solid fa-couch me-1"></i><span th:text="${st.hallName}"></span></small>
+                        <a th:href="@{/login}" class="btn btn-outline-cine m-1 text-center p-2 position-relative mt-3 text-decoration-none px-4">
+
+                            <!-- BADGE SUẤT CHIẾU SỚM -->
+                            <div th:if="${st.startTime.toLocalDate().isBefore(movie.releaseDate)}"
+                                 class="badge bg-warning text-dark position-absolute top-0 start-50 translate-middle rounded-pill shadow-sm text-nowrap">
+                                <i class="fa-solid fa-star me-1 text-danger"></i>Chiếu sớm
+                            </div>
+
+                            <!-- Ngày chiếu -->
+                            <div class="small fw-bold text-muted mb-1 mt-1">
+                                <i class="fa-regular fa-calendar me-1"></i>
+                                <span th:text="${#temporals.format(st.startTime, 'dd/MM/yyyy')}"></span>
+                            </div>
+
+                            <!-- Giờ chiếu -->
+                            <div class="fw-bold fs-5 mb-1 text-cine-primary mt-1">
+                                <span th:text="${#temporals.format(st.startTime, 'HH:mm')}"></span> -
+                                <span th:text="${#temporals.format(st.endTime, 'HH:mm')}"></span>
+                            </div>
+
                         </a>
                     </th:block>
                 </div>
@@ -97,6 +117,21 @@
     </div>
 </div>
 
-<th:block id="actorJs"></th:block>
+<th:block id="actorJs">
+    <!-- Khởi tạo thư viện chọn ngày (ví dụ Flatpickr) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (typeof flatpickr !== 'undefined') {
+                flatpickr("#dateFilter", {
+                    dateFormat: "d/m/Y", // Định dạng ngày tháng năm
+                    onChange: function(selectedDates, dateStr, instance) {
+                        // Submit form khi chọn ngày
+                        instance.element.form.submit();
+                    }
+                });
+            }
+        });
+    </script>
+</th:block>
 </body>
 </html>

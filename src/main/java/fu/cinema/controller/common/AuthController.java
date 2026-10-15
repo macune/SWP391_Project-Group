@@ -105,7 +105,7 @@ public class AuthController {
             } else if ("ROLE_MANAGER".equals(role)) {
                 return "redirect:/manager/showtimes";
             } else if ("ROLE_STAFF".equals(role)) {
-                return "redirect:/staff/pos";
+                return "redirect:/staff/fnb";
             } else {
                 return "redirect:/customer/dashboard";
             }

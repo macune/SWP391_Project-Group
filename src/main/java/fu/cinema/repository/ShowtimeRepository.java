@@ -48,4 +48,11 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
             LocalDateTime now,
             ShowtimeStatus status
     );
+
+    List<Showtime> findByHall_Branch_BranchIdAndStartTimeBetweenAndStatusNotOrderByStartTimeAsc(
+            Long branchId,
+            LocalDateTime start,
+            LocalDateTime end,
+            ShowtimeStatus status
+    );
 }

@@ -66,7 +66,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 1. ACTOR GUEST / PUBLIC (Trang chủ, Auth, Báo lỗi, Static resources)
                         .requestMatchers(
-                                "/", "/home", "/login", "/register", "/logout", "/verify-email", "/access-denied",
+                                "/", "/home","/movie-detail/**", "/login", "/register", "/logout", "/verify-email", "/access-denied",
                                 "/css/**", "/js/**", "/vendor/**", "/webjars/**", "/images/**", "/error", "/forgot-password", "/reset-password"
                         ).permitAll()
 

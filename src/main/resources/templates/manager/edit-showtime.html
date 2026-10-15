@@ -100,13 +100,13 @@
                         Ngày chiếu <span class="text-danger">*</span>
                     </label>
 
-                    <input type="date"
+                    <input type="text"
                            id="showDate"
                            name="showDate"
                            class="form-control"
-                           th:value="${showtime.showDate != null
-               ? #temporals.format(showtime.showDate, 'yyyy-MM-dd')
-               : ''}"
+                           placeholder="dd/mm/yyyy"
+                           autocomplete="off"
+                           th:value="${showtime.showDate != null ? #temporals.format(showtime.showDate, 'dd/MM/yyyy') : ''}"
                            required>
 
                     <div class="text-danger small"

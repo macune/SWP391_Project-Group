@@ -49,7 +49,9 @@
         <!-- Form Filter Customer -->
         <form class="row g-3 mb-4" th:action="@{/customer/movie-detail/{id}(id=${movie.movieId})}" method="get">
             <div class="col-md-4">
-                <input type="date" name="date" class="form-control border-cine" th:value="${selectedDate}" onchange="this.form.submit()">
+                <input type="date" name="date" class="form-control border-cine"
+                       th:value="${selectedDate != null ? #temporals.format(selectedDate, 'yyyy-MM-dd') : ''}"
+                       onchange="this.form.submit()">
             </div>
             <div class="col-md-4">
                 <select name="branchId" class="form-select border-cine" onchange="this.form.submit()">

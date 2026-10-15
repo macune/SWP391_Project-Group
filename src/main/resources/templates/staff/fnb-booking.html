@@ -29,20 +29,16 @@
 
     <!-- Nội dung chính -->
     <div class="row g-4">
-        <!-- Cột Trái: Menu -->
+        <!-- Cột Trái: Menu Bắp Nước (Mở rộng chiếm không gian) -->
         <div class="col-md-8">
-            <div class="card border-0 shadow-sm p-4 mb-4">
-                <h6 class="fw-bold text-cine-primary mb-3">1. Chọn Suất Chiếu Đang Mở Bán</h6>
-                <div class="alert bg-cine-soft border-cine mb-0">
-                    Khu vực hiển thị danh sách suất chiếu trong ngày và sơ đồ ghế cho Nhân viên POS.
-                </div>
-            </div>
-
             <div class="card border-0 shadow-sm p-4">
-                <h6 class="fw-bold text-cine-primary mb-3">2. Menu Bắp Nước</h6>
+                <h5 class="fw-bold text-cine-primary mb-4 border-bottom pb-2">
+                    <i class="fa-solid fa-burger me-2"></i>Menu Bắp Nước
+                </h5>
                 <div class="row row-cols-1 row-cols-md-3 g-3">
                     <!-- Vòng lặp lấy dữ liệu từ DTO BranchStockResponse -->
                     <div class="col" th:each="stock : ${menuItems}">
+                        <!-- ... Giữ nguyên khối div card chứa bắp nước của bạn ở đây ... -->
                         <div class="card h-100 border-cine shadow-sm rounded-3">
                             <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 120px;">
                                 <img th:if="${stock.imageUrl != null and !stock.imageUrl.isEmpty()}"
@@ -57,11 +53,9 @@
                                 <span class="badge bg-secondary mb-2 align-self-center px-2 py-1" style="font-size: 0.7rem;" th:text="${stock.itemCategory}">FOOD</span>
 
                                 <div class="mt-auto">
-                                    <!-- HIỂN THỊ SỐ LƯỢNG HÀNG TRONG KHO (Kèm cảnh báo đỏ nếu <= 10) -->
                                     <div class="small text-muted mb-1">
                                         Kho: <span class="fw-bold" th:classappend="${stock.quantity <= 10 ? 'text-danger' : 'text-success'}" th:text="${stock.quantity}">0</span>
                                     </div>
-
                                     <p class="text-danger fw-bold mb-2" th:text="${#numbers.formatDecimal(stock.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
 
                                     <button th:if="${stock.quantity > 0 and stock.isAvailable}"
@@ -91,7 +85,7 @@
 
                 <div id="cart-items" class="mb-3" style="max-height: 300px; overflow-y: auto;"></div>
 
-                <p id="empty-cart-msg" class="small text-muted text-center my-4">Chưa có ghế hoặc bắp nước nào được chọn.</p>
+                <p id="empty-cart-msg" class="small text-muted text-center my-4">Chưa có bắp nước nào được chọn.</p>
 
                 <hr/>
 

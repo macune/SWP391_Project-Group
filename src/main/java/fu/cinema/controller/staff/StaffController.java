@@ -19,17 +19,16 @@ public class StaffController {
     private final BranchStockService branchStockService;
     private final AccountRepository accountRepository;
 
-    @GetMapping("/pos")
-    public String posBookingPage(Model model) {
+    @GetMapping("/fnb")
+    public String fnbBookingPage(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Account staffAcc = accountRepository.findByUsername(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
 
         Long branchId = staffAcc.getStaff().getBranch().getBranchId();
-
         model.addAttribute("menuItems", branchStockService.getStockByBranch(branchId));
 
-        return "staff/pos-booking";
+        return "staff/fnb-booking";
     }
 
     @GetMapping("/check-in")

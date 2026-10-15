@@ -4,6 +4,7 @@ import fu.cinema.dto.request.ShowtimeRequest;
 import fu.cinema.entity.Hall;
 import fu.cinema.entity.Movie;
 import fu.cinema.entity.Showtime;
+import fu.cinema.entity.Branch;
 import fu.cinema.enums.HallStatus;
 import fu.cinema.enums.MovieStatus;
 import fu.cinema.enums.ShowtimeStatus;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -63,6 +65,7 @@ public class ShowtimeServiceImpl implements ShowtimeService {
 
         LocalDateTime earliestAllowedTime = LocalDateTime.now().plusHours(24);
         List<Showtime> newShowtimes = new ArrayList<>();
+        Branch branch = hall.getBranch();
 
         for (LocalDate date : dates) {
             LocalDateTime start = LocalDateTime.of(date, request.getStartTime());
@@ -72,6 +75,8 @@ public class ShowtimeServiceImpl implements ShowtimeService {
                 throw new IllegalArgumentException("Mỗi suất chiếu phải được lên lịch trước ít nhất 24 giờ.");
             }
 
+            // 1. KIỂM TRA GIỜ HOẠT ĐỘNG CỦA RẠP
+            validateOperatingHours(start, end, branch);
             validateNoConflict(hall.getHallId(), start, end);
 
             newShowtimes.add(Showtime.builder()
@@ -84,7 +89,6 @@ public class ShowtimeServiceImpl implements ShowtimeService {
                     .build());
         }
 
-        // Check local conflicts within the requested list of duplicate dates
         for (int i = 0; i < newShowtimes.size(); i++) {
             Showtime first = newShowtimes.get(i);
             for (int j = i + 1; j < newShowtimes.size(); j++) {
@@ -112,6 +116,11 @@ public class ShowtimeServiceImpl implements ShowtimeService {
             throw new IllegalArgumentException("Chỉ có thể hủy các suất chiếu đã được lên lịch.");
         }
 
+        // 2. CHẶN HỦY NẾU ĐÃ CÓ NGƯỜI MUA VÉ
+        if (!showtime.getTickets().isEmpty()) {
+            throw new IllegalArgumentException("Không thể hủy! Suất chiếu này đã có khách hàng đặt vé.");
+        }
+
         showtime.setStatus(ShowtimeStatus.CANCELLED);
         showtimeRepository.save(showtime);
     }
@@ -119,7 +128,6 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     @Override
     @Transactional
     public void updateShowtime(Long showtimeId, ShowtimeRequest request, Long branchId) {
-
         Showtime showtime = showtimeRepository.findById(showtimeId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
 
@@ -129,6 +137,11 @@ public class ShowtimeServiceImpl implements ShowtimeService {
 
         if (showtime.getStatus() != ShowtimeStatus.SCHEDULED) {
             throw new IllegalArgumentException("Chỉ có thể sửa suất chiếu đang ở trạng thái đã lên lịch.");
+        }
+
+        // 3. CHẶN SỬA NẾU ĐÃ CÓ NGƯỜI MUA VÉ
+        if (!showtime.getTickets().isEmpty()) {
+            throw new IllegalArgumentException("Không thể sửa! Suất chiếu này đã có khách hàng đặt vé.");
         }
 
         Movie movie = movieRepository.findById(request.getMovieId())
@@ -155,6 +168,9 @@ public class ShowtimeServiceImpl implements ShowtimeService {
         if (startDateTime.isBefore(LocalDateTime.now().plusHours(24))) {
             throw new IllegalArgumentException("Suất chiếu phải được lên lịch trước ít nhất 24 giờ.");
         }
+
+        // 4. KIỂM TRA GIỜ HOẠT ĐỘNG KHI CẬP NHẬT
+        validateOperatingHours(startDateTime, endDateTime, hall.getBranch());
 
         List<Showtime> conflicts = showtimeRepository
                 .findByHall_HallIdAndShowtimeIdNotAndStartTimeLessThanAndEndTimeGreaterThanAndStatusNot(
@@ -196,9 +212,39 @@ public class ShowtimeServiceImpl implements ShowtimeService {
             if (startsTooEarly && endsTooLate) {
                 throw new ShowtimeConflictException("Suất chiếu đang bị xung đột với một suất khác bắt đầu lúc "
                         + existingStart.format(timeFormatter)
-                        + " đến " + existingEnd.format(timeFormatter) + "Kèm 10 phút nghỉ giữa suất chiếu"
+                        + " đến " + existingEnd.format(timeFormatter)
                         + ". Hãy đổi thời gian phù hợp!");
             }
+        }
+    }
+
+    // HÀM KIỂM TRA GIỜ HOẠT ĐỘNG CỦA RẠP
+    private void validateOperatingHours(LocalDateTime start, LocalDateTime end, Branch branch) {
+        LocalTime opening = branch.getOpeningTime();
+        LocalTime closing = branch.getClosingTime();
+
+        LocalDateTime openingDateTime = start.toLocalDate().atTime(opening);
+
+        LocalDateTime closingDateTime = start.toLocalDate().atTime(closing);
+
+       if (closing.isBefore(opening)) {
+            if (start.toLocalTime().isBefore(closing)) {
+                openingDateTime = openingDateTime.minusDays(1);
+                closingDateTime = closingDateTime.minusDays(1).plusDays(1);
+            } else {
+                closingDateTime = closingDateTime.plusDays(1);
+            }
+        }
+
+        boolean isValidStart = !start.isBefore(openingDateTime) && !start.isAfter(closingDateTime);
+        boolean isValidEnd = !end.isBefore(openingDateTime) && !end.isAfter(closingDateTime);
+
+        if (!isValidStart || !isValidEnd) {
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+            throw new IllegalArgumentException(
+                    "Toàn bộ thời gian chiếu (" + start.format(timeFormatter) + " - " + end.format(timeFormatter) +
+                            ") phải nằm trọn trong giờ hoạt động của rạp (" + opening.format(timeFormatter) + " - " + closing.format(timeFormatter) + ")."
+            );
         }
     }
 }

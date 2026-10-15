@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: staff-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#dummy-css},
+          actorJs = ~{::#dummy-js}
+      )}">
+<head>
+    <title>Lịch Chiếu Hôm Nay | CineFlow Staff</title>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+
+    <!-- Tiêu đề -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 text-cine-primary">
+                <i class="fa-solid fa-calendar-day me-2"></i>Lịch Chiếu Hôm Nay
+            </h4>
+            <p class="small text-muted mb-0">
+                Chi nhánh: <strong class="text-cine-main" th:text="${branchName}">CineFlow</strong> |
+                Ngày: <strong class="text-danger" th:text="${#temporals.format(today, 'dd/MM/yyyy')}"></strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Cảnh báo nếu từ giờ đến cuối ngày không còn suất nào -->
+    <div th:if="${#lists.isEmpty(movieSchedules)}" class="alert bg-cine-frame text-cine-hot text-center border-cine shadow-sm">
+        <i class="fa-solid fa-circle-exclamation me-2"></i>Hiện tại đã hết suất chiếu trong ngày hôm nay.
+    </div>
+
+    <!-- Danh sách Phim & Suất chiếu -->
+    <div class="row row-cols-1 row-cols-xl-2 g-4 mb-5" th:unless="${#lists.isEmpty(movieSchedules)}">
+
+        <div class="col" th:each="schedule : ${movieSchedules}">
+            <div class="card border-cine shadow-sm h-100 bg-white">
+                <div class="row g-0 h-100">
+                    <div class="col-md-4">
+                        <img th:src="${schedule.movie.posterUrl != null and !schedule.movie.posterUrl.isEmpty() ? schedule.movie.posterUrl : '/images/posters/default-poster.jpg'}"
+                             class="img-fluid rounded-start border-end border-cine h-100 object-fit-cover w-100" alt="Poster">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body d-flex flex-column h-100">
+                            <!-- Thông tin Phim -->
+                            <h5 class="card-title fw-bold text-cine-main mb-3" th:text="${schedule.movie.title}">Tên phim</h5>
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                                <span class="badge bg-cine-hot" th:text="${schedule.movie.ageRating}">P</span>
+                                <span class="badge bg-cine-soft text-cine-main border border-cine"><i class="fa-regular fa-clock me-1 text-cine-primary"></i><span th:text="${schedule.movie.duration} + ' phút'"></span></span>
+                                <span class="badge bg-cine-soft text-cine-main border border-cine"><i class="fa-solid fa-masks-theater me-1 text-cine-primary"></i><span th:text="${schedule.movie.genre}"></span></span>
+                            </div>
+
+                            <hr class="border-cine mt-auto">
+                            <h6 class="fw-bold small text-cine-muted mb-2">CHỌN SUẤT CHIẾU BÁN VÉ:</h6>
+
+                            <!-- Danh sách Suất chiếu (Xử lý UI chuẩn Customer) -->
+                            <div class="d-flex flex-wrap gap-2">
+                                <a th:each="st : ${schedule.showtimes}" th:href="@{/staff/booking/seat-selection(showtimeId=${st.showtimeId})}"
+                                   class="btn btn-outline-cine m-1 text-center p-2 position-relative mt-3 text-decoration-none"
+                                   style="min-width: 120px; text-decoration: none;">
+
+                                    <!-- BADGE CHIẾU SỚM -->
+                                    <div th:if="${st.startTime.toLocalDate().isBefore(schedule.movie.releaseDate)}"
+                                         class="badge bg-warning text-dark position-absolute top-0 start-50 translate-middle rounded-pill shadow-sm" style="font-size: 0.8rem;">
+                                        <i class="fa-solid fa-star me-1 text-danger"></i>Chiếu sớm
+                                    </div>
+
+                                    <!-- Giờ chiếu -->
+                                    <div class="fw-bold fs-5 mb-1 text-cine-primary mt-1">
+                                        <span th:text="${#temporals.format(st.startTime, 'HH:mm')}"></span> -
+                                        <span th:text="${#temporals.format(st.endTime, 'HH:mm')}"></span>
+                                    </div>
+
+                                    <!-- Tên phòng chiếu -->
+                                    <div class="small fw-bold text-cine-muted mb-1 mt-1">
+                                        <i class="fa-solid fa-desktop me-1"></i><span th:text="${st.hallName != null ? st.hallName : 'Hall'}"></span>
+                                    </div>
+
+                                    <!-- Số Ghế (Dữ liệu DTO chuẩn) -->
+                                    <div class="small text-secondary" style="font-size: 0.8rem;">
+                                        <i class="fa-solid fa-couch me-1"></i>Ghế:
+                                        <span class="fw-bold" th:classappend="${st.availableSeats <= 10 ? 'text-danger' : 'text-success'}"
+                                              th:text="${st.availableSeats}"></span> / <span th:text="${st.hallCapacity}"></span>
+                                    </div>
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<th:block id="dummy-css"></th:block>
+<th:block id="dummy-js"></th:block>
+</body>
+</html>
