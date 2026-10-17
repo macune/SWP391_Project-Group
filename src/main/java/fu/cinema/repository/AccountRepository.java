@@ -19,6 +19,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @EntityGraph(attributePaths = {"customer", "staff"})
     List<Account> findByRole(Role role);
 
+    @EntityGraph(attributePaths = {"customer", "staff"})
+    List<Account> findByRoleAndStatusNotAndStaff_BranchIsNull(Role role, AccountStatus status);
+
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
 

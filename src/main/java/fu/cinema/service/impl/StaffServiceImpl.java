@@ -32,7 +32,6 @@ public class StaffServiceImpl implements StaffService {
     StaffMapper staffMapper;
     PasswordEncoder passwordEncoder;
 
-    // ... (Các hàm isInfoExists, normalizeRequest, createManager, createStaff giữ nguyên như bạn đã viết) ...
     private void isInfoExists(String username, String email, String phone) {
         if (accountRepository.findByUsername(username).isPresent()) throw new UsernameAlreadyExistsException();
         if (accountRepository.findByEmail(email).isPresent()) throw new EmailAlreadyExistsException();
@@ -61,18 +60,21 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public void createManager(ManagerRequest request) {
-        // ... Code cũ của bạn ...
-        if (request.getBranchId() != null && staffRepository.existsByAccount_RoleAndBranch_BranchIdAndAccount_StatusNot(Role.MANAGER, request.getBranchId(), AccountStatus.DELETED)) {
+        if (request.getBranchId() == null) {
+            throw new AppException("Vui lòng chọn một chi nhánh chưa có người quản lý để phân công!");
+        }
+
+        if (staffRepository.existsByAccount_RoleAndBranch_BranchIdAndAccount_StatusNot(Role.MANAGER, request.getBranchId(), AccountStatus.DELETED)) {
             throw new AppException("Chi nhánh này đã có người quản lý.");
         }
+
         normalizeRequest(request);
         isInfoExists(request.getUsername(), request.getEmail(), request.getPhone());
         if (request.getPassword() == null || request.getPassword().isBlank()) throw new AppException("Mật khẩu không được để trống khi tạo mới!");
         if (request.getPassword().length() < 6) throw new AppException("Mật khẩu phải từ 6 đến 32 ký tự!");
         if (!request.getPassword().equals(request.getConfirmPassword())) throw new PasswordNotMatchException();
 
-        Branch branch = null;
-        if (request.getBranchId() != null) branch = branchRepository.findById(request.getBranchId()).orElseThrow(BranchNotFoundException::new);
+        Branch branch = branchRepository.findById(request.getBranchId()).orElseThrow(BranchNotFoundException::new);
         String passwordHash = passwordEncoder.encode(request.getPassword());
 
         Account account = staffMapper.toAccount(request);
@@ -90,7 +92,6 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public void createStaff(StaffRequest request) {
-        // ... Code cũ của bạn ...
         normalizeRequest(request);
         isInfoExists(request.getUsername(), request.getEmail(), request.getPhone());
         if (request.getPassword() == null || request.getPassword().isBlank()) throw new AppException("Mật khẩu không được để trống khi tạo mới!");
@@ -117,7 +118,6 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public void updateManager(Long staffId, ManagerRequest request) {
-        // ... Code cũ của bạn ...
         Staff staff = staffRepository.findById(staffId).orElseThrow(StaffNotFoundException::new);
         Account account = staff.getAccount();
         if (account.getStatus().equals(AccountStatus.DELETED)) throw new AccountDeletedException();
@@ -161,21 +161,18 @@ public class StaffServiceImpl implements StaffService {
         Account account = staff.getAccount();
         if (account.getStatus().equals(AccountStatus.DELETED)) throw new AccountDeletedException();
 
-        verifyManagerAccess(staff); // Gọi hàm check bảo mật phân quyền
+        verifyManagerAccess(staff);
 
-        // 1. Kiểm tra Username
         if (!request.getUsername().equalsIgnoreCase(account.getUsername())) {
             if (accountRepository.existsByUsername(request.getUsername())) throw new UsernameAlreadyExistsException();
             account.setUsername(request.getUsername());
         }
 
-        // 2. Kiểm tra Email
         if (!request.getEmail().equalsIgnoreCase(account.getEmail())) {
             if (accountRepository.existsByEmail(request.getEmail())) throw new EmailAlreadyExistsException();
             account.setEmail(request.getEmail());
         }
 
-        // 3. Kiểm tra Phone
         if (!request.getPhone().equals(staff.getPhone())) {
             if (staffRepository.findByPhone(request.getPhone()).isPresent()) throw new PhoneAlreadyExistsException();
             staff.setPhone(request.getPhone());
@@ -198,6 +195,9 @@ public class StaffServiceImpl implements StaffService {
         Staff staff = staffRepository.findById(staffId).orElseThrow(StaffNotFoundException::new);
         staff.setBranch(null);
         Account account = staff.getAccount();
+        if (!account.getEmail().contains("_deleted_")) {
+            account.setEmail(account.getEmail() + "_deleted_" + System.currentTimeMillis());
+        }
         account.setStatus(AccountStatus.DELETED);
         accountRepository.save(account);
     }
@@ -206,9 +206,12 @@ public class StaffServiceImpl implements StaffService {
     @Transactional
     public void deleteStaff(Long staffId) {
         Staff staff = staffRepository.findById(staffId).orElseThrow(StaffNotFoundException::new);
-        verifyManagerAccess(staff); // Gọi hàm check bảo mật
+        verifyManagerAccess(staff);
 
         Account account = staff.getAccount();
+        if (!account.getEmail().contains("_deleted_")) {
+            account.setEmail(account.getEmail() + "_deleted_" + System.currentTimeMillis());
+        }
         account.setStatus(AccountStatus.DELETED);
         accountRepository.save(account);
     }

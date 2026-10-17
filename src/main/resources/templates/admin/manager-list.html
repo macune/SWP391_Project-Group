@@ -146,13 +146,15 @@
                                                 <label class="form-label fw-medium">Chi nhánh phụ trách</label>
                                                 <select name="branchId" class="form-select border-cine">
                                                     <option value="">-- Chưa phân công chi nhánh --</option>
-                                                    <option th:each="b : ${branches}"
-                                                            th:value="${b.branchId}"
-                                                            th:text="${b.branchName + ' - ' + b.address}"
-                                                            th:selected="${b.branchId == m.branchId}">
-                                                    </option>
+                                                    <th:block th:each="b : ${branches}">
+                                                        <option th:if="${b.managerId == null or b.branchId == m.branchId}"
+                                                                th:value="${b.branchId}"
+                                                                th:text="${b.branchName + ' - ' + b.address}"
+                                                                th:selected="${b.branchId == m.branchId}">
+                                                        </option>
+                                                    </th:block>
                                                 </select>
-                                                <small class="text-muted">Có thể để trống hoặc thay đổi chi nhánh phân công</small>
+                                                <small class="text-muted">Có thể chọn "Chưa phân công" hoặc chuyển sang chi nhánh chưa có người quản lý</small>
                                             </div>
 
                                             <div class="row g-3 mb-3">
@@ -227,13 +229,17 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-medium">Chi nhánh phụ trách</label>
-                            <select th:field="*{branchId}" class="form-select border-cine">
-                                <option value="">-- Chưa phân công chi nhánh --</option>
-                                <option th:each="b : ${branches}" th:value="${b.branchId}"
-                                        th:text="${b.branchName + ' - ' + b.address}"></option>
+                            <label class="form-label fw-medium">Chi nhánh phụ trách <span class="text-danger">*</span></label>
+                            <select th:field="*{branchId}" class="form-select border-cine" required>
+                                <option value="">-- Chọn chi nhánh chưa có Quản lý --</option>
+                                <th:block th:each="b : ${branches}">
+                                    <option th:if="${b.managerId == null}"
+                                            th:value="${b.branchId}"
+                                            th:text="${b.branchName + ' - ' + b.address}">
+                                    </option>
+                                </th:block>
                             </select>
-                            <small class="text-muted">Có thể để trống và gán chi nhánh sau</small>
+                            <small class="text-muted">Bắt buộc chọn 1 chi nhánh hiện chưa có người quản lý</small>
                         </div>
 
                         <div class="row g-3 mb-3">

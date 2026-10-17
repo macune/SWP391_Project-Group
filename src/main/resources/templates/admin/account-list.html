@@ -133,15 +133,22 @@
                         </span>
                     </td>
                     <td class="text-center">
-                        <!-- Nếu là tài khoản đang đăng nhập: Không cho phép đổi trạng thái -->
+                        <!-- 1. Nếu là tài khoản đang đăng nhập: Không cho phép đổi trạng thái -->
                         <button th:if="${#authentication != null and #authentication.name == a.username}"
                                 type="button" class="btn btn-sm btn-secondary" disabled
                                 title="Không thể tự thay đổi trạng thái tài khoản của chính mình">
                             <i class="fa-solid fa-user-shield me-1"></i> Đang đăng nhập
                         </button>
 
-                        <!-- Nếu là tài khoản khác: Cho phép đổi trạng thái thông qua modal -->
-                        <th:block th:unless="${#authentication != null and #authentication.name == a.username}">
+                        <!-- 2. Nếu tài khoản đã bị xóa (DELETED): Vô hiệu hóa nút Đổi trạng thái -->
+                        <button th:if="${(#authentication == null or #authentication.name != a.username) and a.status != null and a.status.name() == 'DELETED'}"
+                                type="button" class="btn btn-sm btn-secondary" disabled
+                                title="Tài khoản đã bị xóa không thể thay đổi trạng thái">
+                            <i class="fa-solid fa-sliders me-1"></i> Đổi trạng thái
+                        </button>
+
+                        <!-- 3. Nếu là tài khoản khác và chưa bị xóa: Cho phép đổi trạng thái thông qua modal -->
+                        <th:block th:if="${(#authentication == null or #authentication.name != a.username) and (a.status == null or a.status.name() != 'DELETED')}">
                             <!-- Nút mở modal Cập nhật Trạng thái -->
                             <button type="button" class="btn btn-sm btn-outline-warning"
                                     data-bs-toggle="modal"
