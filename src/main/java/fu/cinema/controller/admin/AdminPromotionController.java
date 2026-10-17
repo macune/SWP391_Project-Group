@@ -1,7 +1,9 @@
 package fu.cinema.controller.admin;
 
+import fu.cinema.dto.request.PromotionRequest; // Import DTO
 import fu.cinema.entity.Promotion;
-import fu.cinema.repository.PromotionRepository; // Giả sử bạn đang dùng Repository trực tiếp
+import fu.cinema.enums.PromotionStatus;
+import fu.cinema.repository.PromotionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -19,14 +21,12 @@ public class AdminPromotionController {
 
     private final PromotionRepository promotionRepository;
 
-    // 1. CẬP NHẬT HÀM GET ĐỂ HỖ TRỢ TÌM KIẾM
+    //HÀM GET ĐỂ HIỂN THỊ DANH SÁCH & FORM TẠO MỚI
     @GetMapping
     public String viewPromotions(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
         List<Promotion> promotions;
 
-        // Logic tìm kiếm theo Code
         if (keyword != null && !keyword.trim().isEmpty()) {
-            // Đảm bảo trong PromotionRepository bạn đã viết hàm findByCodeContainingIgnoreCase
             promotions = promotionRepository.findByCodeContainingIgnoreCase(keyword.trim());
             model.addAttribute("keyword", keyword);
         } else {
@@ -36,26 +36,33 @@ public class AdminPromotionController {
         model.addAttribute("coupons", promotions);
 
         if (!model.containsAttribute("coupon")) {
-            Promotion newCoupon = new Promotion();
-            newCoupon.setIsActive(true);
-            model.addAttribute("coupon", newCoupon);
+            PromotionRequest newCouponRequest = new PromotionRequest();
+            newCouponRequest.setIsActive(true);
+            model.addAttribute("coupon", newCouponRequest);
         }
         return "admin/promotion-management";
     }
 
-    // 2. THÊM HÀM EDIT ĐỂ LOAD DỮ LIỆU LÊN FORM
+    //EDIT ĐỂ LOAD DỮ LIỆU LÊN FORM
     @GetMapping("/edit/{id}")
     public String editPromotion(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
             Promotion promotion = promotionRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy mã khuyến mãi!"));
 
-            // Map trạng thái từ Enum sang biến checkbox giao diện
-            promotion.setIsActive(promotion.getStatus().name().equals("ACTIVE"));
+            PromotionRequest request = new PromotionRequest();
+            request.setId(promotion.getId());
+            request.setCode(promotion.getCode());
+            request.setDiscountPercentage(promotion.getDiscountPercentage());
+            request.setDiscountType(promotion.getDiscountType());
+            request.setMaxDiscountAmount(promotion.getMaxDiscountAmount());
+            request.setValidFrom(promotion.getValidFrom());
+            request.setExpiryDate(promotion.getExpiryDate());
 
-            // Lấy lại danh sách để hiện thị bảng bên cạnh
+            request.setIsActive(promotion.getStatus() == PromotionStatus.ACTIVE);
+
             model.addAttribute("coupons", promotionRepository.findAll());
-            model.addAttribute("coupon", promotion);
+            model.addAttribute("coupon", request); // Đẩy DTO ra form
             return "admin/promotion-management";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -63,17 +70,31 @@ public class AdminPromotionController {
         }
     }
 
-    // Hàm Save và Delete bạn giữ nguyên như cũ
+    //DỮ LIỆU TỪ FORM ĐỂ TẠO MỚI
     @PostMapping("/save")
-    public String savePromotion(@ModelAttribute("coupon") Promotion promotion, RedirectAttributes redirectAttributes) {
+    public String savePromotion(@ModelAttribute("coupon") PromotionRequest request, RedirectAttributes redirectAttributes) {
         try {
-            if (promotion.getId() != null && promotion.getId() == 0) {
-                promotion.setId(null);
+            Promotion promotion;
+
+
+            if (request.getId() != null && request.getId() > 0) {
+                promotion = promotionRepository.findById(request.getId())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy mã khuyến mãi để cập nhật!"));
+            } else {
+
+                promotion = new Promotion();
             }
 
-            if (promotion.getStatus() == null) {
-                promotion.setStatus(fu.cinema.enums.PromotionStatus.ACTIVE);
-            }
+            promotion.setCode(request.getCode());
+            promotion.setDiscountPercentage(request.getDiscountPercentage());
+            promotion.setDiscountType(request.getDiscountType() != null ? request.getDiscountType() : "PERCENTAGE");
+            promotion.setMaxDiscountAmount(request.getMaxDiscountAmount());
+            promotion.setValidFrom(request.getValidFrom());
+            promotion.setExpiryDate(request.getExpiryDate());
+
+            promotion.setStatus((request.getIsActive() != null && request.getIsActive())
+                    ? PromotionStatus.ACTIVE
+                    : PromotionStatus.DISABLED);
 
             promotionRepository.save(promotion);
             redirectAttributes.addFlashAttribute("successMessage", "Đã lưu mã giảm giá thành công!");
@@ -83,6 +104,7 @@ public class AdminPromotionController {
         return "redirect:/admin/promotions";
     }
 
+    //HÀM XÓA (Giữ nguyên)
     @PostMapping("/delete/{id}")
     public String deletePromotion(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {

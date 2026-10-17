@@ -23,7 +23,7 @@ public class Promotion {
     @Column(length = 50, unique = true)
     private String code;
 
-    @Column(name = "discount_percentage", nullable = false)
+    @Column(name = "discount_percent", nullable = false)
     private Integer discountPercentage;
 
     @Column(name = "discount_type", nullable = false)
