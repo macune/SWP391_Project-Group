@@ -2,3 +2,245 @@
    FILE CSS DÀNH RIÊNG CHO PHÂN HỆ: STAFF (Bán vé POS / Soát vé)
    Thành viên phụ trách Staff chỉ viết thêm class vào đây.
    ========================================================= */
+
+/* STAFF DASHBOARD */
+.staff-dashboard {
+    padding-top: .5rem;
+    padding-bottom: 2rem;
+}
+
+.staff-dashboard-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid #edd5ce;
+}
+
+.staff-dashboard-eyebrow {
+    display: block;
+    margin-bottom: 5px;
+    color: #a66b68;
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+}
+
+.staff-today-label {
+    padding: 9px 12px;
+    border: 1px solid #edd5ce;
+    border-radius: 9px;
+    color: #8a5556;
+    background: #fff;
+    font-size: .85rem;
+    font-weight: 700;
+}
+
+.staff-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    height: 100%;
+    min-height: 120px;
+    padding: 20px;
+    border: 1px solid #edd5ce;
+    border-radius: 13px;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(95, 48, 43, .045);
+}
+
+.staff-stat-muted {
+    background: #fcfaf9;
+}
+
+.staff-stat-icon,
+.staff-quick-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: #d92332;
+    background: #fff0f1;
+    border-radius: 12px;
+}
+
+.staff-stat-icon {
+    width: 46px;
+    height: 46px;
+    font-size: 19px;
+}
+
+.staff-stat-label {
+    color: #77727a;
+    font-size: .82rem;
+}
+
+.staff-stat-value {
+    margin: 4px 0 2px;
+    color: #382b2e;
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.staff-stat-note {
+    color: #9a9094;
+    font-size: .73rem;
+}
+
+.staff-dashboard-panel {
+    overflow: hidden;
+    padding: 20px;
+    border: 1px solid #edd5ce;
+    border-radius: 13px;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(95, 48, 43, .045);
+}
+
+.staff-panel-heading {
+    margin-bottom: 16px;
+}
+
+.staff-panel-heading h5 {
+    margin: 0;
+    color: #452e31;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.staff-panel-heading h5 i {
+    color: #d92332;
+}
+
+.staff-panel-heading p {
+    margin: 5px 0 0;
+    color: #827a80;
+    font-size: .82rem;
+}
+
+.staff-panel-heading-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.staff-quick-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 100%;
+    min-height: 86px;
+    padding: 14px;
+    border: 1px solid #f0ded9;
+    border-radius: 11px;
+    color: inherit;
+    background: #fffdfc;
+    text-decoration: none;
+    transition: .18s ease;
+}
+
+.staff-quick-action:hover {
+    transform: translateY(-2px);
+    border-color: #e6b3ac;
+    box-shadow: 0 6px 15px rgba(95, 48, 43, .08);
+    color: inherit;
+}
+
+.staff-quick-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 17px;
+}
+
+.staff-quick-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.staff-quick-text strong {
+    color: #452e31;
+    font-size: .87rem;
+}
+
+.staff-quick-text small {
+    color: #827a80;
+    font-size: .74rem;
+}
+
+.staff-quick-arrow,
+.staff-view-all {
+    color: #d92332;
+}
+
+.staff-view-all {
+    font-size: .8rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.staff-showtime-table thead th {
+    padding: 12px 14px;
+    border-bottom-color: #edd5ce;
+    color: #8b5a59;
+    background: #fff8f6;
+    font-size: .75rem;
+    text-transform: uppercase;
+}
+
+.staff-showtime-table tbody td {
+    padding: 13px 14px;
+    border-bottom-color: #f3e9e6;
+    color: #514448;
+    font-size: .85rem;
+}
+
+.staff-status-pill {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 20px;
+    color: #8b5a20;
+    background: #fff3d8;
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.staff-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 7px;
+    padding: 35px 16px;
+    color: #827a80;
+    text-align: center;
+}
+
+.staff-empty-state i {
+    color: #d7aaa5;
+    font-size: 1.8rem;
+}
+
+@media (max-width: 767.98px) {
+    .staff-dashboard-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .staff-stat-card {
+        min-height: 100px;
+        padding: 15px;
+    }
+
+    .staff-dashboard-panel {
+        padding: 15px;
+    }
+
+    .staff-panel-heading-between {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

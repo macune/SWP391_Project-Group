@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: staff-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#staffDashboardCss},
+          actorJs = ~{::#staffDashboardJs}
+      )}">
+<head>
+    <title>Dashboard Nhân viên | CineFlow</title>
+</head>
+<body>
+<div id="page-content" class="container-fluid staff-dashboard">
+
+    <div class="staff-dashboard-heading">
+        <div>
+            <span class="staff-dashboard-eyebrow">CINEFLOW STAFF</span>
+            <h4 class="fw-bold mb-1 text-cine-primary">
+                Tổng quan nhân viên
+            </h4>
+            <p class="small text-muted mb-0">
+                Xin chào <strong sec:authentication="name">staff</strong>!
+                Chi nhánh:
+                <strong th:text="${branchName}">CineFlow</strong>
+            </p>
+        </div>
+
+        <div class="staff-today-label">
+            <i class="fa-regular fa-calendar me-2"></i>
+            <span th:text="${#temporals.format(today, 'dd/MM/yyyy')}"></span>
+        </div>
+    </div>
+
+    <!-- Thống kê -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="staff-stat-card">
+                <div class="staff-stat-icon">
+                    <i class="fa-solid fa-calendar-day"></i>
+                </div>
+                <div>
+                    <div class="staff-stat-label">Suất chiếu hôm nay</div>
+                    <div class="staff-stat-value"
+                         th:text="${todayShowtimesCount}">0</div>
+                    <div class="staff-stat-note">Tại chi nhánh của bạn</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="staff-stat-card">
+                <div class="staff-stat-icon">
+                    <i class="fa-solid fa-burger"></i>
+                </div>
+                <div>
+                    <div class="staff-stat-label">Mặt hàng bắp nước còn bán</div>
+                    <div class="staff-stat-value"
+                         th:text="${availableFnbItemsCount}">0</div>
+                    <div class="staff-stat-note">Có hàng trong kho</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="staff-stat-card">
+                <div class="staff-stat-icon">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+
+                <div>
+                    <div class="staff-stat-label">Doanh thu hôm nay</div>
+
+                    <div class="staff-stat-value"
+                         th:text="${#numbers.formatDecimal(
+                 dailyRevenue, 0, 'COMMA', 0, 'POINT'
+             ) + ' ₫'}">
+                        0 ₫
+                    </div>
+
+                    <div class="staff-stat-note">
+                        Tổng đơn đặt vé đã xác nhận trong ngày
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thao tác nhanh -->
+    <section class="staff-dashboard-panel mb-4">
+        <div class="staff-panel-heading">
+            <h5>
+                <i class="fa-solid fa-bolt me-2"></i>Thao tác nhanh
+            </h5>
+            <p>Truy cập các chức năng thường dùng.</p>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <a th:href="@{/staff/fnb}" class="staff-quick-action">
+                    <span class="staff-quick-icon">
+                        <i class="fa-solid fa-burger"></i>
+                    </span>
+                    <span class="staff-quick-text">
+                        <strong>Quầy bắp nước</strong>
+                        <small>Xem menu và giỏ hàng POS</small>
+                    </span>
+                    <i class="fa-solid fa-arrow-right staff-quick-arrow"></i>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <a th:href="@{/staff/movies/today}"
+                   class="staff-quick-action">
+                    <span class="staff-quick-icon">
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </span>
+                    <span class="staff-quick-text">
+                        <strong>Lịch chiếu hôm nay</strong>
+                        <small>Xem các suất chiếu trong ngày</small>
+                    </span>
+                    <i class="fa-solid fa-arrow-right staff-quick-arrow"></i>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <a th:href="@{/staff/check-in}"
+                   class="staff-quick-action">
+                    <span class="staff-quick-icon">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </span>
+                    <span class="staff-quick-text">
+                        <strong>Soát vé</strong>
+                        <small>Khu vực soát vé</small>
+                    </span>
+                    <i class="fa-solid fa-arrow-right staff-quick-arrow"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lịch chiếu sắp tới -->
+    <section class="staff-dashboard-panel">
+        <div class="staff-panel-heading staff-panel-heading-between">
+            <div>
+                <h5>
+                    <i class="fa-regular fa-clock me-2"></i>
+                    Lịch chiếu sắp tới
+                </h5>
+                <p>Tối đa 5 suất chiếu tiếp theo trong ngày.</p>
+            </div>
+
+            <a th:href="@{/staff/movies/today}"
+               class="staff-view-all">
+                Xem lịch chiếu
+                <i class="fa-solid fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        <div class="table-responsive"
+             th:if="${!#lists.isEmpty(upcomingShowtimes)}">
+            <table class="table staff-showtime-table align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Giờ chiếu</th>
+                    <th>Phim</th>
+                    <th>Phòng</th>
+                    <th>Trạng thái</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="showtime : ${upcomingShowtimes}">
+                    <td>
+                        <strong th:text="${#temporals.format(showtime.startTime, 'HH:mm')}"></strong>
+                        -
+                        <span th:text="${#temporals.format(showtime.endTime, 'HH:mm')}"></span>
+                    </td>
+                    <td th:text="${showtime.movie.title}"></td>
+                    <td th:text="${showtime.hall.hallName}"></td>
+                    <td><span class="staff-status-pill">Sắp chiếu</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="staff-empty-state"
+             th:if="${#lists.isEmpty(upcomingShowtimes)}">
+            <i class="fa-regular fa-calendar-xmark"></i>
+            <strong>Không còn suất chiếu sắp tới hôm nay</strong>
+            <span>Truy cập lịch chiếu để xem thông tin đầy đủ.</span>
+        </div>
+    </section>
+</div>
+
+<th:block id="staffDashboardCss">
+    <link rel="stylesheet" th:href="@{/css/staff.css}">
+</th:block>
+<th:block id="staffDashboardJs"></th:block>
+</body>
+</html>

@@ -59,6 +59,11 @@
     </div>
     <ul class="nav nav-pills flex-column gap-1">
         <li class="nav-item">
+            <a th:href="@{/manager/dashboard}" class="nav-link">
+                <i class="fa-solid fa-gauge-high me-2"></i>Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
             <a th:href="@{/manager/showtimes}" class="nav-link">
                 <i class="fa-regular fa-calendar-days me-2"></i>Xếp lịch chiếu rạp
             </a>
@@ -78,6 +83,21 @@
                 <i class="fa-solid fa-boxes-stacked me-2"></i>Quản lý Tồn Kho
             </a>
         </li>
+
+        <li class="nav-item">
+            <a th:href="@{/manager/revenue}" class="nav-link">
+                <i class="fa-solid fa-chart-line me-2"></i>
+                Báo cáo doanh thu
+            </a>
+        </li>
+        <li>
+        <a th:href="@{/manager/showtime-analytics}"
+           class="nav-link">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Showtime Analytics</span>
+        </a>
+
+        </li>
         <li class="nav-item mt-3 border-top border-cine pt-2">
             <a th:href="@{/manager/branch-settings}" class="nav-link fw-bold text-cine-primary">
                 <i class="fa-solid fa-building-circle-check me-2"></i>Thông tin Chi nhánh
@@ -92,6 +112,12 @@
         <span class="badge bg-cine-soft w-100 py-2 fw-bold">CINEFLOW - POS STAFF</span>
     </div>
     <ul class="nav nav-pills flex-column gap-1">
+        <li class="nav-item">
+            <a th:href="@{/staff/dashboard}" class="nav-link">
+                <i class="fa-solid fa-gauge-high me-3 text-cine-primary"></i>
+                Dashboard
+            </a>
+        </li>
         <li class="nav-item">
             <a th:href="@{/staff/fnb}" class="nav-link">
                 <i class="fa-solid fa-burger me-3 text-cine-primary"></i>Quầy Bắp Nước

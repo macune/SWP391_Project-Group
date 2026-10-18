@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Dashboard - CineFlow</title></head>
+<body>
+<div th:replace="~{layout/layout :: master(title=~{::title}, sidebar=~{layout/sidebar :: manager-sidebar}, content=~{::#page-content}, actorCss=~{::#actorCss}, actorJs=~{::#actorJs})}">
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/manager.css}">
+        <style>
+            .dashboard-page{color:#482b2a}.dashboard-heading{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem}
+            .dashboard-muted{color:#987b78}.dashboard-panel,.dashboard-kpi{background:#fff;border:1px solid #f1d7d2;border-radius:14px;box-shadow:0 3px 12px rgba(100,50,40,.045)}
+            .dashboard-kpi{padding:20px;height:100%;position:relative;overflow:hidden}.dashboard-kpi-icon{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:#fbe3dd;color:#d93650;font-size:1.1rem;margin-bottom:14px}
+            .dashboard-kpi-value{font-size:clamp(1.35rem,2vw,1.8rem);font-weight:750;color:#2f1717;line-height:1.2;overflow-wrap:anywhere}.dashboard-kpi-label{font-size:.9rem;color:#987b78;margin-bottom:7px}
+            .dashboard-panel{padding:20px}.dashboard-panel-title{font-size:1.05rem;font-weight:750;margin:0;color:#482b2a}.dashboard-panel-subtitle{font-size:.82rem;color:#987b78;margin-top:5px}
+            .dashboard-period .btn{border-color:#edc9c2;color:#89514b;background:#fff}.dashboard-period .btn.active,.dashboard-period .btn:hover{background:#d93650;color:#fff;border-color:#d93650}
+            .dashboard-movie{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f7e9e6}.dashboard-movie:last-child{border-bottom:0;padding-bottom:0}.dashboard-poster{width:48px;height:66px;object-fit:cover;border-radius:7px;background:#fbe3dd;flex-shrink:0}.dashboard-rank{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fbe3dd;color:#d93650;font-weight:750;font-size:.8rem;flex-shrink:0}
+            .dashboard-table th{font-size:.78rem;color:#89514b;background:#fff4f1;white-space:nowrap}.dashboard-table td{vertical-align:middle;font-size:.87rem}.dashboard-empty{padding:28px 12px;text-align:center;color:#987b78}
+            @media(max-width:768px){.dashboard-panel{padding:15px}.dashboard-kpi{padding:15px}}
+        </style>
+    </th:block>
+    <div id="page-content" class="dashboard-page">
+        <div class="dashboard-heading">
+            <div>
+                <h2 class="h4 fw-bold mb-1">Tổng quan chi nhánh</h2>
+                <div class="dashboard-muted small" th:text="${currentBranch.branchName} + ' · ' + ${periodLabel}">Chi nhánh</div>
+            </div>
+            <div class="btn-group dashboard-period" role="group" aria-label="Khoảng thời gian">
+                <a th:href="@{/manager/dashboard(period='week')}" class="btn btn-sm" th:classappend="${period == 'week'} ? ' active' : ''">1 tuần</a>
+                <a th:href="@{/manager/dashboard(period='month')}" class="btn btn-sm" th:classappend="${period == 'month'} ? ' active' : ''">1 tháng</a>
+                <a th:href="@{/manager/dashboard(period='year')}" class="btn btn-sm" th:classappend="${period == 'year'} ? ' active' : ''">1 năm</a>
+                <a th:href="@{/manager/dashboard(period='all')}" class="btn btn-sm" th:classappend="${period == 'all'} ? ' active' : ''">Tất cả</a>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-3"><div class="dashboard-kpi"><div class="dashboard-kpi-icon"><i class="fa-solid fa-wallet"></i></div><div class="dashboard-kpi-label">Tổng doanh thu</div><div class="dashboard-kpi-value" th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div><div class="small dashboard-muted mt-2">Theo giao dịch thanh toán thành công</div></div></div>
+            <div class="col-12 col-sm-6 col-xl-3"><div class="dashboard-kpi"><div class="dashboard-kpi-icon"><i class="fa-solid fa-ticket"></i></div><div class="dashboard-kpi-label">Vé đã bán</div><div class="dashboard-kpi-value" th:text="${totalTickets}">0</div><div class="small dashboard-muted mt-2">Đã đặt hoặc check-in</div></div></div>
+            <div class="col-12 col-sm-6 col-xl-3"><div class="dashboard-kpi"><div class="dashboard-kpi-icon"><i class="fa-solid fa-film"></i></div><div class="dashboard-kpi-label">Tổng suất chiếu</div><div class="dashboard-kpi-value" th:text="${totalShowtimes}">0</div><div class="small dashboard-muted mt-2">Trong khoảng thời gian đã chọn</div></div></div>
+            <div class="col-12 col-sm-6 col-xl-3"><div class="dashboard-kpi"><div class="dashboard-kpi-icon"><i class="fa-solid fa-chair"></i></div><div class="dashboard-kpi-label">Tỷ lệ lấp đầy</div><div class="dashboard-kpi-value" th:text="${#numbers.formatDecimal(occupancyRate, 1, 1)} + '%'">0%</div><div class="small dashboard-muted mt-2">Vé hợp lệ / tổng sức chứa các suất</div></div></div>
+        </div>
+
+        <div class="dashboard-panel mb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3"><div><h3 class="dashboard-panel-title">Biểu đồ doanh thu</h3><div class="dashboard-panel-subtitle" th:text="'Doanh thu theo ' + (${period == 'week' or period == 'month'} ? 'ngày' : 'tháng') + ' · ' + ${periodLabel}">Doanh thu theo thời gian</div></div><a th:href="@{/manager/revenue}" class="small text-decoration-none" style="color:#d93650">Xem báo cáo <i class="fa-solid fa-arrow-right ms-1"></i></a></div>
+            <div style="height:300px;position:relative"><canvas id="revenueChart"></canvas></div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-xl-6"><section class="dashboard-panel h-100"><div class="d-flex justify-content-between align-items-start mb-2"><div><h3 class="dashboard-panel-title">Top 5 phim nổi bật</h3><div class="dashboard-panel-subtitle">Xếp hạng theo vé đã bán · <span th:text="${periodLabel}">7 ngày</span></div></div><i class="fa-solid fa-trophy" style="color:#d93650;font-size:1.25rem"></i></div>
+                <div th:if="${#lists.isEmpty(topMovies)}" class="dashboard-empty">Chưa có dữ liệu vé trong khoảng thời gian này.</div>
+                <div th:each="movie,iter : ${topMovies}" class="dashboard-movie"><div class="dashboard-rank" th:text="${iter.index + 1}">1</div><img class="dashboard-poster" th:if="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}" th:src="${movie.posterUrl}" th:alt="${movie.title}"><div class="dashboard-poster d-flex align-items-center justify-content-center" th:unless="${movie.posterUrl != null and !#strings.isEmpty(movie.posterUrl)}"><i class="fa-solid fa-film" style="color:#d93650"></i></div><div class="flex-grow-1 min-w-0"><div class="fw-semibold text-truncate" th:text="${movie.title}">Tên phim</div><div class="small dashboard-muted" th:text="${movie.tickets} + ' vé đã bán'">0 vé</div></div><span class="badge rounded-pill" style="background:#fbe3dd;color:#a65d55" th:text="'#' + (${iter.index + 1})">#1</span></div>
+            </section></div>
+            <div class="col-12 col-xl-6"><section class="dashboard-panel h-100"><div class="d-flex justify-content-between align-items-start mb-2"><div><h3 class="dashboard-panel-title">5 suất chiếu sắp tới</h3><div class="dashboard-panel-subtitle">Không thay đổi theo bộ lọc thời gian</div></div><a th:href="@{/manager/showtimes}" class="small text-decoration-none" style="color:#d93650">Quản lý <i class="fa-solid fa-arrow-right ms-1"></i></a></div>
+                <div th:if="${#lists.isEmpty(upcomingShowtimes)}" class="dashboard-empty">Không có suất chiếu sắp tới.</div>
+                <div class="table-responsive"><table class="table dashboard-table align-middle mb-0" th:unless="${#lists.isEmpty(upcomingShowtimes)}"><thead><tr><th>Phim / Phòng</th><th>Thời gian</th><th>Trạng thái</th></tr></thead><tbody><tr th:each="showtime : ${upcomingShowtimes}"><td><div class="fw-semibold" th:text="${showtime.movieTitle}">Phim</div><div class="small dashboard-muted" th:text="${showtime.hallName}">Phòng</div></td><td class="text-nowrap"><div th:text="${#temporals.format(showtime.startTime, 'dd/MM/yyyy')}">01/01/2026</div><div class="small dashboard-muted" th:text="${#temporals.format(showtime.startTime, 'HH:mm')}">19:00</div></td><td><span class="badge rounded-pill" th:classappend="${showtime.status.name() == 'SCHEDULED'} ? ' text-bg-primary' : (${showtime.status.name() == 'SHOWING'} ? ' text-bg-success' : ' text-bg-secondary')" th:text="${showtime.status}">SCHEDULED</span></td></tr></tbody></table></div>
+            </section></div>
+        </div>
+    </div>
+    <th:block id="actorJs">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script th:inline="javascript">
+            const revenueLabels = /*[[${chartLabels}]]*/ [];
+            const revenueValues = /*[[${chartValues}]]*/ [];
+            const chartCanvas = document.getElementById('revenueChart');
+            if (chartCanvas && typeof Chart !== 'undefined') {
+                new Chart(chartCanvas, {type:'line',data:{labels:revenueLabels,datasets:[{label:'Doanh thu (đ)',data:revenueValues,borderColor:'#D93650',backgroundColor:'rgba(217,54,80,.12)',fill:true,tension:.3,pointRadius:3,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(ctx.parsed.y || 0)}}},scales:{y:{beginAtZero:true,ticks:{callback:(value)=>new Intl.NumberFormat('vi-VN',{notation:'compact',maximumFractionDigits:1}).format(value)}},x:{grid:{display:false}}}}});
+            }
+        </script>
+    </th:block>
+</div>
+</body>
+</html>
