@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ${#authorization.expression('hasAnyRole(''STAFF'', ''MANAGER'', ''ADMIN'')')} ? ~{layout/sidebar :: staff-sidebar} : ~{layout/sidebar :: customer-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title th:text="'Đặt vé: ' + ${data.movieTitle} + ' | CineFlow'">Đặt Vé Xem Phim</title>
+
+    <th:block id="actorCss">
+        <!-- Tái sử dụng toàn bộ CSS ghế và layout của Manager & Customer -->
+        <link rel="stylesheet" th:href="@{/css/customer.css}">
+        <link rel="stylesheet" th:href="@{/css/manager.css}">
+        <style>
+            /* Ghế khách đang click chọn (Hiệu ứng màu xanh lá CineFlow) */
+            .seat-box.seat-selected {
+                background-color: #198754 !important;
+                border-color: #157347 !important;
+                color: #ffffff !important;
+                transform: scale(1.12);
+                box-shadow: 0 0 10px rgba(25, 135, 84, 0.6);
+            }
+
+            /* Ghế đã có người khác mua/giữ (Bị khóa, cấm bấm) */
+            .seat-box.seat-booked {
+                background-color: #6c757d !important;
+                border-color: #495057 !important;
+                color: #dee2e6 !important;
+                cursor: not-allowed !important;
+                opacity: 0.55;
+                pointer-events: none; /* Ngăn chặn hoàn toàn sự kiện click */
+            }
+
+            /* Ghế bị hỏng */
+            .seat-box.seat-broken-disabled {
+                cursor: not-allowed !important;
+                pointer-events: none;
+            }
+
+            /* Cột tóm tắt đơn hàng bám dính khi cuộn màn hình */
+            .sticky-summary {
+                position: -webkit-sticky;
+                position: sticky;
+                top: 20px;
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid">
+
+    <!-- 1. Header thông tin suất chiếu -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <!-- Nếu là Staff: Quay lại lịch chiếu hôm nay -->
+            <a sec:authorize="hasAnyRole('STAFF', 'MANAGER', 'ADMIN')" th:href="@{/staff/movies/today}" class="btn btn-sm btn-outline-cine mb-2">
+                <i class="fa-solid fa-arrow-left me-1"></i> Quay lại lịch chiếu hôm nay
+            </a>
+            <!-- Nếu là Customer: Quay lại danh sách phim -->
+            <a sec:authorize="!hasAnyRole('STAFF', 'MANAGER', 'ADMIN')" th:href="@{/customer/list-movies}" class="btn btn-sm btn-outline-cine mb-2">
+                <i class="fa-solid fa-arrow-left me-1"></i> Quay lại danh sách phim
+            </a>
+            <h4 class="fw-bold mb-0 text-cine-primary">
+                🎬 Đặt Vé: <span th:text="${data.movieTitle}">Tên Phim</span>
+            </h4>
+            <small class="text-muted">
+                Chi nhánh: <strong th:text="${data.branchName}">CineFlow Hà Nội</strong> |
+                Phòng chiếu: <strong th:text="${data.hallName}">Phòng 01</strong> |
+                Suất: <strong th:text="${#temporals.format(data.startTime, 'HH:mm')} + ' - ' + ${#temporals.format(data.endTime, 'HH:mm')}">08:00 - 10:00</strong>
+                (<span th:text="${#temporals.format(data.startTime, 'dd/MM/yyyy')}">20/10/2026</span>)
+            </small>
+        </div>
+
+        <!-- Thanh tiến trình Stepper -->
+        <div class="d-none d-md-flex align-items-center gap-3 bg-white px-3 py-2 rounded-3 border border-cine shadow-sm">
+            <span class="badge bg-danger px-3 py-2"><i class="fa-solid fa-couch me-1"></i> 1. Chọn Ghế</span>
+            <i class="fa-solid fa-chevron-right text-muted small"></i>
+            <span class="text-muted small"><i class="fa-solid fa-burger me-1"></i> 2. Bắp Nước</span>
+            <i class="fa-solid fa-chevron-right text-muted small"></i>
+            <span class="text-muted small"><i class="fa-solid fa-credit-card me-1"></i> 3. Thanh Toán</span>
+        </div>
+    </div>
+
+    <!-- THÔNG BÁO LỖI KHI BỊ TRÙNG GHẾ HOẶC HẾT HẠN (NẾU CÓ) -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4 border-cine shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-exclamation me-2 fs-5 align-middle"></i>
+        <strong th:text="${errorMessage}">Ghế bạn chọn vừa có người giữ trước!</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- 2. Bố cục 2 cột: Sơ đồ ghế (Trái) & Tóm tắt đơn hàng (Phải) -->
+    <div class="row g-4">
+
+        <!-- CỘT TRÁI (Chiếm 8 phần): SƠ ĐỒ RẠP CHIẾU -->
+        <div class="col-lg-8">
+            <div class="card border-cine shadow-sm mb-4">
+                <div class="card-body py-4 px-3 overflow-auto text-center">
+
+                    <!-- Màn hình chiếu (Screen) -->
+                    <div class="cinema-screen">MÀN HÌNH CHIẾU (SCREEN)</div>
+
+                    <!-- Ma trận ghế -->
+                    <div class="d-inline-block text-nowrap mb-4">
+                        <div th:each="entry : ${data.seatMap}" class="seat-row" th:data-row="${entry.key}">
+
+                            <!-- Nhãn tên hàng bên trái (A, B, C...) -->
+                            <button type="button" class="row-label-btn" th:text="${entry.key}" disabled>A</button>
+
+                            <!-- Danh sách các ghế trong hàng đó -->
+                            <div th:each="seat : ${entry.value}"
+                                 class="seat-box"
+                                 th:classappend="${seat.isBroken ? 'seat-BROKEN seat-broken-disabled' : (seat.isBooked ? 'seat-booked' : 'seat-' + seat.type.name())}"
+                                 th:data-seat-id="${seat.seatId}"
+                                 th:data-seat-name="${seat.seatName}"
+                                 th:data-price="${seat.price}"
+                                 th:data-type="${seat.type.name()}"
+                                 th:text="${seat.rowCode + seat.number}"
+                                 onclick="handleSeatClick(this)">
+                                A1
+                            </div>
+
+                            <!-- Nhãn tên hàng bên phải (A, B, C...) -->
+                            <button type="button" class="row-label-btn" th:text="${entry.key}" disabled>A</button>
+                        </div>
+                    </div>
+
+                    <!-- Bảng Chú Thích Loại Ghế -->
+                    <div class="mt-4 pt-3 border-top d-flex flex-wrap justify-content-center gap-4 small fw-medium">
+                        <div class="d-flex align-items-center">
+                            <span class="seat-box seat-STANDARD me-2" style="width:24px;height:24px;font-size:0.6rem;"></span>
+                            <span>Ghế Thường</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="seat-box seat-VIP me-2" style="width:24px;height:24px;font-size:0.6rem;"></span>
+                            <span class="text-warning-emphasis fw-bold">Ghế VIP</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="seat-box seat-SWEETBOX me-2" style="width:36px;height:24px;font-size:0.6rem;"></span>
+                            <span class="text-danger fw-bold">Ghế Đôi</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="seat-box seat-selected me-2" style="width:24px;height:24px;font-size:0.6rem;"></span>
+                            <span class="text-success fw-bold">Đang Chọn</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="seat-box seat-booked me-2" style="width:24px;height:24px;font-size:0.6rem;"></span>
+                            <span class="text-muted">Đã Bán</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="seat-box seat-BROKEN me-2" style="width:24px;height:24px;font-size:0.6rem;"></span>
+                            <span class="text-secondary">Bảo trì</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI (Chiếm 4 phần): HỘP TÓM TẮT ĐƠN ĐẶT VÉ -->
+        <div class="col-lg-4">
+            <div class="card border-cine shadow-sm sticky-summary">
+                <div class="card-header bg-cine-main border-cine py-3">
+                    <h5 class="fw-bold text-cine-primary mb-0">
+                        <i class="fa-solid fa-ticket me-2"></i>Thông Tin Đặt Vé
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    <!-- Ảnh poster & Tên phim -->
+                    <div class="d-flex gap-3 mb-3">
+                        <img th:src="${data.posterUrl != null && !data.posterUrl.isEmpty() ? data.posterUrl : '/images/posters/default-poster.jpg'}"
+                             class="rounded border border-cine" style="width: 75px; height: 105px; object-fit: cover;">
+                        <div>
+                            <h6 class="fw-bold text-cine-main mb-1" th:text="${data.movieTitle}">Tên Phim</h6>
+                            <span class="badge bg-warning text-dark mb-2" th:text="${data.ageRating != null ? data.ageRating : 'P'}">P</span>
+                            <p class="small text-muted mb-0">
+                                <i class="fa-solid fa-location-dot me-1 text-danger"></i><span th:text="${data.branchName}">Hà Nội</span>
+                            </p>
+                            <p class="small text-muted mb-0">
+                                <i class="fa-solid fa-tv me-1 text-primary"></i><span th:text="${data.hallName}">Phòng 01</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="small text-muted mb-3 pb-3 border-bottom border-cine">
+                        <i class="fa-regular fa-clock me-1 text-cine-primary"></i>
+                        Suất: <strong th:text="${#temporals.format(data.startTime, 'HH:mm')}">08:00</strong> -
+                        Ngày: <strong th:text="${#temporals.format(data.startTime, 'dd/MM/yyyy')}">20/10/2026</strong>
+                    </div>
+
+                    <!-- Danh sách ghế đang chọn -->
+                    <div class="mb-3">
+                        <label class="fw-bold small text-muted mb-2">Ghế bạn đã chọn:</label>
+                        <div id="selectedSeatsContainer" class="d-flex flex-wrap gap-1">
+                            <span class="text-muted small fst-italic">Vui lòng bấm chọn ghế trên sơ đồ...</span>
+                        </div>
+                    </div>
+
+                    <!-- Bảng tính tiền chi tiết -->
+                    <div class="border-top border-cine pt-3 mb-3">
+                        <div class="d-flex justify-content-between mb-2 small">
+                            <span class="text-muted">Số lượng ghế:</span>
+                            <strong id="seatCountText">0 ghế</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-cine-main">Tổng tiền tạm tính:</span>
+                            <span id="totalPriceText" class="fs-4 fw-bold text-danger">0 đ</span>
+                        </div>
+                    </div>
+
+                    <!-- Nút Tiếp tục -->
+                    <form th:action="@{/booking/lock-seats}" method="post">
+                        <input type="hidden" name="showtimeId" th:value="${data.showtimeId}">
+
+                        <div id="hiddenInputsContainer"></div>
+
+                        <button type="submit" id="btnContinue" class="btn btn-cine w-100 py-2 fw-bold" disabled>
+                            Tiếp tục (Chọn Bắp Nước) <i class="fa-solid fa-arrow-right ms-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- 3. JAVASCRIPT XỬ LÝ CHỌN GHẾ VÀ CỘNG TIỀN THEO THỜI GIAN THỰC -->
+<th:block id="actorJs">
+    <script>
+        // Mảng lưu trữ danh sách ghế đang chọn trên giao diện
+        let selectedSeats = [];
+
+        function handleSeatClick(seatEl) {
+            // Nếu ghế đã bán hoặc đang hỏng -> bỏ qua không làm gì cả
+            if (seatEl.classList.contains('seat-booked') || seatEl.classList.contains('seat-broken-disabled')) {
+                return;
+            }
+
+            const seatId = seatEl.getAttribute('data-seat-id');
+            const seatName = seatEl.getAttribute('data-seat-name');
+            const price = parseFloat(seatEl.getAttribute('data-price')) || 0;
+            const type = seatEl.getAttribute('data-type');
+
+            // Kiểm tra xem ghế này đã có trong danh sách chọn chưa
+            const existingIndex = selectedSeats.findIndex(s => s.seatId === seatId);
+
+            if (existingIndex > -1) {
+                // ĐÃ CHỌN RỒI -> BÂY GIỜ BỎ CHỌN
+                selectedSeats.splice(existingIndex, 1);
+                seatEl.classList.remove('seat-selected');
+            } else {
+                // CHƯA CHỌN -> THÊM VÀO DANH SÁCH
+                // Giới hạn chọn tối đa 8 ghế / lần đặt
+                if (selectedSeats.length >= 8) {
+                    alert('Bạn chỉ có thể chọn tối đa 8 ghế trong một lần đặt vé!');
+                    return;
+                }
+                selectedSeats.push({ seatId, seatName, price, type });
+                seatEl.classList.add('seat-selected');
+            }
+
+            // Vẽ lại cột tóm tắt bên phải
+            renderSummary();
+        }
+
+        function renderSummary() {
+            const container = document.getElementById('selectedSeatsContainer');
+            const seatCountText = document.getElementById('seatCountText');
+            const totalPriceText = document.getElementById('totalPriceText');
+            const btnContinue = document.getElementById('btnContinue');
+            const hiddenContainer = document.getElementById('hiddenInputsContainer');
+
+            if (selectedSeats.length === 0) {
+                container.innerHTML = '<span class="text-muted small fst-italic">Vui lòng bấm chọn ghế trên sơ đồ...</span>';
+                seatCountText.innerText = '0 ghế';
+                totalPriceText.innerText = '0 đ';
+                hiddenContainer.innerHTML = ''; // Xóa sạch input ngầm khi không chọn ghế
+                btnContinue.disabled = true;
+                return;
+            }
+
+            // 1. Hiển thị danh sách các badge ghế
+            container.innerHTML = selectedSeats.map(seat => {
+                let badgeClass = 'bg-secondary';
+                if (seat.type === 'VIP') badgeClass = 'bg-warning text-dark';
+                else if (seat.type === 'SWEETBOX') badgeClass = 'bg-danger';
+                return `<span class="badge ${badgeClass} px-2 py-1">${seat.seatName}</span>`;
+            }).join(' ');
+
+            hiddenContainer.innerHTML = selectedSeats.map(seat =>
+                `<input type="hidden" name="seatIds" value="${seat.seatId}">`
+            ).join('');
+            // 2. Cập nhật số lượng ghế
+            seatCountText.innerText = selectedSeats.length + ' ghế';
+            // 3. Tính tổng tiền
+            const total = selectedSeats.reduce((sum, item) => sum + item.price, 0);
+            totalPriceText.innerText = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total);
+            // 4. Kích hoạt nút Tiếp tục
+            btnContinue.disabled = false;
+        }
+    </script>
+</th:block>
+
+</body>
+</html>

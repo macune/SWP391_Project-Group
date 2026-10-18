@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: customer-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#dummy-css},
+          actorJs = ~{::#dummy-js}
+      )}">
+<head>
+    <title>Vé Của Tôi | CineFlow</title>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid py-3">
+
+    <!-- Tiêu đề trang & Nút đặt vé nhanh -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h4 class="fw-bold mb-1 text-cine-primary">
+                <i class="fa-solid fa-ticket me-2"></i>Vé Của Tôi (Lịch Sử Đặt Vé)
+            </h4>
+            <p class="small text-muted mb-0">Theo dõi thông tin và trạng thái các vé bạn đã đặt</p>
+        </div>
+        <a th:href="@{/customer/list-movies}" class="btn btn-cine btn-sm px-3 py-2">
+            <i class="fa-solid fa-film me-1"></i>Đặt Vé Mới
+        </a>
+    </div>
+
+    <!-- Thanh Tìm Kiếm & Bộ Lọc Trạng Thái -->
+    <div class="card border-cine shadow-sm mb-4">
+        <div class="card-body">
+            <form th:action="@{/customer/bookings}" method="get" class="row g-3 align-items-center">
+                <!-- 1. Ô tìm kiếm theo Tên phim hoặc Mã đơn -->
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-cine">
+                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                        </span>
+                        <input type="text" name="keyword" th:value="${keyword}"
+                               class="form-control border-cine"
+                               placeholder="Tìm theo tên phim hoặc mã đơn (VD: 105)...">
+                    </div>
+                </div>
+
+                <!-- 2. Ô lọc theo Trạng thái đơn -->
+                <div class="col-md-4">
+                    <select name="status" class="form-select border-cine">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="CONFIRMED" th:selected="${status != null and status.name() == 'CONFIRMED'}">Đã thanh toán (CONFIRMED)</option>
+                        <option value="PENDING" th:selected="${status != null and status.name() == 'PENDING'}">Chờ thanh toán (PENDING)</option>
+                        <option value="CANCELLED" th:selected="${status != null and status.name() == 'CANCELLED'}">Đã hủy (CANCELLED)</option>
+                    </select>
+                </div>
+
+                <!-- 3. Nút Lọc và Nút Đặt lại -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-cine-primary w-100">
+                        <i class="fa-solid fa-filter me-1"></i>Lọc
+                    </button>
+                    <a th:href="@{/customer/bookings}" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng Danh Sách Lịch Sử Đặt Vé -->
+    <div class="card border-cine shadow-sm">
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã đơn</th>
+                    <th class="text-start ps-3">Tên Phim</th>
+                    <th>Suất chiếu</th>
+                    <th>Ghế</th>
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- Trường hợp danh sách rỗng -->
+                <tr th:if="${#lists.isEmpty(bookings)}">
+                    <td colspan="7" class="py-5 text-muted">
+                        <i class="fa-regular fa-folder-open fa-2x mb-2 d-block"></i>
+                        Không tìm thấy đơn đặt vé nào.
+                    </td>
+                </tr>
+
+                <!-- Lặp danh sách BookingHistoryResponse -->
+                <tr th:each="b : ${bookings}">
+                    <td class="fw-bold text-cine-primary" th:text="'#' + ${b.bookingId}"></td>
+                    <td class="text-start ps-3 fw-bold text-cine-main" th:text="${b.movieTitle}"></td>
+                    <td>
+                            <span th:if="${b.showtime != null}"
+                                  th:text="${#temporals.format(b.showtime, 'dd/MM/yyyy HH:mm')}"></span>
+                        <span th:unless="${b.showtime != null}" class="text-muted">---</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border border-cine" th:text="${b.seats}"></span>
+                    </td>
+                    <td class="fw-bold text-danger"
+                        th:text="${#numbers.formatDecimal(b.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                    <td>
+                        <span th:if="${b.status.name() == 'CONFIRMED'}" class="badge bg-success">Đã thanh toán</span>
+                        <span th:if="${b.status.name() == 'PENDING'}" class="badge bg-warning text-dark">Chờ thanh toán</span>
+                        <span th:if="${b.status.name() == 'CANCELLED'}" class="badge bg-danger">Đã hủy</span>
+                    </td>
+                    <td>
+                        <!-- Nếu đơn đang PENDING -> cho phép bấm vào thanh toán tiếp -->
+                        <a th:if="${b.status.name() == 'PENDING'}"
+                           th:href="@{/booking/review(bookingId=${b.bookingId})}"
+                           class="btn btn-sm btn-outline-warning">
+                            <i class="fa-solid fa-credit-card me-1"></i>Thanh toán
+                        </a>
+                        <!-- Nếu đơn đã hoàn tất hoặc đã hủy -->
+                        <span th:unless="${b.status.name() == 'PENDING'}" class="text-muted small">
+                                <i class="fa-solid fa-check-double text-muted"></i>
+                            </span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<th:block id="dummy-css"></th:block>
+<th:block id="dummy-js"></th:block>
+</body>
+</html>

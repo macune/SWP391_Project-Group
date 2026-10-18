@@ -58,7 +58,7 @@
 
                             <!-- Danh sách Suất chiếu (Xử lý UI chuẩn Customer) -->
                             <div class="d-flex flex-wrap gap-2">
-                                <a th:each="st : ${schedule.showtimes}" th:href="@{/staff/booking/seat-selection(showtimeId=${st.showtimeId})}"
+                                <a th:each="st : ${schedule.showtimes}" th:href="@{/booking/seat-selection(showtimeId=${st.showtimeId})}"
                                    class="btn btn-outline-cine m-1 text-center p-2 position-relative mt-3 text-decoration-none"
                                    style="min-width: 120px; text-decoration: none;">
 

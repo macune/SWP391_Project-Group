@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: staff-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#dummy-css},
+          actorJs = ~{::#dummy-js}
+      )}">
+<head>
+    <title>Chi Tiết Đơn Vé</title>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid py-3" style="max-width: 700px;">
+
+    <a th:href="@{/staff/bookings}" class="btn btn-outline-secondary btn-sm mb-3">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại
+    </a>
+
+    <div th:if="${successMessage}" class="alert alert-success py-2" th:text="${successMessage}"></div>
+
+    <div class="card border-cine shadow-sm">
+        <div class="card-header bg-white fw-bold fs-5 text-cine-primary">
+            Chi Tiết Đơn Hàng #<span th:text="${booking.bookingId}"></span>
+        </div>
+        <div class="card-body">
+            <p><strong>Khách hàng:</strong> <span th:text="${booking.customerName}"></span> (SĐT: <span th:text="${booking.customerPhone}"></span>)</p>
+            <p><strong>Phim:</strong> <span th:text="${booking.movieTitle}"></span></p>
+            <p><strong>Phòng chiếu:</strong> <span th:text="${booking.hallName}"></span></p>
+            <p><strong>Suất chiếu:</strong> <span th:text="${#temporals.format(booking.startTime, 'dd/MM/yyyy HH:mm')}"></span></p>
+            <p><strong>Ghế đã đặt:</strong> <span class="badge bg-primary fs-6" th:text="${booking.seatNames}"></span></p>
+            <p><strong>Tổng tiền:</strong> <span class="text-danger fw-bold fs-5" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span></p>
+
+            <hr>
+
+            <!-- FORM CHỈNH SỬA ĐƠN ĐẶT VÉ -->
+            <form th:action="@{/staff/bookings/{id}/edit(id=${booking.bookingId})}" method="post">
+                <label class="form-label fw-bold">Chỉnh sửa trạng thái đơn:</label>
+                <div class="d-flex gap-2">
+                    <select name="status" class="form-select w-50">
+                        <option value="PENDING" th:selected="${booking.status.name() == 'PENDING'}">Chờ thanh toán (PENDING)</option>
+                        <option value="CONFIRMED" th:selected="${booking.status.name() == 'CONFIRMED'}">Đã thanh toán (CONFIRMED)</option>
+                        <option value="CANCELLED" th:selected="${booking.status.name() == 'CANCELLED'}">Hủy đơn (CANCELLED)</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thay đổi
+                    </button>
+                </div>
+                <small class="text-muted d-block mt-1">* Chọn "Đã thanh toán" khi thu tiền tại quầy, hoặc "Hủy đơn" để nhả ghế.</small>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<th:block id="dummy-css"></th:block>
+<th:block id="dummy-js"></th:block>
+</body>
+</html>

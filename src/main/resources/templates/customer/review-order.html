@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ${#authorization.expression('hasAnyRole(''STAFF'', ''MANAGER'', ''ADMIN'')')} ? ~{layout/sidebar :: staff-sidebar} : ~{layout/sidebar :: customer-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title>Xem Lại Đơn Hàng | CineFlow</title>
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/customer.css}">
+    </th:block>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid py-3">
+
+    <!-- Thông báo lỗi hoặc thành công -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4 border-cine shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-exclamation me-2"></i><strong th:text="${errorMessage}">Lỗi</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-4 border-cine shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><strong th:text="${successMessage}">Thành công</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Tiêu đề trang -->
+    <div class="mb-4 pb-2 border-bottom border-cine">
+        <h4 class="fw-bold mb-1 text-cine-primary">
+            <i class="fa-solid fa-clipboard-check me-2"></i>Xem Lại Đơn Hàng (Review Order)
+        </h4>
+        <p class="small text-muted mb-0">Rà soát lại thông tin vé, bắp nước và mã giảm giá trước khi hoàn tất đặt vé.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- CỘT TRÁI (Chiếm 7 phần): CHI TIẾT TỪNG MỤC -->
+        <div class="col-lg-7">
+
+            <!-- 1. THÔNG TIN PHIM & VÉ -->
+            <div class="card border-cine shadow-sm mb-4">
+                <div class="card-header bg-cine-main border-cine">
+                    <h5 class="fw-bold text-cine-primary mb-0"><i class="fa-solid fa-film me-2"></i>1. Vé Xem Phim</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-3 mb-3">
+                        <img th:src="${data.posterUrl != null ? data.posterUrl : '/images/posters/default-poster.jpg'}"
+                             class="rounded border border-cine" style="width: 80px; height: 110px; object-fit: cover;">
+                        <div>
+                            <h5 class="fw-bold text-cine-main mb-1" th:text="${data.movieTitle}">Tên Phim</h5>
+                            <p class="small text-muted mb-1">
+                                <i class="fa-solid fa-location-dot me-1 text-danger"></i><strong th:text="${data.branchName}">Hà Nội</strong> - <span th:text="${data.hallName}">Phòng 01</span>
+                            </p>
+                            <p class="small text-muted mb-0">
+                                <i class="fa-regular fa-clock me-1 text-primary"></i>Suất chiếu:
+                                <strong th:text="${#temporals.format(data.startTime, 'HH:mm dd/MM/yyyy')}">08:00 20/10/2026</strong>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                        <div>
+                            <span class="small text-muted fw-bold me-2">Ghế đã chọn:</span>
+                            <span th:each="s : ${data.seatNames}" class="badge bg-secondary me-1" th:text="${s}">A1</span>
+                        </div>
+                        <div class="fw-bold text-cine-main" th:text="${#numbers.formatDecimal(data.ticketTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'">160,000 đ</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. BẮP NƯỚC (F&B) TÙY CHỌN (ĐIỂM NỐI VỚI BẠN LÀM F&B) -->
+            <div class="card border-cine shadow-sm mb-4">
+                <div class="card-header bg-cine-main border-cine d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-cine-primary mb-0"><i class="fa-solid fa-burger me-2"></i>2. Bắp Nước & Combo (Tùy chọn)</h5>
+                    <a th:href="@{/customer/booking/{id}/fnb(id=${data.bookingId})}" class="btn btn-sm btn-outline-cine fw-bold">
+                        <i class="fa-solid fa-plus me-1"></i>Thêm Bắp Nước
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- Nếu chưa chọn F&B -->
+                    <div th:if="${#lists.isEmpty(data.fnbDetails)}" class="text-muted small fst-italic py-2">
+                        <i class="fa-solid fa-circle-info me-1"></i>Bạn chưa chọn bắp nước. Bấm nút phía trên nếu muốn mua thêm!
+                    </div>
+
+                    <!-- Nếu đã có F&B (khi module F&B đã cắm vào) -->
+                    <div th:unless="${#lists.isEmpty(data.fnbDetails)}">
+                        <ul class="list-unstyled mb-2">
+                            <li th:each="item : ${data.fnbDetails}" class="d-flex justify-content-between small py-1 border-bottom">
+                                <span th:text="${item}">1x Bắp phô mai</span>
+                            </li>
+                        </ul>
+                        <div class="d-flex justify-content-between pt-2 fw-bold">
+                            <span>Tiền bắp nước:</span>
+                            <span class="text-cine-main" th:text="${#numbers.formatDecimal(data.fnbTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'">50,000 đ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. KHUNG ÁP DỤNG MÃ KHUYẾN MÃI -->
+            <div class="card border-cine shadow-sm mb-4">
+                <div class="card-header bg-cine-main border-cine">
+                    <h5 class="fw-bold text-cine-primary mb-0"><i class="fa-solid fa-tags me-2"></i>3. Mã Khuyến Mãi (Voucher)</h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/booking/apply-promotion}" method="post" class="d-flex gap-2">
+                        <input type="hidden" name="bookingId" th:value="${data.bookingId}">
+                        <input type="text" name="promoCode" class="form-control border-cine text-uppercase fw-bold"
+                               placeholder="Nhập mã voucher (ví dụ: GIAM20)..."
+                               th:value="${data.appliedPromoCode}">
+                        <button type="submit" class="btn btn-cine fw-bold text-nowrap px-4">
+                            Áp dụng
+                        </button>
+                    </form>
+                    <div th:if="${data.appliedPromoCode != null}" class="text-success small fw-bold mt-2">
+                        <i class="fa-solid fa-check me-1"></i>Đang áp dụng mã: <span th:text="${data.appliedPromoCode}"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CỘT PHẢI (Chiếm 5 phần): BẢNG TỔNG TIỀN & CÁC NÚT HÀNH ĐỘNG -->
+        <div class="col-lg-5">
+            <div class="card border-cine shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-cine-main border-cine">
+                    <h5 class="fw-bold text-cine-primary mb-0"><i class="fa-solid fa-receipt me-2"></i>Tổng Tiền Đơn Hàng</h5>
+                </div>
+                <div class="card-body">
+                    <!-- 1. Tiền vé -->
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tiền vé xem phim:</span>
+                        <strong th:text="${#numbers.formatDecimal(data.ticketTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'">160,000 đ</strong>
+                    </div>
+
+                    <!-- 2. Tiền F&B -->
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tiền bắp nước (F&B):</span>
+                        <strong th:text="${#numbers.formatDecimal(data.fnbTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</strong>
+                    </div>
+
+                    <!-- 3. Tiền giảm giá -->
+                    <div class="d-flex justify-content-between mb-3 text-success">
+                        <span>Giảm giá khuyến mãi:</span>
+                        <strong th:text="'- ' + ${#numbers.formatDecimal(data.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'">- 0 đ</strong>
+                    </div>
+
+                    <hr class="border-cine">
+
+                    <!-- 4. TỔNG TIỀN KHÁCH PHẢI TRẢ (NỔI BẬT) -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fw-bold fs-5 text-cine-main">Tổng thanh toán:</span>
+                        <span class="fs-3 fw-bold text-danger"
+                              th:text="${#numbers.formatDecimal(data.finalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'">
+                            160,000 đ
+                        </span>
+                    </div>
+
+                    <!-- 2 NÚT HÀNH ĐỘNG THEO DIAGRAM 2.5 -->
+                    <div class="d-flex flex-column gap-2">
+                        <!-- Nút Chốt đơn đặt vé -->
+                        <form th:action="@{/booking/confirm}" method="post">
+                            <input type="hidden" name="bookingId" th:value="${data.bookingId}">
+                            <button type="submit" class="btn btn-cine w-100 py-3 fw-bold fs-5 shadow-sm text-center">
+                                <i class="fa-solid fa-check me-2"></i>Xác Nhận Đặt Vé
+                            </button>
+                        </form>
+
+                        <!-- Nút Hủy đơn (Giải phóng ghế) -->
+                        <form th:action="@{/booking/cancel}" method="post">
+                            <input type="hidden" name="bookingId" th:value="${data.bookingId}">
+                            <button type="submit" class="btn btn-outline-danger w-100 py-2 fw-bold"
+                                    onclick="return confirm('Bạn có chắc chắn muốn hủy đơn này và giải phóng các ghế đã chọn không?')">
+                                <i class="fa-solid fa-ban me-1"></i>Hủy đơn đặt vé (Giải phóng ghế)
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<th:block id="actorJs"></th:block>
+</body>
+</html>

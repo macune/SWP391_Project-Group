@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: staff-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#dummy-css},
+          actorJs = ~{::#dummy-js}
+      )}">
+<head>
+    <title>Danh Sách Đơn Đặt Vé</title>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid py-3">
+    <h4 class="fw-bold mb-3 text-cine-primary">
+        <i class="fa-solid fa-receipt me-2"></i>Quản Lý Đơn Đặt Vé (Staff)
+    </h4>
+
+    <div class="card border-cine shadow-sm">
+        <div class="card-body p-0 table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Phim</th>
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(bookings)}">
+                    <td colspan="6" class="text-muted py-4">Chưa có đơn đặt vé nào.</td>
+                </tr>
+                <tr th:each="b : ${bookings}">
+                    <td class="fw-bold" th:text="'#' + ${b.bookingId}"></td>
+                    <td th:text="${b.account != null ? (b.account.customer != null ? b.account.customer.fullName : b.account.username) : 'Khách vãng lai'}"></td>
+                    <td>
+                        <span th:if="${!b.tickets.isEmpty()}" th:text="${b.tickets[0].showtime.movie.title}"></span>
+                    </td>
+                    <td class="fw-bold text-danger"
+                        th:text="${#numbers.formatDecimal(b.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                    <td>
+                        <span th:if="${b.status.name() == 'CONFIRMED'}" class="badge bg-success">Đã thanh toán</span>
+                        <span th:if="${b.status.name() == 'PENDING'}" class="badge bg-warning text-dark">Chờ thanh toán</span>
+                        <span th:if="${b.status.name() == 'CANCELLED'}" class="badge bg-danger">Đã hủy</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/staff/bookings/{id}(id=${b.bookingId})}" class="btn btn-sm btn-outline-primary">
+                            <i class="fa-solid fa-eye me-1"></i>Chi tiết
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<th:block id="dummy-css"></th:block>
+<th:block id="dummy-js"></th:block>
+</body>
+</html>

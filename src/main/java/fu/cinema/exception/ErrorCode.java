@@ -17,7 +17,10 @@ public enum ErrorCode {
     PASSWORD_NOT_MATCH("Mật khẩu chưa khớp."),
     STAFF_NOT_FOUND("Không tìm thấy thông tin nhân viên trong hệ thống."),
     ACCOUNT_HAS_DELETED("Tài khoản không tồn tại hoặc đã bị vô hiệu hóa"),
-    ACCOUNT_NOT_FOUND("Không tìm thấy tài khoản.");
+    ACCOUNT_NOT_FOUND("Không tìm thấy tài khoản."),
+    SHOWTIME_NOT_FOUND("Không tìm thấy suất chiếu."),
+    BOOKING_NOT_FOUND("Không tìm thấy đơn hàng."),
+    PROMO_NOT_FOUND("Không tìm thấy mã khuyến mãi.");
     private final String message;
 
     ErrorCode(String message) {

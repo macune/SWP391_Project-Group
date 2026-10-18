@@ -1,11 +1,18 @@
 package fu.cinema.controller.customer;
 
+import fu.cinema.dto.response.BookingHistoryResponse;
+import fu.cinema.enums.BookingStatus;
+import fu.cinema.service.BookingService;
 import fu.cinema.service.PromotionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/customer")
@@ -13,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class CustomerController {
 
     private final PromotionService promotionService;
+    private final BookingService bookingService;
 
     //Trang tổng quan
     @GetMapping("/dashboard")
@@ -23,9 +31,15 @@ public class CustomerController {
 
     // Trang Vé của tôi
     @GetMapping("/bookings")
-    public String myBookings(Model model) {
+    public String myBookings(Model model,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) BookingStatus status) {
+
+        List<BookingHistoryResponse> bookings = bookingService.getMyBookings(keyword, status);
+        model.addAttribute("bookings", bookings);
+        model.addAttribute("keyword", keyword);
         model.addAttribute("sectionTitle", "Vé của tôi (Lịch sử đặt vé)");
-        return "customer/dashboard";
+        return "customer/my-bookings";
     }
 
     //Trang Hồ sơ cá nhân

@@ -89,7 +89,8 @@
                     <th:block th:each="st : ${showtimes}" th:if="${st.branchName == branchName}">
 
                         <!-- GUEST: Bấm vào suất chiếu -> Đăng nhập -->
-                        <a th:href="@{/login}" class="btn btn-outline-cine m-1 text-center p-2 position-relative mt-3 text-decoration-none px-4">
+                        <a th:href="${#authorization.expression('isAuthenticated()')} ? @{/booking/seat-selection(showtimeId=${st.showtimeId})} : @{/login}"
+                           class="btn btn-outline-cine m-1 text-center p-2 position-relative mt-3 text-decoration-none px-4">
 
                             <!-- BADGE SUẤT CHIẾU SỚM -->
                             <div th:if="${st.startTime.toLocalDate().isBefore(movie.releaseDate)}"

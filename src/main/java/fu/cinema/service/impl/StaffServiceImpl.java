@@ -32,7 +32,6 @@ public class StaffServiceImpl implements StaffService {
     StaffMapper staffMapper;
     PasswordEncoder passwordEncoder;
 
-    // ... (Các hàm isInfoExists, normalizeRequest, createManager, createStaff giữ nguyên như bạn đã viết) ...
     private void isInfoExists(String username, String email, String phone) {
         if (accountRepository.findByUsername(username).isPresent()) throw new UsernameAlreadyExistsException();
         if (accountRepository.findByEmail(email).isPresent()) throw new EmailAlreadyExistsException();
@@ -61,7 +60,6 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public void createManager(ManagerRequest request) {
-        // ... Code cũ của bạn ...
         if (request.getBranchId() != null && staffRepository.existsByAccount_RoleAndBranch_BranchIdAndAccount_StatusNot(Role.MANAGER, request.getBranchId(), AccountStatus.DELETED)) {
             throw new AppException("Chi nhánh này đã có người quản lý.");
         }
@@ -90,7 +88,6 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public void createStaff(StaffRequest request) {
-        // ... Code cũ của bạn ...
         normalizeRequest(request);
         isInfoExists(request.getUsername(), request.getEmail(), request.getPhone());
         if (request.getPassword() == null || request.getPassword().isBlank()) throw new AppException("Mật khẩu không được để trống khi tạo mới!");
@@ -117,7 +114,6 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public void updateManager(Long staffId, ManagerRequest request) {
-        // ... Code cũ của bạn ...
         Staff staff = staffRepository.findById(staffId).orElseThrow(StaffNotFoundException::new);
         Account account = staff.getAccount();
         if (account.getStatus().equals(AccountStatus.DELETED)) throw new AccountDeletedException();

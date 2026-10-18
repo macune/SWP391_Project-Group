@@ -8,16 +8,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tickets", uniqueConstraints = {
-        @UniqueConstraint(name = "UQ_Ticket_Showtime_Seat", columnNames = {"showtime_id", "seat_id"})
-})
+@Table(name = "tickets")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Ticket {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ticket_id")
