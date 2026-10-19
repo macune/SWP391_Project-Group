@@ -17,6 +17,45 @@
         <i class="fa-solid fa-receipt me-2"></i>Quản Lý Đơn Đặt Vé (Staff)
     </h4>
 
+    <!-- THANH TÌM KIẾM & BỘ LỌC DÀNH CHO STAFF -->
+    <div class="card border-cine shadow-sm mb-4">
+        <div class="card-body">
+            <form th:action="@{/staff/bookings}" method="get" class="row g-3 align-items-center">
+                <!-- 1. Ô tìm kiếm đa năng -->
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-cine">
+                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                        </span>
+                        <input type="text" name="keyword" th:value="${keyword}"
+                               class="form-control border-cine"
+                               placeholder="Tìm theo mã đơn, tên khách, SĐT, tên phim...">
+                    </div>
+                </div>
+
+                <!-- 2. Ô lọc theo trạng thái đơn -->
+                <div class="col-md-4">
+                    <select name="status" class="form-select border-cine">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="CONFIRMED" th:selected="${status != null and status.name() == 'CONFIRMED'}">Đã thanh toán (CONFIRMED)</option>
+                        <option value="PENDING" th:selected="${status != null and status.name() == 'PENDING'}">Chờ thanh toán (PENDING)</option>
+                        <option value="CANCELLED" th:selected="${status != null and status.name() == 'CANCELLED'}">Đã hủy (CANCELLED)</option>
+                    </select>
+                </div>
+
+                <!-- 3. Nút Lọc và Nút Đặt lại (Reset) -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-cine-primary w-100">
+                        <i class="fa-solid fa-filter me-1"></i>Lọc
+                    </button>
+                    <a th:href="@{/staff/bookings}" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="card border-cine shadow-sm">
         <div class="card-body p-0 table-responsive">
             <table class="table table-hover align-middle mb-0 text-center">
@@ -36,12 +75,9 @@
                 </tr>
                 <tr th:each="b : ${bookings}">
                     <td class="fw-bold" th:text="'#' + ${b.bookingId}"></td>
-                    <td th:text="${b.account != null ? (b.account.customer != null ? b.account.customer.fullName : b.account.username) : 'Khách vãng lai'}"></td>
-                    <td>
-                        <span th:if="${!b.tickets.isEmpty()}" th:text="${b.tickets[0].showtime.movie.title}"></span>
-                    </td>
-                    <td class="fw-bold text-danger"
-                        th:text="${#numbers.formatDecimal(b.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                    <td th:text="${b.customerName}"></td>
+                    <td th:text="${b.movieTitle}"></td>
+                    <td class="fw-bold text-danger" th:text="${#numbers.formatDecimal(b.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
                     <td>
                         <span th:if="${b.status.name() == 'CONFIRMED'}" class="badge bg-success">Đã thanh toán</span>
                         <span th:if="${b.status.name() == 'PENDING'}" class="badge bg-warning text-dark">Chờ thanh toán</span>

@@ -37,7 +37,7 @@ public class BookingServiceImpl implements BookingService {
             return basePrice.add(BigDecimal.valueOf(15000));
         }
         if(seatType == SeatType.SWEETBOX){
-            return basePrice.multiply(BigDecimal.valueOf(2));
+            return basePrice.add(BigDecimal.valueOf(20000));
         }
         return basePrice;
     }
@@ -295,6 +295,61 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.delete(booking);
     }
 
+    // Danh sách bookings (Staff)
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookDetailsResponse> getAllBookings(String keyword, BookingStatus status) {
+        List<Booking> allBookings = bookingRepository.findAllByOrderByCreatedAtDesc();
+        List<BookDetailsResponse> result = new ArrayList<>();
+
+        for (Booking b : allBookings) {
+            // Lọc theo trạng thái nếu có chọn
+            if (status != null && b.getStatus() != status) {
+                continue;
+            }
+
+            String customerName = "---";
+            String customerPhone = "---";
+            if (b.getAccount() != null) {
+                customerName = b.getAccount().getUsername();
+                if (b.getAccount().getCustomer() != null) {
+                    customerName = b.getAccount().getCustomer().getFullName();
+                    customerPhone = b.getAccount().getCustomer().getPhone();
+                }
+            }
+
+            // Lấy tên phim
+            String movieTitle = (!b.getTickets().isEmpty()) ? b.getTickets().get(0).getShowtime().getMovie().getTitle() : "---";
+
+            // Tìm kiếm theo từ khóa (Mã đơn, Tên khách, SĐT hoặc Tên phim)
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                keyword = keyword.trim().toLowerCase();
+
+                boolean matchId = String.valueOf(b.getBookingId()).contains(keyword);
+                boolean matchCustomer = customerName.toLowerCase().contains(keyword) || customerPhone.contains(keyword);
+                boolean matchMovie = movieTitle.toLowerCase().contains(keyword);
+
+                // Nếu không khớp bất kỳ thông tin nào -> bỏ qua
+                if (!matchId && !matchCustomer && !matchMovie) {
+                    continue;
+                }
+            }
+
+            // Đóng gói, gửi về controller
+            result.add(BookDetailsResponse.builder()
+                    .bookingId(b.getBookingId())
+                    .customerName(customerName)
+                    .customerPhone(customerPhone)
+                    .movieTitle(movieTitle)
+                    .totalAmount(b.getTotalAmount())
+                    .status(b.getStatus())
+                    .build());
+        }
+
+        return result;
+    }
+
+    // Lấy chi tiết booking (Dùng cho staff)
     @Override
     @Transactional(readOnly = true)
     public BookDetailsResponse getBookingDetail(Long bookingId) {
@@ -330,8 +385,13 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public void updateBookingStatus(Long bookingId, BookingStatus newStatus) {
         Booking booking = bookingRepository.findById((bookingId)).orElseThrow(BookingNotFoundException::new);
-        booking.setStatus(newStatus);
 
+        // Nếu booking đã bị hủy, ngăn không cho đổi trạng thái
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new AppException("Đơn đặt vé này đã bị hủy, không thể thay đổi trạng thái!");
+        }
+
+        booking.setStatus(newStatus);
         // Đơn hàng hết hạn thì toàn bộ vé ứng với đơn hàng đó về trạng thái Cancelled
         if(newStatus == BookingStatus.CANCELLED){
             for(Ticket ticket : booking.getTickets()){
@@ -348,6 +408,7 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.save(booking);
     }
 
+    // Lấy lịch sử mua vé của người dùng
     @Override
     @Transactional(readOnly = true)
     public List<BookingHistoryResponse> getMyBookings(String keyword, BookingStatus status) {

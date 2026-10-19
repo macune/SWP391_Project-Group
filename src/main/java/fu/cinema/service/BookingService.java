@@ -30,6 +30,10 @@ public interface BookingService {
     // Sử dụng khi khách hủy đặt vé -> Giải phóng ghế + xóa booking
     void cancelBooking(Long bookingId);
 
+    // Lấy các hóa đơn (Staff)
+    List<BookDetailsResponse> getAllBookings(String keyword, BookingStatus status);
+
+    // Booking details cho 1 hóa đơn
     BookDetailsResponse getBookingDetail(Long bookingId);
 
     // Staff: Đổi trạng thái đơn (Xác nhận hoặc Hủy đơn)
@@ -38,7 +42,7 @@ public interface BookingService {
     // Lịch sử vé người dùng
     List<BookingHistoryResponse> getMyBookings(String keyword, BookingStatus status);
 
-    //
+    // Hàm dùng để kiểm tra khi người dùng bấm nút xác nhận thanh toán, đi đến trang payment thì lúc đó ghế hết hạn chưa
     void confirmBooking(Long bookingId);
 }
 

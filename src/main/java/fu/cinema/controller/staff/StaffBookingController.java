@@ -1,5 +1,6 @@
 package fu.cinema.controller.staff;
 
+import fu.cinema.dto.response.BookDetailsResponse;
 import fu.cinema.enums.BookingStatus;
 import fu.cinema.repository.BookingRepository;
 import fu.cinema.service.BookingService;
@@ -9,6 +10,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/staff/bookings")
 @RequiredArgsConstructor
@@ -17,10 +20,17 @@ public class StaffBookingController {
     private final BookingService bookingService;
     private final BookingRepository bookingRepository;
 
-    // Xem danh sách
+    // Xem danh sách (có hỗ trợ tìm kiếm và lọc)
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("bookings", bookingRepository.findAll());
+    public String list(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) BookingStatus status,
+            Model model) {
+
+        List<BookDetailsResponse> bookings = bookingService.getAllBookings(keyword, status);
+        model.addAttribute("bookings", bookings);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("status", status); // Giữ lại giá trị vừa chọn trên dropdown
         return "staff/booking-list";
     }
 

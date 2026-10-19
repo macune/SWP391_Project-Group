@@ -38,6 +38,7 @@ public class CustomerController {
         List<BookingHistoryResponse> bookings = bookingService.getMyBookings(keyword, status);
         model.addAttribute("bookings", bookings);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("status", status);
         model.addAttribute("sectionTitle", "Vé của tôi (Lịch sử đặt vé)");
         return "customer/my-bookings";
     }

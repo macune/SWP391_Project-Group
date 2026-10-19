@@ -34,8 +34,13 @@
 
             <hr>
 
+            <!-- Nếu đơn đã CANCELLED thì chỉ hiện thông báo, không cho chỉnh sửa -->
+            <div th:if="${booking.status.name() == 'CANCELLED'}" class="alert alert-secondary py-2">
+                <i class="fa-solid fa-lock me-2"></i>Đơn hàng này đã bị hủy, không thể chỉnh sửa trạng thái.
+            </div>
+
             <!-- FORM CHỈNH SỬA ĐƠN ĐẶT VÉ -->
-            <form th:action="@{/staff/bookings/{id}/edit(id=${booking.bookingId})}" method="post">
+            <form th:unless="${booking.status.name() == 'CANCELLED'}" th:action="@{/staff/bookings/{id}/edit(id=${booking.bookingId})}" method="post">
                 <label class="form-label fw-bold">Chỉnh sửa trạng thái đơn:</label>
                 <div class="d-flex gap-2">
                     <select name="status" class="form-select w-50">
