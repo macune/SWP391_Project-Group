@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(~{::title}, ~{layout/sidebar :: customer-sidebar}, ~{::#page-content}, ~{::#actorCss}, ~{::#actorJs})}">
+<head>
+    <title>Vé của tôi | CineFlow</title>
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/customer.css}">
+    </th:block>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid py-2">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom border-cine">
+        <div>
+            <h4 class="fw-bold mb-1">
+                <i class="fa-solid fa-ticket text-cine-primary me-2"></i>Vé Của Tôi (E-Tickets)
+            </h4>
+            <p class="small text-cine-pastel mb-0">
+                Danh sách các vé điện tử đã đặt và mã QR để quét tại rạp
+            </p>
+        </div>
+        <a th:href="@{/customer/list-movies}" class="btn btn-cine btn-sm px-3 py-2">
+            <i class="fa-solid fa-film me-1"></i>Đặt thêm vé mới
+        </a>
+    </div>
+
+    <!-- Thông báo -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Khi chưa có vé nào -->
+    <div th:if="${#lists.isEmpty(tickets)}" class="card p-5 text-center shadow-sm">
+        <div class="mb-3">
+            <i class="fa-solid fa-ticket-simple fs-1 text-cine-primary opacity-75"></i>
+        </div>
+        <h5 class="fw-bold">Bạn chưa có vé điện tử nào</h5>
+        <p class="text-cine-pastel mb-3">Hãy chọn bộ phim yêu thích và đặt chỗ ngay để nhận vé điện tử kèm mã QR.</p>
+        <div>
+            <a th:href="@{/customer/list-movies}" class="btn btn-cine px-4">
+                <i class="fa-solid fa-play me-1"></i>Khám phá Phim đang chiếu
+            </a>
+        </div>
+    </div>
+
+    <!-- Danh sách vé -->
+    <div class="row g-3" th:if="${not #lists.isEmpty(tickets)}">
+        <div class="col-xl-6" th:each="t : ${tickets}">
+            <div class="card shadow-sm h-100 overflow-hidden">
+                <div class="row g-0 h-100">
+                    <!-- Cột ảnh Poster -->
+                    <div class="col-sm-3 bg-cine-dark d-flex align-items-center justify-content-center p-2">
+                        <img th:src="${t.posterUrl != null and !t.posterUrl.isEmpty() ? t.posterUrl : '/images/posters/default-poster.jpg'}"
+                             th:alt="${t.movieTitle}"
+                             class="img-fluid rounded border border-cine movie-poster-card"
+                             style="max-height: 165px;">
+                    </div>
+
+                    <!-- Cột thông tin tóm tắt -->
+                    <div class="col-sm-9 p-3 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                            <span class="badge bg-cine-soft" th:text="'Đơn #' + ${t.bookingId} + ' • Vé #' + ${t.ticketId}">
+                                Đơn #1 • Vé #1
+                            </span>
+
+                            <span th:if="${t.status.name() == 'BOOKED'}" class="badge bg-success">
+                                <i class="fa-solid fa-qrcode me-1"></i>Sẵn sàng quét QR
+                            </span>
+                            <span th:if="${t.status.name() == 'CHECKED_IN'}" class="badge bg-secondary">
+                                <i class="fa-solid fa-check me-1"></i>Đã sử dụng
+                            </span>
+                            <span th:if="${t.status.name() == 'LOCKED'}" class="badge bg-warning text-dark">
+                                <i class="fa-solid fa-clock me-1"></i>Chờ thanh toán
+                            </span>
+                            <span th:if="${t.status.name() == 'CANCELLED'}" class="badge bg-danger">
+                                Đã hủy
+                            </span>
+                        </div>
+
+                        <h5 class="fw-bold text-cine-primary mb-1" th:text="${t.movieTitle}">Tên Phim</h5>
+
+                        <div class="small text-cine-pastel mb-2">
+                            <div>
+                                <i class="fa-solid fa-building me-1 text-cine-primary"></i>
+                                <strong th:text="${t.branchName}">Chi nhánh</strong> -
+                                <span th:text="${t.hallName}">Phòng chiếu</span>
+                            </div>
+                            <div>
+                                <i class="fa-regular fa-clock me-1 text-cine-primary"></i>
+                                Suất chiếu:
+                                <strong th:text="${t.startTime != null ? #temporals.format(t.startTime, 'HH:mm - dd/MM/yyyy') : ''}">
+                                    19:30 - 20/10/2026
+                                </strong>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto pt-2 border-top border-cine d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <span class="badge bg-cine-primary px-2 py-1 me-1" th:text="'Ghế ' + ${t.seatLabel}">Ghế A1</span>
+                                <span class="small text-cine-pastel" th:text="'(' + ${t.seatTypeDisplay} + ')'">(Ghế VIP)</span>
+                                <span class="fw-bold text-cine-primary ms-2"
+                                      th:text="${#numbers.formatDecimal(t.price, 0, 'POINT', 0, 'COMMA')} + ' đ'">85.000 đ</span>
+                            </div>
+
+                            <a th:href="@{/customer/tickets/{id}(id=${t.ticketId})}" class="btn btn-cine btn-sm px-3">
+                                <i class="fa-solid fa-qrcode me-1"></i>Xem chi tiết & QR
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<th:block id="actorJs"></th:block>
+</body>
+</html>

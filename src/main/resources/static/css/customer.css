@@ -6,3 +6,65 @@
     aspect-ratio: 2 / 3;
     object-fit: cover;
 }
+
+/* =========================================================
+   E-TICKET (VÉ ĐIỆN TỬ & MÃ QR)
+   ========================================================= */
+.eticket-wrapper {
+    background-color: #ffffff;
+    border: 2px solid var(--cine-border);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+}
+
+.eticket-header {
+    background: linear-gradient(135deg, var(--cine-hot), var(--cine-primary));
+    color: #ffffff;
+    padding: 16px 24px;
+}
+
+.eticket-divider {
+    border-left: 2px dashed var(--cine-bg-highlight);
+    position: relative;
+}
+
+@media (max-width: 991.98px) {
+    .eticket-divider {
+        border-left: none;
+        border-top: 2px dashed var(--cine-bg-highlight);
+    }
+}
+
+.eticket-qr-box {
+    background-color: var(--cine-bg-main);
+    border: 2px solid var(--cine-bg-highlight);
+    border-radius: 14px;
+    padding: 16px;
+    display: inline-block;
+}
+
+.eticket-info-box {
+    background-color: var(--cine-bg-main);
+    border: 1px solid var(--cine-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    height: 100%;
+}
+
+/* Ẩn sidebar và các nút điều hướng khi người dùng bấm In vé (Print E-Ticket) */
+@media print {
+    .app-sidebar,
+    header,
+    footer,
+    .no-print {
+        display: none !important;
+    }
+    body {
+        background-color: #ffffff !important;
+    }
+    .eticket-wrapper {
+        box-shadow: none !important;
+        border: 2px solid #6e3531 !important;
+    }
+}
