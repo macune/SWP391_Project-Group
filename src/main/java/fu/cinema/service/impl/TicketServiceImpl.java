@@ -2,6 +2,7 @@ package fu.cinema.service.impl;
 
 import fu.cinema.dto.request.TicketInitRequest;
 import fu.cinema.dto.response.TicketResponse;
+import fu.cinema.dto.response.TicketValidationResponse;
 import fu.cinema.entity.*;
 import fu.cinema.enums.BookingStatus;
 import fu.cinema.enums.Role;
@@ -210,6 +211,121 @@ public class TicketServiceImpl implements TicketService {
                 .stream()
                 .map(ticketMapper::toTicketResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public fu.cinema.dto.response.TicketValidationResponse validateTicketByQr(String qrCode, String staffUsername) {
+        if (qrCode == null || qrCode.isBlank()) {
+            return fu.cinema.dto.response.TicketValidationResponse.builder()
+                    .validForCheckIn(false)
+                    .validationState("NOT_FOUND")
+                    .message("Vui lòng quét hoặc nhập mã định danh QR của vé.")
+                    .build();
+        }
+
+        String normalizedCode = qrCode.trim();
+        java.util.Optional<Ticket> ticketOpt = ticketRepository.findByQrCodeWithFullDetails(normalizedCode);
+
+        if (ticketOpt.isEmpty()) {
+            return fu.cinema.dto.response.TicketValidationResponse.builder()
+                    .validForCheckIn(false)
+                    .validationState("NOT_FOUND")
+                    .message("Không tìm thấy vé nào khớp với mã QR: " + normalizedCode)
+                    .build();
+        }
+
+        Ticket ticket = ticketOpt.get();
+        TicketResponse ticketResponse = ticketMapper.toTicketResponse(ticket);
+
+        // Kiểm tra xem vé có thuộc đúng chi nhánh mà nhân viên đang làm việc hay không
+        Long staffBranchId = getStaffBranchId(staffUsername);
+        if (staffBranchId != null && !staffBranchId.equals(ticketResponse.getBranchId())) {
+            return fu.cinema.dto.response.TicketValidationResponse.builder()
+                    .validForCheckIn(false)
+                    .validationState("WRONG_BRANCH")
+                    .message("Cảnh báo: Vé này thuộc chi nhánh [" + ticketResponse.getBranchName() + "], không thuộc rạp hiện tại!")
+                    .ticket(ticketResponse)
+                    .build();
+        }
+
+        // Kiểm tra trạng thái vé
+        if (ticket.getStatus() == TicketStatus.BOOKED) {
+            return fu.cinema.dto.response.TicketValidationResponse.builder()
+                    .validForCheckIn(true)
+                    .validationState("VALID")
+                    .message("Vé hợp lệ (Chưa sử dụng). Nhân viên có thể xác nhận cho khách vào phòng và in vé.")
+                    .ticket(ticketResponse)
+                    .build();
+        } else if (ticket.getStatus() == TicketStatus.CHECKED_IN) {
+            String usedTime = ticket.getCheckedInAt() != null
+                    ? ticket.getCheckedInAt().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss - dd/MM/yyyy"))
+                    : "trước đó";
+            return fu.cinema.dto.response.TicketValidationResponse.builder()
+                    .validForCheckIn(false)
+                    .validationState("ALREADY_USED")
+                    .message("CẢNH BÁO: Vé này ĐÃ ĐƯỢC SỬ DỤNG lúc " + usedTime + "!")
+                    .ticket(ticketResponse)
+                    .build();
+        } else if (ticket.getStatus() == TicketStatus.LOCKED) {
+            return fu.cinema.dto.response.TicketValidationResponse.builder()
+                    .validForCheckIn(false)
+                    .validationState("UNPAID")
+                    .message("Vé này đang ở trạng thái giữ chỗ (Chưa hoàn tất thanh toán).")
+                    .ticket(ticketResponse)
+                    .build();
+        } else {
+            return fu.cinema.dto.response.TicketValidationResponse.builder()
+                    .validForCheckIn(false)
+                    .validationState("CANCELLED")
+                    .message("Vé này đã bị hủy, không có giá trị vào phòng chiếu.")
+                    .ticket(ticketResponse)
+                    .build();
+        }
+    }
+
+    @Override
+    @Transactional
+    public fu.cinema.dto.response.TicketValidationResponse confirmTicketCheckIn(Long ticketId, String staffUsername) {
+        Ticket ticket = ticketRepository.findByIdWithFullDetails(ticketId)
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));
+
+        Long staffBranchId = getStaffBranchId(staffUsername);
+        Long ticketBranchId = ticket.getShowtime().getHall().getBranch().getBranchId();
+        if (staffBranchId != null && !staffBranchId.equals(ticketBranchId)) {
+            throw new AppException(ErrorCode.TICKET_WRONG_BRANCH);
+        }
+
+        if (ticket.getStatus() == TicketStatus.CHECKED_IN) {
+            throw new AppException(ErrorCode.TICKET_ALREADY_CHECKED_IN);
+        }
+
+        if (ticket.getStatus() != TicketStatus.BOOKED) {
+            throw new AppException(ErrorCode.TICKET_NOT_BOOKED);
+        }
+
+        ticket.setStatus(TicketStatus.CHECKED_IN);
+        ticket.setCheckedInAt(java.time.LocalDateTime.now());
+        ticketRepository.save(ticket);
+
+        TicketResponse updatedResponse = ticketMapper.toTicketResponse(ticket);
+        return fu.cinema.dto.response.TicketValidationResponse.builder()
+                .validForCheckIn(false)
+                .validationState("CHECKED_IN_SUCCESS")
+                .message("Soát vé thành công! Đã ghi nhận khách vào phòng chiếu.")
+                .ticket(updatedResponse)
+                .build();
+    }
+
+    private Long getStaffBranchId(String username) {
+        if (username == null || username.isBlank()) {
+            return null;
+        }
+        return accountRepository.findByUsername(username)
+                .map(Account::getStaff)
+                .map(Staff::getBranch)
+                .map(Branch::getBranchId)
+                .orElse(null);
     }
 
     /**

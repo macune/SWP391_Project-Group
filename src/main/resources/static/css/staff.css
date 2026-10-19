@@ -2,3 +2,67 @@
    FILE CSS DÀNH RIÊNG CHO PHÂN HỆ: STAFF (Bán vé POS / Soát vé)
    Thành viên phụ trách Staff chỉ viết thêm class vào đây.
    ========================================================= */
+
+/* Khung Camera quét QR */
+.qr-scanner-box {
+    background-color: #1e1514;
+    border: 2px solid var(--cine-primary);
+    border-radius: 14px;
+    min-height: 310px;
+    overflow: hidden;
+    position: relative;
+}
+
+#qr-reader {
+    width: 100%;
+    border: none !important;
+}
+
+#qr-reader video {
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.ticket-meta-item {
+    background-color: var(--cine-bg-main);
+    border: 1px solid var(--cine-border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    height: 100%;
+}
+
+/* Khu vực mẫu vé in vật lý (Ẩn trên màn hình thường, chỉ hiển thị khi bấm In vé) */
+#printable-ticket-stub {
+    display: none;
+}
+
+@media print {
+    body * {
+        visibility: hidden !important;
+    }
+
+    .app-sidebar,
+    header,
+    footer,
+    .no-print {
+        display: none !important;
+    }
+
+    #printable-ticket-stub,
+    #printable-ticket-stub * {
+        visibility: visible !important;
+    }
+
+    #printable-ticket-stub {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 340px;
+        padding: 18px;
+        border: 2px dashed #000000;
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: 'Inter', monospace, sans-serif;
+    }
+}

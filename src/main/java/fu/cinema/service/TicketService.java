@@ -48,4 +48,14 @@ public interface TicketService {
      * Lấy danh sách tất cả vé của khách hàng đang đăng nhập (Trang "Vé của tôi").
      */
     List<TicketResponse> getMyTickets(String username);
+
+    /**
+     * Quét mã QR / Nhập mã định danh để kiểm tra tính hợp lệ và hiển thị thông tin vé cho Staff.
+     */
+    fu.cinema.dto.response.TicketValidationResponse validateTicketByQr(String qrCode, String staffUsername);
+
+    /**
+     * Xác nhận soát vé cho khách vào phòng chiếu (Chuyển trạng thái BOOKED -> CHECKED_IN).
+     */
+    fu.cinema.dto.response.TicketValidationResponse confirmTicketCheckIn(Long ticketId, String staffUsername);
 }

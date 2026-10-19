@@ -52,19 +52,19 @@
     height: 100%;
 }
 
-/* Ẩn sidebar và các nút điều hướng khi người dùng bấm In vé (Print E-Ticket) */
-@media print {
-    .app-sidebar,
-    header,
-    footer,
-    .no-print {
-        display: none !important;
-    }
-    body {
-        background-color: #ffffff !important;
-    }
-    .eticket-wrapper {
-        box-shadow: none !important;
-        border: 2px solid #6e3531 !important;
-    }
-}
+/*!* Ẩn sidebar và các nút điều hướng khi người dùng bấm In vé (Print E-Ticket) *!*/
+/*@media print {*/
+/*    .app-sidebar,*/
+/*    header,*/
+/*    footer,*/
+/*    .no-print {*/
+/*        display: none !important;*/
+/*    }*/
+/*    body {*/
+/*        background-color: #ffffff !important;*/
+/*    }*/
+/*    .eticket-wrapper {*/
+/*        box-shadow: none !important;*/
+/*        border: 2px solid #6e3531 !important;*/
+/*    }*/
+/*}*/
