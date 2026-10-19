@@ -103,6 +103,7 @@ public class ManagerRevenueController {
             @RequestParam(required = false) MovieStatus movieStatus,
             @RequestParam(defaultValue = "title") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(defaultValue = "0") int page,
             Model model
     ) {
         Long branchId = getCurrentManagerBranchId();
@@ -114,19 +115,24 @@ public class ManagerRevenueController {
             sortDir = "asc";
         }
 
-        model.addAttribute("currentBranch", getCurrentManagerBranch());
-        model.addAttribute("startDate", startDate);
-        model.addAttribute("endDate", endDate);
-        model.addAttribute("movieStatus", movieStatus);
-        model.addAttribute("movieStatuses", MovieStatus.values());
-        model.addAttribute("sortBy", sortBy);
-        model.addAttribute("sortDir", sortDir);
+
         List<RevenueMovieResponse> movies =
                 revenueReportService.getMovieReport(
                         branchId, startDate, endDate,
                         movieStatus, sortBy, sortDir
                 );
 
+        // Lọc theo tên phim trước khi tính tổng và phân trang
+        if (movieName != null && !movieName.isBlank()) {
+            String keyword = movieName.trim().toLowerCase();
+
+            movies = movies.stream()
+                    .filter(movie -> movie.movieTitle() != null
+                            && movie.movieTitle().toLowerCase().contains(keyword))
+                    .toList();
+        }
+
+        // Tính tổng theo danh sách sau khi lọc
         BigDecimal totalRevenue = movies.stream()
                 .map(RevenueMovieResponse::revenue)
                 .filter(Objects::nonNull)
@@ -144,25 +150,45 @@ public class ManagerRevenueController {
                 .mapToLong(RevenueMovieResponse::totalSeats)
                 .sum();
 
+        // Phân trang: 10 phim/trang
+        int pageSize = 10;
+        int totalRows = movies.size();
+        int totalPages = Math.max(
+                1, (int) Math.ceil(totalRows / (double) pageSize)
+        );
+
+        page = Math.max(0, Math.min(page, totalPages - 1));
+
+        int from = page * pageSize;
+        int to = Math.min(from + pageSize, totalRows);
+
+        List<RevenueMovieResponse> pageItems =
+                movies.subList(from, to);
+
+        // Dữ liệu cho giao diện
+        model.addAttribute("currentBranch", getCurrentManagerBranch());
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("movieName", movieName);
+        model.addAttribute("movieStatus", movieStatus);
+        model.addAttribute("movieStatuses", MovieStatus.values());
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("sortDir", sortDir);
+
         model.addAttribute("movies", movies);
+        model.addAttribute("items", pageItems);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize", pageSize);
+        model.addAttribute("totalRows", totalRows);
+        model.addAttribute("totalPages", totalPages);
+
         model.addAttribute("totalRevenue", totalRevenue);
         model.addAttribute("totalShowtimes", totalShowtimes);
         model.addAttribute("totalTickets", totalTickets);
         model.addAttribute("totalSeats", totalSeats);
 
-        if (movieName != null && !movieName.isBlank()) {
-            String keyword = movieName.trim().toLowerCase();
-
-            movies = movies.stream()
-                    .filter(movie -> movie.movieTitle() != null
-                            && movie.movieTitle().toLowerCase().contains(keyword))
-                    .toList();
-        }
-
-        model.addAttribute("movieName", movieName);
-        model.addAttribute("movies", movies);
-
         return "manager/revenue-movies";
+
     }
     @GetMapping("/movie/{movieId}")
     public String showMovieShowtimes(
@@ -175,6 +201,7 @@ public class ManagerRevenueController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate,
+            @RequestParam(defaultValue = "0") int page,
 
             @RequestParam(defaultValue = "time") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
@@ -212,14 +239,35 @@ public class ManagerRevenueController {
         model.addAttribute("endDate", endDate);
         model.addAttribute("sortBy", sortBy);
 
-        model.addAttribute(
-                "showtimes",
+
+        List<fu.cinema.dto.response.RevenueShowtimeResponse> showtimes =
                 revenueReportService.getShowtimeReport(
                         branchId, movieId, startDate, endDate, sortBy, sortDir
-                )
+                );
+
+// Phân trang 10 suất chiếu/trang
+        int pageSize = 10;
+        int totalRows = showtimes.size();
+        int totalPages = Math.max(
+                1, (int) Math.ceil(totalRows / (double) pageSize)
         );
 
+        page = Math.max(0, Math.min(page, totalPages - 1));
+
+        int from = page * pageSize;
+        int to = Math.min(from + pageSize, totalRows);
+
+        List<fu.cinema.dto.response.RevenueShowtimeResponse> pageItems =
+                showtimes.subList(from, to);
+
+        model.addAttribute("showtimes", pageItems);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize", pageSize);
+        model.addAttribute("totalRows", totalRows);
+        model.addAttribute("totalPages", totalPages);
+
         return "manager/revenue-showtimes";
+
     }
     @GetMapping("/showtime/{showtimeId}")
     public String showShowtimeDetail(

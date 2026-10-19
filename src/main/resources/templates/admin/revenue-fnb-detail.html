@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: admin-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title>Chi tiết giao dịch F&B</title>
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/admin.css}">
+    </th:block>
+</head>
+<body>
+<div id="page-content" class="container-fluid py-4 revenue-page">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Chi tiết giao dịch F&B</h2>
+            <p class="text-secondary mb-0"
+               th:text="${currentBranch != null
+       ? currentBranch.branchName
+       : 'Toàn bộ chi nhánh'}"></p>
+        </div>
+
+        <a th:href="@{/admin/revenue/fnb(
+            startDate=${startDate},
+            endDate=${endDate}
+        )}" class="btn-back">
+            <i class="fa-solid fa-arrow-left me-1"></i>
+            Quay lại danh sách F&B
+        </a>
+    </div>
+
+    <form method="get"
+          th:action="@{/admin/revenue/fnb/{id}(id=${itemId})}"
+          class="card fnb-filter mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="branchId" class="form-label">Chi nhánh</label>
+                <select id="branchId" name="branchId" class="form-select">
+                    <option value="">Toàn bộ chi nhánh</option>
+                    <option th:each="branch : ${branches}"
+                            th:value="${branch.branchId}"
+                            th:text="${branch.branchName}"
+                            th:selected="${selectedBranchId != null
+                    and selectedBranchId.equals(branch.branchId)}">
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="startDate" class="form-label">Từ ngày</label>
+                <input id="startDate" type="date" name="startDate"
+                       class="form-control" th:value="${startDate}">
+            </div>
+
+            <div class="col-md-3">
+                <label for="endDate" class="form-label">Đến ngày</label>
+                <input id="endDate" type="date" name="endDate"
+                       class="form-control" th:value="${endDate}">
+            </div>
+
+            <div class="col-md-3">
+                <label for="paymentMethod" class="form-label">
+                    Phương thức thanh toán
+                </label>
+                <select id="paymentMethod" name="paymentMethod"
+                        class="form-select">
+                    <option value="ALL"
+                            th:selected="${paymentMethod == 'ALL'}">
+                        Tất cả phương thức
+                    </option>
+                    <option value="CASH"
+                            th:selected="${paymentMethod == 'CASH'}">
+                        Tiền mặt
+                    </option>
+                    <option value="ONLINE_QR"
+                            th:selected="${paymentMethod == 'ONLINE_QR'}">
+                        QR Banking
+                    </option>
+                    <option value="E_WALLET"
+                            th:selected="${paymentMethod == 'E_WALLET'}">
+                        Ví điện tử
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-fnb-primary flex-grow-1">
+                    <i class="fa-solid fa-filter me-1"></i>Lọc
+                </button>
+                <a th:href="@{/admin/revenue/fnb/{id}(id=${itemId})}"
+                   class="btn btn-fnb-outline">Đặt lại</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="card fnb-list-card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Danh sách giao dịch</h5>
+                <span class="text-secondary small"
+                      th:text="${totalRows} + ' giao dịch sản phẩm'"></span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle fnb-table">
+                    <thead class="table-light">
+                    <tr>
+                        <th>STT</th>
+
+                        <th>
+                            <a class="sort-link fnb-sort-link"
+                               th:href="@{/admin/revenue/fnb/{id}(
+                                   id=${itemId},
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   paymentMethod=${paymentMethod},
+                                   sortDir=${sortDir == 'desc' ? 'asc' : 'desc'},
+                                   page=0
+                               )}">
+                                Thời gian thanh toán
+                                <i class="fa-solid"
+                                   th:classappend="${sortDir == 'desc'
+                                       ? ' fa-sort-down'
+                                       : ' fa-sort-up'}"></i>
+                            </a>
+                        </th>
+                        <th>Chi nhánh</th>
+                        <th>Phương thức thanh toán</th>
+                        <th class="text-center">Số lượng</th>
+                        <th class="text-end">Doanh thu</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="row, stat : ${rows}">
+                        <td th:text="${currentPage * pageSize + stat.count}"></td>
+
+                        <td th:text="${#temporals.format(
+                            row.transactionTime, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td th:text="${transactionBranchNames[row.paymentId] ?: '—'}"></td>
+                        <td th:text="${row.paymentMethod == 'CASH' ? 'Tiền mặt' :
+                            (row.paymentMethod == 'ONLINE_QR' ? 'QR Banking' :
+                            (row.paymentMethod == 'E_WALLET' ? 'Ví điện tử' : 'Khác'))}">
+                        </td>
+
+                        <td class="text-center"
+                            th:text="${row.quantity}"></td>
+
+                        <td class="text-end fw-semibold"
+                            th:text="${#numbers.formatDecimal(
+                                row.subtotal, 0, 'COMMA', 0, 'POINT') + ' ₫'}">
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(rows)}">
+                        <td colspan="6" class="text-center text-secondary py-5">
+                            Không có giao dịch phù hợp với bộ lọc.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <span class="text-secondary small"
+                      th:text="${totalRows == 0 ? 'Hiển thị 0 giao dịch' :
+                        'Hiển thị ' + (currentPage * pageSize + 1) + '–' +
+                        (currentPage * pageSize + rows.size()) +
+                        ' / ' + totalRows + ' giao dịch'}"></span>
+
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-sm btn-outline-primary"
+                       th:if="${currentPage > 0}"
+                       th:href="@{/admin/revenue/fnb/{id}(
+                           id=${itemId},
+                           branchId=${selectedBranchId},
+                           startDate=${startDate},
+                           endDate=${endDate},
+                           paymentMethod=${paymentMethod},
+                           sortDir=${sortDir},
+                           page=${currentPage - 1}
+                       )}">Trước</a>
+
+                    <button class="btn btn-sm btn-outline-secondary"
+                            th:unless="${currentPage > 0}" disabled>
+                        Trước
+                    </button>
+
+                    <span class="small"
+                          th:text="${currentPage + 1 + ' / ' + totalPages}">
+                    </span>
+
+                    <a class="btn btn-sm btn-outline-primary"
+                       th:if="${currentPage + 1 < totalPages}"
+                       th:href="@{/admin/revenue/fnb/{id}(
+                           id=${itemId},
+                           startDate=${startDate},
+                           endDate=${endDate},
+                           branchId=${selectedBranchId},
+                           paymentMethod=${paymentMethod},
+                           sortDir=${sortDir},
+                           page=${currentPage + 1}
+                       )}">Sau</a>
+
+                    <button class="btn btn-sm btn-outline-secondary"
+                            th:unless="${currentPage + 1 < totalPages}" disabled>
+                        Sau
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<th:block id="actorJs"></th:block>
+</body>
+</html>

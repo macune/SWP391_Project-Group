@@ -1,43 +1,264 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/layout :: master(
-          title = ~{::title},
-          sidebar = ~{layout/sidebar :: admin-sidebar},
-          content = ~{::#page-content},
-          actorCss = ~{::link},
-          actorJs = ~{::script}
+          ~{::title},
+          ~{layout/sidebar :: admin-sidebar},
+          ~{::content},
+          ~{::css},
+          ~{::js}
       )}">
+
 <head>
-    <title>Quản trị chuỗi rạp | CineFlow Admin</title>
-    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <title>Dashboard Admin</title>
+
+    <th:block th:fragment="css">
+        <link rel="stylesheet" th:href="@{/css/admin.css}">
+    </th:block>
 </head>
+
 <body>
+<div th:fragment="content" class="admin-dashboard">
 
-<div id="page-content" class="container-fluid">
-    <h4 class="fw-bold mb-4">Tổng quan hệ thống CineFlow</h4>
+    <div class="dashboard-header">
+        <div>
+            <h1>Dashboard</h1>
+            <p>Tổng quan hoạt động kinh doanh CineFlow</p>
+        </div>
+        <span class="dashboard-date"
+              th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy')}">
+            19/10/2026
+        </span>
+    </div>
 
-    <div class="row g-3">
-        <div class="col-md-4">
-            <div class="card bg-cine-dark text-white border-0 shadow-sm p-3">
-                <span class="small text-cine-pastel">Tổng chi nhánh đang hoạt động</span>
-                <h2 class="fw-bold mb-0 mt-1">12 Cụm rạp</h2>
+    <!-- Bộ lọc -->
+    <form method="get" th:action="@{/admin/dashboard}"
+          class="dashboard-filters">
+
+        <div class="filter-group">
+            <label for="branchId">Chi nhánh</label>
+            <select id="branchId" name="branchId">
+                <option value="">Toàn bộ chi nhánh</option>
+                <option th:each="branch : ${branches}"
+                        th:value="${branch.branchId}"
+                        th:text="${branch.branchName}"
+                        th:selected="${selectedBranchId != null
+                            and selectedBranchId.equals(branch.branchId)}">
+                    Chi nhánh
+                </option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="period">Thời gian</label>
+            <select id="period" name="period">
+                <option value="week" th:selected="${period == 'week'}">
+                    7 ngày gần nhất
+                </option>
+                <option value="month" th:selected="${period == 'month'}">
+                    1 tháng gần nhất
+                </option>
+                <option value="year" th:selected="${period == 'year'}">
+                    1 năm gần nhất
+                </option>
+                <option value="all" th:selected="${period == 'all'}">
+                    Toàn bộ dữ liệu
+                </option>
+            </select>
+        </div>
+
+        <button type="submit" class="filter-button">
+            Áp dụng
+        </button>
+    </form>
+
+    <!-- KPI -->
+    <div class="dashboard-kpis">
+
+        <div class="kpi-card">
+            <div class="kpi-icon revenue-icon">₫</div>
+            <div>
+                <p>Doanh thu</p>
+                <h2 th:text="${#numbers.formatDecimal(
+                    totalRevenue != null ? totalRevenue : 0,
+                    0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                    0 ₫
+                </h2>
+                <span th:text="${periodLabel}">7 ngày gần nhất</span>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-cine-primary border-0 shadow-sm p-3">
-                <span class="small">Doanh thu vé hôm nay</span>
-                <h2 class="fw-bold mb-0 mt-1">145.000.000 ₫</h2>
+
+        <div class="kpi-card">
+            <div class="kpi-icon ticket-icon">▤</div>
+            <div>
+                <p>Vé đã bán</p>
+                <h2 th:text="${totalTickets}">0</h2>
+                <span>Vé hợp lệ</span>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-cine-hot border-0 shadow-sm p-3">
-                <span class="small">Doanh thu Bắp nước (Concessions)</span>
-                <h2 class="fw-bold mb-0 mt-1">42.500.000 ₫</h2>
+
+        <div class="kpi-card">
+            <div class="kpi-icon showtime-icon">◷</div>
+            <div>
+                <p>Suất chiếu</p>
+                <h2 th:text="${totalShowtimes}">0</h2>
+                <span>Trong kỳ được chọn</span>
             </div>
         </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon occupancy-icon">▥</div>
+            <div>
+                <p>Lấp đầy ghế</p>
+                <h2 th:text="${#numbers.formatDecimal(
+                    occupancyRate, 1, 1)} + '%'">
+                    0%
+                </h2>
+                <span>Tỷ lệ ghế có vé hợp lệ</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Biểu đồ -->
+    <section class="dashboard-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Biểu đồ doanh thu</h2>
+                <p>Doanh thu theo thời gian</p>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="revenueChart"></canvas>
+        </div>
+    </section>
+
+    <div class="dashboard-bottom">
+
+        <!-- Top phim -->
+        <section class="dashboard-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Top 5 phim</h2>
+                    <p>Xếp hạng theo số vé bán</p>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(topMovies)}"
+                 class="empty-state">
+                Chưa có dữ liệu phim trong kỳ này.
+            </div>
+
+            <div class="movie-list"
+                 th:unless="${#lists.isEmpty(topMovies)}">
+
+                <div class="movie-row"
+                     th:each="movie, stat : ${topMovies}">
+                    <span class="movie-rank"
+                          th:text="${stat.count}">1</span>
+
+                    <img th:if="${movie.posterUrl != null
+                                and !#strings.isEmpty(movie.posterUrl)}"
+                         th:src="${movie.posterUrl}"
+                         alt="Poster phim"
+                         class="movie-poster">
+
+                    <div class="movie-info">
+                        <h3 th:text="${movie.title}">Tên phim</h3>
+                        <span th:text="${movie.tickets} + ' vé'">
+                            0 vé
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Suất chiếu sắp tới -->
+        <section class="dashboard-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Suất chiếu sắp tới</h2>
+                    <p>5 suất chiếu gần nhất</p>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(upcomingShowtimes)}"
+                 class="empty-state">
+                Không có suất chiếu sắp tới.
+            </div>
+
+            <div class="upcoming-list"
+                 th:unless="${#lists.isEmpty(upcomingShowtimes)}">
+
+                <div class="upcoming-row"
+                     th:each="show : ${upcomingShowtimes}">
+                    <div class="upcoming-time">
+                        <strong th:text="${#temporals.format(
+                            show.startTime, 'HH:mm')}">19:00</strong>
+                        <span th:text="${#temporals.format(
+                            show.startTime, 'dd/MM')}">19/10</span>
+                    </div>
+
+                    <div class="upcoming-info">
+                        <h3 th:text="${show.movieTitle}">Tên phim</h3>
+                        <span th:text="${show.hallName}">Phòng chiếu</span>
+                    </div>
+
+                    <span class="status-badge"
+                          th:text="${show.status}">SCHEDULED</span>
+                </div>
+            </div>
+        </section>
+
     </div>
 </div>
 
-<script th:src="@{/js/admin.js}"></script>
+<th:block th:fragment="js">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script th:inline="javascript">
+        const chartLabels = /*[[${chartLabels}]]*/ [];
+        const chartValues = /*[[${chartValues}]]*/ [];
+
+        const canvas = document.getElementById('revenueChart');
+
+        if (canvas) {
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Doanh thu (VNĐ)',
+                        data: chartValues,
+                        borderColor: '#D93650',
+                        backgroundColor: 'rgba(217, 54, 80, 0.12)',
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value =>
+                                    new Intl.NumberFormat('vi-VN', {
+                                        notation: 'compact'
+                                    }).format(value) + ' ₫'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</th:block>
 </body>
 </html>

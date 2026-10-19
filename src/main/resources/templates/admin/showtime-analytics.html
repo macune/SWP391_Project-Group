@@ -1,0 +1,434 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: admin-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title>Showtime Analytics</title>
+    <th:block id="actorCss">
+        <link rel="stylesheet"
+              th:href="@{/css/admin.css}">
+    </th:block>
+    <th:block id="actorJs">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script th:inline="javascript">
+
+            document.addEventListener("DOMContentLoaded", function () {
+                const search = document.getElementById("movieSearch");
+                const movieId = document.getElementById("movieId");
+                const options = document.querySelectorAll("#movieOptions option");
+
+                search.addEventListener("input", function () {
+                    const selected = Array.from(options).find(
+                        option => option.value === search.value
+                    );
+
+                    movieId.value = selected ? selected.dataset.id : "";
+                });
+
+                const selectedOption = Array.from(options).find(
+                    option => option.dataset.id === movieId.value
+                );
+
+                if (selectedOption) {
+                    search.value = selectedOption.value;
+                }
+            });
+            const hourLabels = /*[[${hourLabels}]]*/ [];
+            const hourValues = /*[[${hourValues}]]*/ [];
+            const dayLabels = /*[[${dayLabels}]]*/ [];
+            const dayValues = /*[[${dayValues}]]*/ [];
+
+            new Chart(document.getElementById('hourChart'), {
+                type: 'bar',
+                data: {
+                    labels: hourLabels,
+                    datasets: [{
+                        label: 'Vé đã đặt / check-in',
+                        data: hourValues,
+                        backgroundColor: '#D93650',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+
+            new Chart(document.getElementById('dayChart'), {
+                type: 'bar',
+                data: {
+                    labels: dayLabels,
+                    datasets: [{
+                        label: 'Vé đã đặt / check-in',
+                        data: dayValues,
+                        backgroundColor: [
+                            '#F0C9C1', '#F0C9C1', '#F0C9C1',
+                            '#F0C9C1', '#D93650', '#A65D55', '#D93650'
+                        ],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        </script>
+    </th:block>
+</head>
+<body>
+<div id="page-content" class="container-fluid py-4 analytics-page">
+
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">Showtime Analytics</h2>
+        <p class="text-secondary mb-0">
+            Phân tích hiệu suất suất chiếu —
+            <span th:text="${branchLabel}"></span>
+        </p>
+    </div>
+
+    <form method="get" th:action="@{/admin/showtime-analytics}"
+          class="analytics-filter mb-4">
+
+        <div>
+            <label for="branchId">Chi nhánh</label>
+            <select class="form-select" id="branchId" name="branchId">
+                <option value="">Tất cả chi nhánh</option>
+                <option th:each="branch : ${branches}"
+                        th:value="${branch.branchId}"
+                        th:text="${branch.branchName}"
+                        th:selected="${selectedBranchId != null
+                    and selectedBranchId == branch.branchId}">
+                </option>
+            </select>
+        </div>
+
+        <div>
+            <label for="startDate">Từ ngày</label>
+            <input class="form-control" type="date" id="startDate"
+                   name="startDate" th:value="${startDate}" required>
+        </div>
+        <div>
+            <label for="endDate">Đến ngày</label>
+            <input class="form-control" type="date" id="endDate"
+                   name="endDate" th:value="${endDate}" required>
+        </div>
+        <div>
+            <label for="movieId">Phim</label>
+            <input type="hidden" id="movieId" name="movieId"
+                   th:value="${selectedMovieId}">
+
+            <input type="text" id="movieSearch"
+                   class="form-control"
+                   list="movieOptions"
+                   placeholder="Nhập tên phim để tìm..."
+                   autocomplete="off">
+
+            <datalist id="movieOptions">
+                <option th:each="movie : ${movies}"
+                        th:value="${movie.title}"
+                        th:attr="data-id=${movie.movieId}">
+                </option>
+            </datalist>
+        </div>
+
+        <div>
+            <label for="status">Trạng thái suất chiếu</label>
+            <select class="form-select" id="status" name="status">
+                <option value="">Tất cả trạng thái</option>
+
+                <option th:each="item : ${statuses}"
+                        th:value="${item}"
+                        th:text="${item.name() == 'SCHEDULED' ? 'Đã lên lịch'
+                    : item.name() == 'SHOWING' ? 'Đang chiếu'
+                    : item.name() == 'COMPLETED' ? 'Đã kết thúc'
+                    : item.name() == 'CANCELLED' ? 'Đã hủy'
+                    : item.name()}"
+                        th:selected="${selectedStatus == item}">
+                </option>
+            </select>
+        </div>
+
+        <div class="filter-actions">
+            <button class="btn btn-analytics" type="submit">
+                <i class="fa-solid fa-filter me-1"></i> Lọc
+            </button>
+            <a class="btn btn-reset-analytics"
+               th:href="@{/admin/showtime-analytics}">Đặt lại</a>
+        </div>
+    </form>
+
+    <p class="text-danger" th:if="${dateError}" th:text="${dateError}"></p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="analytics-card">
+                <div class="metric-icon"><i class="fa-regular fa-calendar"></i></div>
+                <p>Tổng suất chiếu</p>
+                <h3 th:text="${totalShowtimes}">0</h3>
+                <small>Trong khoảng thời gian đã chọn</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="analytics-card">
+                <div class="metric-icon"><i class="fa-solid fa-ticket"></i></div>
+                <p>Tổng vé đã bán</p>
+                <h3 th:text="${#numbers.formatInteger(totalTickets, 0, 'COMMA')}">0</h3>
+                <small>Vé đã đặt hoặc check-in</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="analytics-card">
+                <div class="metric-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                <p>Tỷ lệ lấp đầy</p>
+                <h3 th:text="${#numbers.formatDecimal(occupancyRate, 1, 1) + '%'}">0%</h3>
+                <small>Vé đã đặt / tổng sức chứa</small>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="analytics-card">
+                <div class="metric-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+                <p>Doanh thu vé</p>
+                <h3 th:text="${#numbers.formatDecimal(ticketRevenue, 0, 'COMMA', 0, 'POINT') + ' đ'}">0 đ</h3>
+                <small>Theo trạng thái vé hiện tại</small>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-7">
+            <div class="analytics-card">
+                <h5 class="fw-bold mb-1">Khung giờ đông khách</h5>
+                <p class="text-secondary small mb-3">
+                    Tổng vé đã đặt hoặc check-in theo giờ bắt đầu suất chiếu
+                </p>
+                <div style="height:300px; position:relative;">
+                    <canvas id="hourChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-5">
+            <div class="analytics-card">
+                <h5 class="fw-bold mb-1">Ngày đông khách</h5>
+                <p class="text-secondary small mb-3">
+                    So sánh lượng vé theo thứ trong tuần
+                </p>
+                <div style="height:300px; position:relative;">
+                    <canvas id="dayChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="analytics-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Danh sách suất chiếu</h5>
+            <span class="text-secondary"
+                  th:text="${totalShowtimes + ' suất chiếu'}"></span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table analytics-table align-middle">
+                <thead>
+                <tr>
+                    <th>STT</th>
+
+                    <th>
+                        <a class="sort-link"
+                           th:href="@{/admin/showtime-analytics(
+           startDate=${startDate},
+           endDate=${endDate},
+           movieId=${selectedMovieId},
+           status=${selectedStatus},
+           sortBy='movie',
+           sortDir=${sortBy == 'movie' and sortDir == 'asc' ? 'desc' : 'asc'}
+       )}">
+                            Phim
+                            <i class="fa-solid"
+                               th:classappend="${sortBy == 'movie'
+               ? (sortDir == 'asc' ? ' fa-sort-up' : ' fa-sort-down')
+               : ' fa-sort'}"></i>
+                        </a>
+                    </th>
+                    <th>Rạp Phim</th>
+                    <th>Phòng chiếu</th>
+                    <th>
+                        <a class="sort-link"
+                           th:href="@{/admin/showtime-analytics(
+           startDate=${startDate},
+           endDate=${endDate},
+           movieId=${selectedMovieId},
+           status=${selectedStatus},
+           sortBy='time',
+           sortDir=${sortBy == 'time' and sortDir == 'asc' ? 'desc' : 'asc'}
+       )}">
+                            Thời gian
+                            <i class="fa-solid"
+                               th:classappend="${sortBy == 'time'
+               ? (sortDir == 'asc' ? ' fa-sort-up' : ' fa-sort-down')
+               : ' fa-sort'}"></i>
+                        </a>
+                    </th>
+
+                    <th>Trạng thái</th>
+                    <th>Vé đã bán</th>
+                    <th>Tổng ghế</th>
+                    <th>Tỷ lệ lấp đầy</th>
+
+                    <th>
+                        <a class="sort-link"
+                           th:href="@{/admin/showtime-analytics(
+           startDate=${startDate},
+           endDate=${endDate},
+           movieId=${selectedMovieId},
+           status=${selectedStatus},
+           sortBy='revenue',
+           sortDir=${sortBy == 'revenue' and sortDir == 'asc' ? 'desc' : 'asc'}
+       )}">
+                            Doanh thu vé
+                            <i class="fa-solid"
+                               th:classappend="${sortBy == 'revenue'
+               ? (sortDir == 'asc' ? ' fa-sort-up' : ' fa-sort-down')
+               : ' fa-sort'}"></i>
+                        </a>
+                    </th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="row, stat : ${showtimeRows}">
+                    <td th:text="${stat.count}"></td>
+                    <td th:text="${row['movieTitle']}"></td>
+                    <td th:text="${row['branchName']}"></td>
+                    <td th:text="${row['hallName']}"></td>
+                    <td>
+                        <div th:text="${#temporals.format(row['startTime'], 'dd/MM/yyyy')}"></div>
+                        <small class="text-secondary"
+                               th:text="${#temporals.format(row['startTime'], 'HH:mm')
+                   + ' - ' + #temporals.format(row['endTime'], 'HH:mm')}">
+                        </small>
+                    </td>
+                    <td>
+
+<span class="status-pill"
+      th:classappend="${' status-' + #strings.toLowerCase(row['status'].toString())}"
+      th:text="${row['status'] == T(fu.cinema.enums.ShowtimeStatus).SCHEDULED ? 'Đã lên lịch'
+          : row['status'] == T(fu.cinema.enums.ShowtimeStatus).SHOWING ? 'Đang chiếu'
+          : row['status'] == T(fu.cinema.enums.ShowtimeStatus).COMPLETED ? 'Đã kết thúc'
+          : row['status'] == T(fu.cinema.enums.ShowtimeStatus).CANCELLED ? 'Đã hủy'
+          : row['status']}">
+</span>
+
+                    </td>
+                    <td th:text="${row['soldTickets']}"></td>
+                    <td th:text="${row['capacity']}"></td>
+                    <td th:text="${#numbers.formatDecimal(row['occupancy'], 1, 1) + '%'}"></td>
+                    <td th:text="${#numbers.formatDecimal(row['revenue'], 0, 'COMMA', 0, 'POINT') + ' đ'}"></td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(showtimeRows)}">
+                    <td colspan="9" class="text-center py-4 text-secondary">
+                        Không có suất chiếu phù hợp với bộ lọc.
+                    </td>
+                </tr>
+                </tbody>
+
+            </table>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-3"
+                 th:if="${totalPages > 0}">
+
+    <span class="text-secondary small">
+        Trang <strong th:text="${currentPage}"></strong>
+        / <strong th:text="${totalPages}"></strong>
+        — Tổng <strong th:text="${totalElements}"></strong> suất chiếu
+    </span>
+
+                <nav aria-label="Showtime pagination">
+                    <ul class="pagination pagination-sm mb-0">
+
+                        <li class="page-item"
+                            th:classappend="${currentPage == 1 ? ' disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/admin/showtime-analytics(
+                       startDate=${startDate},
+                       endDate=${endDate},
+                       movieId=${selectedMovieId},
+                       status=${selectedStatus},
+                       branchId=${selectedBranchId},
+                       sortBy=${sortBy},
+                       sortDir=${sortDir},
+                       page=${currentPage - 1}
+                   )}">
+                                &laquo;
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:each="p : ${#numbers.sequence(1, totalPages)}"
+                            th:classappend="${p == currentPage ? ' active' : ''}">
+                            <a class="page-link"
+                               th:text="${p}"
+                               th:href="@{/admin/showtime-analytics(
+                       startDate=${startDate},
+                       endDate=${endDate},
+                       movieId=${selectedMovieId},
+                       status=${selectedStatus},
+                       branchId=${selectedBranchId},
+                       sortBy=${sortBy},
+                       sortDir=${sortDir},
+                       page=${p}
+                   )}">
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:classappend="${currentPage == totalPages ? ' disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/admin/showtime-analytics(
+                       startDate=${startDate},
+                       endDate=${endDate},
+                       movieId=${selectedMovieId},
+                       status=${selectedStatus},
+                       sortBy=${sortBy},
+                       branchId=${selectedBranchId},
+                       sortDir=${sortDir},
+                       page=${currentPage + 1}
+                   )}">
+                                &raquo;
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

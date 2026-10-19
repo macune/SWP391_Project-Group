@@ -153,8 +153,17 @@
                         <th class="text-end">
                             <a class="sort-link"
                                th:classappend="${sortBy == 'showtimes' ? ' active' : ''}"
-                               th:href="@{/manager/revenue(startDate=${startDate},endDate=${endDate},movieStatus=${movieStatus},sortBy='showtimes',sortDir=${sortBy == 'showtimes' and sortDir == 'asc' ? 'desc' : 'asc'})}">
-                                Số suất chiếu
+
+                               th:href="@{/manager/revenue(
+    movieName=${movieName},
+    startDate=${startDate},
+    endDate=${endDate},
+    movieStatus=${movieStatus},
+    sortBy='showtimes',
+    sortDir=${sortBy == 'showtimes' and sortDir == 'asc' ? 'desc' : 'asc'},
+    page=0
+)}">
+                               Số suất chiếu
                                 <i class="fa-solid"
                                    th:classappend="${sortBy == 'showtimes' and sortDir == 'desc' ? ' fa-sort-down' : (sortBy == 'showtimes' ? ' fa-sort-up' : ' fa-sort')}"></i>
                             </a>
@@ -163,10 +172,21 @@
                         <th class="text-end">
                             <a class="sort-link"
                                th:classappend="${sortBy == 'revenue' ? ' active' : ''}"
-                               th:href="@{/manager/revenue(startDate=${startDate},endDate=${endDate},movieStatus=${movieStatus},sortBy='revenue',sortDir=${sortBy == 'revenue' and sortDir == 'asc' ? 'desc' : 'asc'})}">
-                                Doanh thu vé
+
+                               th:href="@{/manager/revenue(
+    movieName=${movieName},
+    startDate=${startDate},
+    endDate=${endDate},
+    movieStatus=${movieStatus},
+    sortBy='revenue',
+    sortDir=${sortBy == 'revenue' and sortDir == 'asc' ? 'desc' : 'asc'},
+    page=0
+)}">
+                               Doanh thu vé
                                 <i class="fa-solid"
-                                   th:classappend="${sortBy == 'revenue' and sortDir == 'desc' ? ' fa-sort-down' : (sortBy == 'revenue' ? ' fa-sort-up' : ' fa-sort')}"></i>
+
+                                   th:classappend="${sortBy == 'revenue' and sortDir == 'desc' ? ' fa-sort-down' : (sortBy == 'revenue' ? ' fa-sort-up' : ' fa-sort')}"
+
                             </a>
                         </th>
                         <th></th>
@@ -174,8 +194,8 @@
                     </thead>
 
                     <tbody>
-                    <tr th:each="movie, stat : ${movies}">
-                        <td th:text="${stat.count}"></td>
+                    <tr th:each="movie, stat : ${items}">
+                        <td th:text="${currentPage * pageSize + stat.count}"></td>
                         <td>
                             <div class="d-flex align-items-center gap-3">
                                 <img th:if="${movie.posterUrl != null
@@ -220,7 +240,7 @@
                         </td>
                     </tr>
 
-                    <tr th:if="${#lists.isEmpty(movies)}">
+                    <tr th:if="${#lists.isEmpty(items)}">
                         <td colspan="7" class="text-center text-secondary py-5">
                             Không có dữ liệu phim trong khoảng thời gian này.
                         </td>
@@ -228,6 +248,73 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Thông tin và phân trang -->
+            <div class="d-flex flex-wrap justify-content-between
+                        align-items-center gap-3 mt-3"
+                 th:if="${totalRows > 0}">
+
+                <small class="text-secondary"
+                       th:text="|Hiển thị ${currentPage * pageSize + 1}–${currentPage * pageSize + items.size()} / ${totalRows} phim|">
+                </small>
+
+                <nav aria-label="Phân trang phim"
+                     th:if="${totalPages > 1}">
+                    <ul class="pagination mb-0">
+
+                        <li class="page-item"
+                            th:classappend="${currentPage == 0 ? ' disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/manager/revenue(
+                                   movieName=${movieName},
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   movieStatus=${movieStatus},
+                                   sortBy=${sortBy},
+                                   sortDir=${sortDir},
+                                   page=${currentPage - 1}
+                               )}">
+                                Trước
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:classappend="${p == currentPage ? ' active' : ''}">
+                            <a class="page-link"
+                               th:text="${p + 1}"
+                               th:href="@{/manager/revenue(
+                                   movieName=${movieName},
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   movieStatus=${movieStatus},
+                                   sortBy=${sortBy},
+                                   sortDir=${sortDir},
+                                   page=${p}
+                               )}">
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:classappend="${currentPage >= totalPages - 1 ? ' disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/manager/revenue(
+                                   movieName=${movieName},
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   movieStatus=${movieStatus},
+                                   sortBy=${sortBy},
+                                   sortDir=${sortDir},
+                                   page=${currentPage + 1}
+                               )}">
+                                Sau
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+
         </div>
     </div>
 </div>

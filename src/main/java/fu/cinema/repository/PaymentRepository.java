@@ -33,4 +33,24 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
+
+    @Query("""
+    SELECT DISTINCT p
+    FROM Payment p
+    JOIN p.booking b
+    JOIN b.tickets t
+    JOIN t.showtime s
+    JOIN s.hall h
+    WHERE p.status = :status
+      AND (:branchId IS NULL OR h.branch.branchId = :branchId)
+      AND (:startTime IS NULL OR p.transactionTime >= :startTime)
+      AND (:endTime IS NULL OR p.transactionTime < :endTime)
+    ORDER BY p.transactionTime DESC
+    """)
+    List<Payment> findSuccessfulPaymentsForAdmin(
+            @Param("branchId") Long branchId,
+            @Param("status") PaymentStatus status,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
 }

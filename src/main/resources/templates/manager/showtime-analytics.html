@@ -142,17 +142,24 @@
                 </option>
             </datalist>
         </div>
+
         <div>
             <label for="status">Trạng thái suất chiếu</label>
             <select class="form-select" id="status" name="status">
                 <option value="">Tất cả trạng thái</option>
+
                 <option th:each="item : ${statuses}"
                         th:value="${item}"
-                        th:text="${item}"
+                        th:text="${item.name() == 'SCHEDULED' ? 'Đã lên lịch'
+                    : item.name() == 'SHOWING' ? 'Đang chiếu'
+                    : item.name() == 'COMPLETED' ? 'Đã kết thúc'
+                    : item.name() == 'CANCELLED' ? 'Đã hủy'
+                    : item.name()}"
                         th:selected="${selectedStatus == item}">
                 </option>
             </select>
         </div>
+
         <div class="filter-actions">
             <button class="btn btn-analytics" type="submit">
                 <i class="fa-solid fa-filter me-1"></i> Lọc
@@ -309,7 +316,16 @@
                         </small>
                     </td>
                     <td>
-                        <span class="status-pill" th:text="${row['status']}"></span>
+
+<span class="status-pill"
+      th:classappend="${' status-' + #strings.toLowerCase(row['status'].toString())}"
+      th:text="${row['status'] == T(fu.cinema.enums.ShowtimeStatus).SCHEDULED ? 'Đã lên lịch'
+          : row['status'] == T(fu.cinema.enums.ShowtimeStatus).SHOWING ? 'Đang chiếu'
+          : row['status'] == T(fu.cinema.enums.ShowtimeStatus).COMPLETED ? 'Đã kết thúc'
+          : row['status'] == T(fu.cinema.enums.ShowtimeStatus).CANCELLED ? 'Đã hủy'
+          : row['status']}">
+</span>
+
                     </td>
                     <td th:text="${row['soldTickets']}"></td>
                     <td th:text="${row['capacity']}"></td>

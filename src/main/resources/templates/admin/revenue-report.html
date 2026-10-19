@@ -1,0 +1,265 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: admin-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title>Báo cáo doanh thu</title>
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/admin.css}">
+    </th:block>
+</head>
+<body>
+<div id="page-content" class="container-fluid py-4 revenue-page">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Báo cáo doanh thu</h2>
+            <p class="text-secondary mb-0">
+                Theo dõi doanh thu và giao dịch của chi nhánh
+            </p>
+        </div>
+        <a th:href="@{/admin/revenue/movie/{movieId}(
+        movieId=${showtime.movie.movieId},
+        startDate=${startDate},
+        endDate=${endDate}
+    )}"
+           class="btn-back">
+            <i class="fa-solid fa-arrow-left me-1"></i>
+            Quay lại danh sách suất chiếu
+        </a>
+    </div>
+
+    <form method="get" th:action="@{/admin/revenue/showtime/{id}(id=${showtime.showtimeId})}"
+          class="card border-0 shadow-sm p-3 mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="branchId" class="form-label">Chi nhánh</label>
+                <select id="branchId" name="branchId" class="form-select">
+                    <option value="">Toàn bộ chi nhánh</option>
+                    <option th:each="branch : ${branches}"
+                            th:value="${branch.branchId}"
+                            th:text="${branch.branchName}"
+                            th:selected="${selectedBranchId != null
+                    and selectedBranchId.equals(branch.branchId)}">
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="startDate" class="form-label">Từ ngày</label>
+                <input id="startDate"
+                       type="date"
+                       name="startDate"
+                       class="form-control"
+                       th:value="${startDate}">
+            </div>
+
+            <div class="col-md-3">
+                <label for="endDate" class="form-label">Đến ngày</label>
+                <input id="endDate"
+                       type="date"
+                       name="endDate"
+                       class="form-control"
+                       th:value="${endDate}">
+            </div>
+
+            <div class="col-md-3">
+                <label for="paymentMethod" class="form-label">
+                    Phương thức thanh toán
+                </label>
+                <select id="paymentMethod"
+                        name="paymentMethod"
+                        class="form-select">
+                    <option value="all"
+                            th:selected="${paymentMethod == 'all'}">
+                        Tất cả phương thức
+                    </option>
+                    <option value="CASH"
+                            th:selected="${paymentMethod == 'CASH'}">
+                        Tiền mặt
+                    </option>
+                    <option value="ONLINE_QR"
+                            th:selected="${paymentMethod == 'ONLINE_QR'}">
+                        Thanh toán QR
+                    </option>
+                    <option value="E_WALLET"
+                            th:selected="${paymentMethod == 'E_WALLET'}">
+                        Ví điện tử
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn-filter flex-grow-1">
+                    <i class="fa-solid fa-filter me-1"></i>Lọc
+                </button>
+                <a th:href="@{/admin/revenue/showtime/{id}(id=${showtime.showtimeId})}"
+                   class="btn-reset">
+                    Đặt lại
+                </a>
+            </div>
+        </div>
+    </form>
+
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Chi tiết giao dịch</h5>
+                <span class="text-secondary small"
+                      th:text="${report.transactionCount} + ' giao dịch'"></span>
+            </div>
+
+            <div class="table-responsive">
+                <table id="transactionTable" class="table table-hover align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>STT</th>
+                        <th>Thời gian</th>
+                        <th>Phương thức</th>
+                        <th class="text-center">Số vé</th>
+                        <th class="text-end">Tiền vé</th>
+                        <th class="text-end">Tổng tiền</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="transaction, stat : ${report.transactions}">
+                        <td th:text="${stat.count}"></td>
+
+                        <td th:text="${#temporals.format(
+        transaction.transactionTime, 'dd/MM/yyyy HH:mm')}"></td>
+
+                        <td>
+    <span class="badge"
+          th:classappend="${transaction.paymentMethod == 'CASH'} ? ' bg-success-subtle text-success' :
+                          (${transaction.paymentMethod == 'ONLINE_QR'} ? ' bg-primary-subtle text-primary' :
+                          ' bg-warning-subtle text-dark')"
+          th:text="${transaction.paymentMethod == 'CASH'} ? 'Tiền mặt' :
+                   (${transaction.paymentMethod == 'ONLINE_QR'} ? 'QR Banking' :
+                   (${transaction.paymentMethod == 'E_WALLET'} ? 'Ví điện tử' : 'Khác'))">
+    </span>
+                        </td>
+                        <td class="text-center"
+                            th:text="${transaction.ticketCount}">
+                        </td>
+
+                        <!-- Tiền mỗi vé -->
+                        <td class="text-end"
+                            th:text="${#numbers.formatDecimal(
+        transaction.ticketCount > 0
+            ? transaction.ticketRevenue / transaction.ticketCount
+            : 0,
+        0, 'COMMA', 0, 'POINT') + ' ₫'}">
+                        </td>
+
+                        <!-- Tổng tiền = Số vé × Tiền/vé -->
+                        <td class="text-end fw-semibold"
+                            th:text="${#numbers.formatDecimal(
+        transaction.ticketRevenue,
+        0, 'COMMA', 0, 'POINT') + ' ₫'}">
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(report.transactions)}">
+                        <td colspan="7" class="text-center text-secondary py-5">
+                            Không có giao dịch phù hợp với bộ lọc.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="transactionPagination"
+                 class="d-flex justify-content-between align-items-center mt-3">
+                <span id="paginationInfo" class="text-secondary small"></span>
+
+                <nav aria-label="Phân trang giao dịch">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" id="prevPageItem">
+                            <button type="button" class="page-link" id="prevPage">
+                                Trước
+                            </button>
+                        </li>
+                        <li class="page-item" id="nextPageItem">
+                            <button type="button" class="page-link" id="nextPage">
+                                Sau
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<th:block id="actorJs">
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const table = document.getElementById('transactionTable');
+            const pagination = document.getElementById('transactionPagination');
+
+            if (!table || !pagination) return;
+
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'))
+                .filter(row => row.querySelectorAll('td').length > 1);
+
+            const pageSize = 10;
+            let currentPage = 1;
+
+            const totalPages = Math.ceil(rows.length / pageSize);
+
+            const info = document.getElementById('paginationInfo');
+            const prevButton = document.getElementById('prevPage');
+            const nextButton = document.getElementById('nextPage');
+            const prevItem = document.getElementById('prevPageItem');
+            const nextItem = document.getElementById('nextPageItem');
+
+            function renderPage() {
+                rows.forEach((row, index) => {
+                    const rowPage = Math.floor(index / pageSize) + 1;
+                    row.style.display = rowPage === currentPage ? '' : 'none';
+
+                    // Đánh số thứ tự liên tục giữa các trang
+                    row.cells[0].textContent = index + 1;
+                });
+
+                info.textContent = rows.length === 0
+                    ? 'Không có giao dịch'
+                    : `Hiển thị ${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, rows.length)} / ${rows.length} giao dịch`;
+
+                prevItem.classList.toggle('disabled', currentPage <= 1);
+                nextItem.classList.toggle('disabled', currentPage >= totalPages);
+
+                prevButton.disabled = currentPage <= 1;
+                nextButton.disabled = currentPage >= totalPages;
+
+                pagination.style.display = totalPages > 1 ? 'flex' : 'none';
+            }
+
+            prevButton.addEventListener('click', function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPage();
+                }
+            });
+
+            nextButton.addEventListener('click', function () {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderPage();
+                }
+            });
+
+            renderPage();
+        });
+    </script>
+</th:block>
+</body>
+</html>

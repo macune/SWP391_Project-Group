@@ -7,6 +7,7 @@ import fu.cinema.enums.PaymentStatus;
 import fu.cinema.enums.MovieStatus;
 import fu.cinema.enums.TicketStatus;
 import fu.cinema.repository.BranchStockRepository;
+import fu.cinema.repository.MovieRepository;
 import fu.cinema.repository.PaymentRepository;
 import fu.cinema.repository.ShowtimeRepository;
 import fu.cinema.service.RevenueReportService;
@@ -27,6 +28,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
     private final BranchStockRepository branchStockRepository;
     private final PaymentRepository paymentRepository;
     private final ShowtimeRepository showtimeRepository;
+    private final MovieRepository movieRepository;
     @Override
     public RevenueReportResponse getReport(
             Long branchId,
@@ -48,7 +50,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
                 ? null : endDate.plusDays(1).atStartOfDay();
 
         List<Payment> payments =
-                paymentRepository.findSuccessfulPaymentsByBranchAndTime(
+                paymentRepository.findSuccessfulPaymentsForAdmin(
                         branchId,
                         PaymentStatus.SUCCESS,
                         startTime,
@@ -133,6 +135,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         );
     }
 
+
     @Override
     public List<RevenueMovieResponse> getMovieReport(
             Long branchId,
@@ -142,94 +145,147 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             String sortBy,
             String sortDir
     ) {
-        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException("Ngày bắt đầu không được sau ngày kết thúc.");
+        if (startDate != null && endDate != null
+                && startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException(
+                    "Ngày bắt đầu không được sau ngày kết thúc."
+            );
         }
 
-        LocalDateTime startTime = startDate == null ? null : startDate.atStartOfDay();
-        LocalDateTime endTime = endDate == null ? null : endDate.plusDays(1).atStartOfDay();
+        LocalDateTime startTime = startDate == null
+                ? null : startDate.atStartOfDay();
 
+        LocalDateTime endTime = endDate == null
+                ? null : endDate.plusDays(1).atStartOfDay();
+
+        // 1. Lấy danh sách phim theo trạng thái.
+        // Không phụ thuộc phim có suất chiếu hay không.
+        List<Movie> movies = movieStatus == null
+                ? movieRepository.findAll()
+                : movieRepository.findByStatus(movieStatus);
+
+        // 2. Lấy suất chiếu thuộc chi nhánh và khoảng ngày đã chọn.
         List<Showtime> showtimes =
-                showtimeRepository.findByHall_Branch_BranchIdOrderByStartTimeAsc(branchId)
+                showtimeRepository
+                        .findByHall_Branch_BranchIdOrderByStartTimeAsc(branchId)
                         .stream()
-                        .filter(s -> startTime == null || !s.getStartTime().isBefore(startTime))
-                        .filter(s -> endTime == null || s.getStartTime().isBefore(endTime))
-                        .filter(s -> movieStatus == null || s.getMovie().getStatus() == movieStatus)
+                        .filter(s -> startTime == null
+                                || !s.getStartTime().isBefore(startTime))
+                        .filter(s -> endTime == null
+                                || s.getStartTime().isBefore(endTime))
+                        .filter(s -> movieStatus == null
+                                || s.getMovie().getStatus() == movieStatus)
                         .toList();
 
-        Map<Long, List<Showtime>> showtimesByMovie = showtimes.stream()
-                .collect(Collectors.groupingBy(s -> s.getMovie().getMovieId()));
+        Map<Long, List<Showtime>> showtimesByMovie =
+                showtimes.stream()
+                        .collect(Collectors.groupingBy(
+                                s -> s.getMovie().getMovieId()
+                        ));
 
         Set<Long> selectedShowtimeIds = showtimes.stream()
                 .map(Showtime::getShowtimeId)
                 .collect(Collectors.toSet());
 
+        // 3. Tính doanh thu và số vé từ các giao dịch thành công.
         List<Payment> payments =
                 paymentRepository.findSuccessfulPaymentsByBranchAndTime(
-                        branchId, PaymentStatus.SUCCESS, startTime, endTime);
+                        branchId,
+                        PaymentStatus.SUCCESS,
+                        startTime,
+                        endTime
+                );
 
         Map<Long, BigDecimal> revenueByMovie = new HashMap<>();
         Map<Long, Long> ticketCountByMovie = new HashMap<>();
 
         for (Payment payment : payments) {
-            if (payment.getBooking() == null || payment.getBooking().getTickets() == null) {
+            if (payment.getBooking() == null
+                    || payment.getBooking().getTickets() == null) {
                 continue;
             }
 
             for (Ticket ticket : payment.getBooking().getTickets()) {
                 if (ticket.getShowtime() == null
-                        || !selectedShowtimeIds.contains(ticket.getShowtime().getShowtimeId())) {
+                        || !selectedShowtimeIds.contains(
+                        ticket.getShowtime().getShowtimeId())) {
                     continue;
                 }
 
                 if (ticket.getStatus() == TicketStatus.BOOKED
                         || ticket.getStatus() == TicketStatus.CHECKED_IN) {
-                    Long movieId = ticket.getShowtime().getMovie().getMovieId();
 
-                    revenueByMovie.merge(movieId, ticket.getPrice(), BigDecimal::add);
-                    ticketCountByMovie.merge(movieId, 1L, Long::sum);
+                    Long movieId =
+                            ticket.getShowtime().getMovie().getMovieId();
+
+                    revenueByMovie.merge(
+                            movieId, ticket.getPrice(), BigDecimal::add
+                    );
+
+                    ticketCountByMovie.merge(
+                            movieId, 1L, Long::sum
+                    );
                 }
             }
         }
 
+        // 4. Sắp xếp kết quả.
         Comparator<RevenueMovieResponse> comparator;
+
         switch (sortBy == null ? "title" : sortBy.toLowerCase()) {
-            case "revenue" -> comparator = Comparator.comparing(RevenueMovieResponse::revenue);
-            case "showtimes" -> comparator = Comparator.comparingLong(RevenueMovieResponse::showtimeCount);
-            default -> comparator = Comparator.comparing(
-                    RevenueMovieResponse::movieTitle,
-                    String.CASE_INSENSITIVE_ORDER
-            );
+            case "revenue" ->
+                    comparator = Comparator.comparing(
+                            RevenueMovieResponse::revenue
+                    );
+            case "showtimes" ->
+                    comparator = Comparator.comparingLong(
+                            RevenueMovieResponse::showtimeCount
+                    );
+            default ->
+                    comparator = Comparator.comparing(
+                            RevenueMovieResponse::movieTitle,
+                            String.CASE_INSENSITIVE_ORDER
+                    );
         }
 
         if ("desc".equalsIgnoreCase(sortDir)) {
             comparator = comparator.reversed();
         }
 
-        return showtimesByMovie.entrySet().stream()
-                .map(entry -> {
-                    Long movieId = entry.getKey();
-                    List<Showtime> movieShowtimes = entry.getValue();
-                    Showtime firstShowtime = movieShowtimes.get(0);
+        // 5. Tạo kết quả từ TẤT CẢ phim đã chọn.
+        // Phim không có suất chiếu sẽ có các chỉ số bằng 0.
+        return movies.stream()
+                .map(movie -> {
+                    List<Showtime> movieShowtimes =
+                            showtimesByMovie.getOrDefault(
+                                    movie.getMovieId(),
+                                    Collections.emptyList()
+                            );
 
                     long totalSeats = movieShowtimes.stream()
-                            .mapToLong(showtime -> showtime.getHall().getSeats().size())
+                            .mapToLong(showtime ->
+                                    showtime.getHall().getSeats().size())
                             .sum();
 
                     return new RevenueMovieResponse(
-                            movieId,
-                            firstShowtime.getMovie().getTitle(),
-                            firstShowtime.getMovie().getPosterUrl(),
-                            firstShowtime.getMovie().getStatus(),
+                            movie.getMovieId(),
+                            movie.getTitle(),
+                            movie.getPosterUrl(),
+                            movie.getStatus(),
                             movieShowtimes.size(),
-                            ticketCountByMovie.getOrDefault(movieId, 0L),
+                            ticketCountByMovie.getOrDefault(
+                                    movie.getMovieId(), 0L
+                            ),
                             totalSeats,
-                            revenueByMovie.getOrDefault(movieId, BigDecimal.ZERO)
+                            revenueByMovie.getOrDefault(
+                                    movie.getMovieId(), BigDecimal.ZERO
+                            )
                     );
                 })
                 .sorted(comparator)
                 .toList();
     }
+
 
     @Override
     public List<RevenueShowtimeResponse> getShowtimeReport(
