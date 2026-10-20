@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: admin-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title>Báo cáo doanh thu F&B</title>
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/admin.css}">
+    </th:block>
+</head>
+<body>
+<div id="page-content" class="container-fluid py-4 revenue-page">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Báo cáo doanh thu F&B</h2>
+            <p class="text-secondary mb-0"
+               th:text="${currentBranch != null
+       ? currentBranch.branchName
+       : 'Toàn bộ chi nhánh'}"></p>
+        </div>
+
+        <a th:href="@{/admin/revenue}"
+           class="btn-back">
+            <i class="fa-solid fa-arrow-left me-1"></i>
+            Quay lại báo cáo phim
+        </a>
+    </div>
+
+    <form method="get" th:action="@{/admin/revenue/fnb}"
+          class="card fnb-filter mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="branchId" class="form-label">Chi nhánh</label>
+                <select id="branchId" name="branchId" class="form-select">
+                    <option value="">Toàn bộ chi nhánh</option>
+                    <option th:each="branch : ${branches}"
+                            th:value="${branch.branchId}"
+                            th:text="${branch.branchName}"
+                            th:selected="${selectedBranchId != null
+                    and selectedBranchId.equals(branch.branchId)}">
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="startDate" class="form-label">Từ ngày</label>
+                <input id="startDate" type="date" name="startDate"
+                       class="form-control" th:value="${startDate}">
+            </div>
+
+            <div class="col-md-3">
+                <label for="endDate" class="form-label">Đến ngày</label>
+                <input id="endDate" type="date" name="endDate"
+                       class="form-control" th:value="${endDate}">
+            </div>
+
+            <div class="col-md-3">
+                <label for="category" class="form-label">Loại F&B</label>
+                <select id="category" name="category" class="form-select">
+                    <option value="ALL"
+                            th:selected="${category == 'ALL'}">
+                        Tất cả loại
+                    </option>
+                    <option value="FOOD"
+                            th:selected="${category == 'FOOD'}">
+                        Đồ ăn
+                    </option>
+                    <option value="DRINK"
+                            th:selected="${category == 'DRINK'}">
+                        Đồ uống
+                    </option>
+                    <option value="COMBO"
+                            th:selected="${category == 'COMBO'}">
+                        Combo
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-fnb-primary flex-grow-1">
+                    <i class="fa-solid fa-filter me-1"></i>Lọc
+                </button>
+                <a th:href="@{/admin/revenue/fnb}"
+                   class="btn btn-fnb-outline">Đặt lại</a>
+            </div>
+        </div>
+    </form>
+    <div class="row g-3 mb-4">
+        <!-- Tổng doanh thu -->
+        <div class="col-md-6">
+            <div class="card fnb-summary-card">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fnb-summary-label">Tổng doanh thu F&B</div>
+                        <h4 class="fnb-summary-value"
+                            th:text="${#numbers.formatDecimal(
+                            #aggregates.sum(allItems.![revenue]),
+                            0, 'COMMA', 0, 'POINT'
+                        ) + ' ₫'}">
+                        </h4>
+                    </div>
+                    <div class="fnb-summary-icon">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tổng số lượng đã bán -->
+        <div class="col-md-6">
+            <div class="card fnb-summary-card">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fnb-summary-label">Tổng số lượng đã bán</div>
+                        <h4 class="fnb-summary-value"
+                            th:text="${#aggregates.sum(allItems.![soldQuantity])}">
+                        </h4>
+                    </div>
+                    <div class="fnb-summary-icon">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card fnb-list-card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Danh sách món F&B trong kho</h5>
+                <span class="text-secondary small"
+                      th:text="${#lists.size(items)} + ' sản phẩm'"></span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle fnb-table">
+                    <thead class="table-light">
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên món</th>
+                        <th>Loại F&B</th>
+
+                        <th class="text-center">
+                            <a class="sort-link fnb-sort-link"
+                               th:href="@{/admin/revenue/fnb(
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   category=${category},
+                                   sortBy='sold',
+                                   sortDir=${sortBy == 'sold' and sortDir == 'desc' ? 'asc' : 'desc'}
+                               )}">
+                                Số lượng đã bán
+                                <i class="fa-solid"
+                                   th:classappend="${sortBy == 'sold'
+                                       ? (sortDir == 'desc' ? ' fa-sort-down' : ' fa-sort-up')
+                                       : ' fa-sort'}"></i>
+                            </a>
+                        </th>
+
+                        <th class="text-end">
+                            <a class="sort-link fnb-sort-link"
+                               th:href="@{/admin/revenue/fnb(
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   category=${category},
+                                   sortBy='revenue',
+                                   sortDir=${sortBy == 'revenue' and sortDir == 'desc' ? 'asc' : 'desc'}
+                               )}">
+                                Doanh thu
+                                <i class="fa-solid"
+                                   th:classappend="${sortBy == 'revenue'
+                                       ? (sortDir == 'desc' ? ' fa-sort-down' : ' fa-sort-up')
+                                       : ' fa-sort'}"></i>
+                            </a>
+                        </th>
+
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="item, stat : ${items}">
+                        <td th:text="${stat.count}"></td>
+
+                        <td class="fw-semibold"
+                            th:text="${item.itemName}"></td>
+
+                        <td>
+                            <span class="fnb-category"
+                                  th:text="${item.category == 'FOOD' ? 'Đồ ăn' :
+                                      (item.category == 'DRINK' ? 'Đồ uống' : 'Combo')}">
+                            </span>
+                        </td>
+
+                        <td class="text-center"
+                            th:text="${item.soldQuantity}"></td>
+
+                        <td class="text-end fw-semibold"
+                            th:text="${#numbers.formatDecimal(
+                                item.revenue, 0, 'COMMA', 0, 'POINT') + ' ₫'}">
+                        </td>
+
+                        <td class="text-end">
+                            <a class="btn-fnb-detail"
+                               th:href="@{/admin/revenue/fnb/{id}(
+                                   id=${item.itemId},
+                                   startDate=${startDate},
+                                   endDate=${endDate}
+                               )}">
+                                Xem giao dịch
+                                <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(items)}">
+                        <td colspan="6" class="text-center text-secondary py-5">
+                            Không có món F&B trong kho phù hợp với bộ lọc.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<th:block id="actorJs"></th:block>
+</body>
+</html>

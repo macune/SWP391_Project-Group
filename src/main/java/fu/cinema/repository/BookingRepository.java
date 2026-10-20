@@ -2,6 +2,11 @@ package fu.cinema.repository;
 
 import fu.cinema.entity.Booking;
 import fu.cinema.enums.BookingStatus;
+import fu.cinema.entity.Ticket;
+import fu.cinema.enums.BookingStatus;
+import fu.cinema.enums.TicketStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,4 +21,13 @@ public interface BookingRepository extends JpaRepository<Booking,Long> {
 
     // Lấy toàn bộ đơn hàng sắp xếp theo thời gian tạo mới nhất
     List<Booking> findAllByOrderByCreatedAtDesc();
+    long countByAccount_UsernameAndStatus(
+            String username,
+            BookingStatus status
+    );
+    List<Booking> findByStatusAndBookingTimeBetween(
+            BookingStatus status,
+            LocalDateTime start,
+            LocalDateTime end
+    );
 }

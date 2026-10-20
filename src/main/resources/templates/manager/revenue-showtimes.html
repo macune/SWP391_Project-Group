@@ -1,0 +1,220 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: manager-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title>Báo cáo doanh thu theo suất chiếu</title>
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/manager.css}">
+    </th:block>
+</head>
+<body>
+<div id="page-content" class="container-fluid py-4 revenue-page">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Doanh thu theo suất chiếu</h2>
+            <p class="text-secondary mb-0"
+               th:text="${currentBranch.branchName}"></p>
+        </div>
+        <a th:href="@{/manager/revenue(
+                startDate=${startDate}, endDate=${endDate})}"
+           class="btn-back">
+            Quay lại danh sách phim
+        </a>
+    </div>
+
+    <form method="get"
+          th:action="@{/manager/revenue/movie/{id}(id=${movieId})}"
+          class="card border-0 shadow-sm p-3 mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="startDate" class="form-label">Từ ngày</label>
+                <input id="startDate" type="date" name="startDate"
+                       class="form-control" th:value="${startDate}">
+            </div>
+
+            <div class="col-md-4">
+                <label for="endDate" class="form-label">Đến ngày</label>
+                <input id="endDate" type="date" name="endDate"
+                       class="form-control" th:value="${endDate}">
+            </div>
+
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn-filter">
+                    Lọc
+                </button>
+                <a th:href="@{/manager/revenue/movie/{id}(id=${movieId})}"
+                   class="btn-reset">Đặt lại</a>
+            </div>
+        </div>
+
+    </form>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3">Danh sách suất chiếu</h5>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>STT</th>
+                        <th>Phim</th>
+                        <th>Phòng chiếu</th>
+                        <th>
+                            <a class="sort-link"
+                               th:classappend="${sortBy == 'time' ? ' active' : ''}"
+                               th:href="@{/manager/revenue/movie/{id}(
+           id=${movieId},
+           startDate=${startDate},
+           endDate=${endDate},
+           sortBy='time',
+           sortDir=${sortBy == 'time' and sortDir == 'asc' ? 'desc' : 'asc'}
+       )}">
+                                Thời gian
+                                <i class="fa-solid"
+                                   th:classappend="${sortBy == 'time' and sortDir == 'desc'
+               ? ' fa-sort-down'
+               : (sortBy == 'time' ? ' fa-sort-up' : ' fa-sort')}">
+                                </i>
+                            </a>
+                        </th>
+                        <th class="text-center">Số vé bán / Tổng ghế</th>
+                        <th class="text-end">
+                            <a class="sort-link"
+                               th:classappend="${sortBy == 'revenue' ? ' active' : ''}"
+                               th:href="@{/manager/revenue/movie/{id}(
+           id=${movieId},
+           startDate=${startDate},
+           endDate=${endDate},
+           sortBy='revenue',
+           sortDir=${sortBy == 'revenue' and sortDir == 'asc' ? 'desc' : 'asc'}
+       )}">
+                                Doanh thu vé
+                                <i class="fa-solid"
+                                   th:classappend="${sortBy == 'revenue' and sortDir == 'desc'
+               ? ' fa-sort-down'
+               : (sortBy == 'revenue' ? ' fa-sort-up' : ' fa-sort')}">
+                                </i>
+                            </a>
+                        </th>
+                        <th></th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="showtime, stat : ${showtimes}">
+                        <td th:text="${currentPage * pageSize + stat.count}"></td>
+                        <td th:text="${showtime.movieTitle}"></td>
+                        <td th:text="${showtime.hallName}"></td>
+                        <td>
+                            <div th:text="${#temporals.format(
+                                showtime.startTime, 'dd/MM/yyyy HH:mm')}"></div>
+                            <small class="text-secondary"
+                                   th:text="${#temporals.format(
+                                       showtime.endTime, 'HH:mm')}"></small>
+                        </td>
+                        <td class="text-center">
+                            <span th:text="${showtime.ticketCount}"></span>
+                            /
+                            <span th:text="${showtime.totalSeats}"></span>
+                        </td>
+                        <td class="text-end fw-semibold"
+                            th:text="${#numbers.formatDecimal(
+                                showtime.revenue, 0, 'COMMA', 0, 'POINT') + ' ₫'}">
+                        </td>
+                        <td class="text-end">
+                            <a class="btn-detail"
+                               th:href="@{/manager/revenue/showtime/{id}(
+                                   id=${showtime.showtimeId},
+                                   startDate=${startDate},
+                                   endDate=${endDate})}">
+                                Chi tiết
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(showtimes)}">
+                        <td colspan="7" class="text-center text-secondary py-5">
+                            Không có suất chiếu trong khoảng thời gian này.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-between
+                        align-items-center gap-3 mt-3"
+                 th:if="${totalRows > 0}">
+
+                <small class="text-secondary"
+                       th:text="|Hiển thị ${currentPage * pageSize + 1}–${currentPage * pageSize + showtimes.size()} / ${totalRows} suất chiếu|">
+                </small>
+
+                <nav aria-label="Phân trang suất chiếu"
+                     th:if="${totalPages > 1}">
+                    <ul class="pagination mb-0">
+
+                        <li class="page-item"
+                            th:classappend="${currentPage == 0 ? ' disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/manager/revenue/movie/{id}(
+                                   id=${movieId},
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   sortBy=${sortBy},
+                                   sortDir=${sortDir},
+                                   page=${currentPage - 1}
+                               )}">
+                                Trước
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:classappend="${p == currentPage ? ' active' : ''}">
+                            <a class="page-link"
+                               th:text="${p + 1}"
+                               th:href="@{/manager/revenue/movie/{id}(
+                                   id=${movieId},
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   sortBy=${sortBy},
+                                   sortDir=${sortDir},
+                                   page=${p}
+                               )}">
+                            </a>
+                        </li>
+
+                        <li class="page-item"
+                            th:classappend="${currentPage >= totalPages - 1 ? ' disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/manager/revenue/movie/{id}(
+                                   id=${movieId},
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   sortBy=${sortBy},
+                                   sortDir=${sortDir},
+                                   page=${currentPage + 1}
+                               )}">
+                                Sau
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+    </div>
+</div>
+<th:block id="actorJs"></th:block>
+</body>
+</html>

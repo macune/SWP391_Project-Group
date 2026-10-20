@@ -28,11 +28,8 @@ public class AdminController {
     BranchService branchService;
     AccountService accountService;
 
-    // Cổng điều hướng chính của Admin: Doanh thu toàn chuỗi
-    @GetMapping("/dashboard")
-    public String dashboard() {
-        return "admin/dashboard";
-    }
+
+
 
     // Trang quản lý danh sách Quản lý chi nhánh (Managers)
     @GetMapping("/managers")
