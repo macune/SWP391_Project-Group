@@ -25,8 +25,11 @@ public class AccountServiceImpl implements AccountService {
     AccountRepository accountRepository;
     AccountMapper accountMapper;
 
-    public List<AccountResponse> getAllAccounts(){
-        List<Account> list = accountRepository.findByStatusIn(List.of(AccountStatus.ACTIVE, AccountStatus.LOCKED));
+    @Override
+    public List<AccountResponse> getAllAccounts() {
+        List<Account> list = accountRepository.findByStatusIn(
+                List.of(AccountStatus.ACTIVE, AccountStatus.LOCKED, AccountStatus.DELETED)
+        );
         return list.stream().map(accountMapper::toAccountResponse).toList();
     }
 
@@ -37,8 +40,21 @@ public class AccountServiceImpl implements AccountService {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if(auth!=null && account.getUsername().equals(auth.getName())){
+        if (auth != null && account.getUsername().equals(auth.getName())) {
             throw new AppException("Bạn không thể thay đổi trạng thái của chính mình.");
+        }
+
+        if (account.getStatus() == AccountStatus.DELETED) {
+            throw new AppException("Tài khoản đã bị xóa không thể thay đổi trạng thái.");
+        }
+
+        if (status == AccountStatus.DELETED) {
+            if (!account.getEmail().contains("_deleted_")) {
+                account.setEmail(account.getEmail() + "_deleted_" + System.currentTimeMillis());
+            }
+            if (account.getStaff() != null) {
+                account.getStaff().setBranch(null);
+            }
         }
 
         account.setStatus(status);
@@ -52,7 +68,7 @@ public class AccountServiceImpl implements AccountService {
         }
         List<Account> list = accountRepository.findByUsernameContainingIgnoreCaseAndStatusIn(
                 keyword.trim(),
-                List.of(AccountStatus.ACTIVE, AccountStatus.LOCKED)
+                List.of(AccountStatus.ACTIVE, AccountStatus.LOCKED, AccountStatus.DELETED)
         );
         return list.stream().map(accountMapper::toAccountResponse).toList();
     }

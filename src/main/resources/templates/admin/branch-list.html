@@ -301,7 +301,7 @@
                                 <small class="text-cine-pastel" th:text="'Username: @' + ${b.managerUsername}"></small>
                             </div>
                             <form th:action="@{/admin/branches/{branchId}/managers/remove(branchId=${b.branchId})}" method="post"
-                                  onsubmit="return confirm('Bạn có chắc muốn gỡ quyền Quản lý của nhân sự này khỏi chi nhánh?');">
+                                  onsubmit="return confirm('Bạn có chắc muốn gỡ Quản lý này khỏi chi nhánh?');">
                                 <button type="submit" class="btn btn-sm btn-outline-cine text-danger border-danger">
                                     <i class="fa-solid fa-user-xmark me-1"></i>Gỡ bỏ
                                 </button>
@@ -320,12 +320,12 @@
                         </h6>
                         <form th:action="@{/admin/branches/{branchId}/managers/assign(branchId=${b.branchId})}" method="post">
                             <div class="mb-3">
-                                <label class="form-label fw-medium small">Chọn User (Vai trò Customer):</label>
+                                <label class="form-label fw-medium small">Chọn Quản lý (Chưa phân công chi nhánh):</label>
                                 <select name="accountId" class="form-select border-cine" required>
-                                    <option value="">-- Chọn User để làm Manager --</option>
+                                    <option value="">-- Chọn Manager chưa có chi nhánh --</option>
                                     <option th:each="u : ${eligibleUsers}"
                                             th:value="${u.accountId}"
-                                            th:text="${(u.customer != null ? u.customer.fullName : u.username) + ' (@' + u.username + ') - ' + u.email}">
+                                            th:text="${(u.staff != null ? u.staff.fullName : u.username) + ' (@' + u.username + ') - ' + u.email}">
                                     </option>
                                 </select>
                             </div>

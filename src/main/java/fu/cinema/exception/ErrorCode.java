@@ -21,6 +21,23 @@ public enum ErrorCode {
     SHOWTIME_NOT_FOUND("Không tìm thấy suất chiếu."),
     BOOKING_NOT_FOUND("Không tìm thấy đơn hàng."),
     PROMO_NOT_FOUND("Không tìm thấy mã khuyến mãi.");
+    ACCOUNT_NOT_FOUND("Không tìm thấy tài khoản."),
+
+    // Mã lỗi cho chức năng Đặt vé & Khởi tạo vé điện tử (FE-06.1)
+    BOOKING_NOT_FOUND("Không tìm thấy đơn đặt vé trong hệ thống."),
+    BOOKING_INVALID_STATUS("Đơn đặt vé đã bị hủy hoặc hết hạn, không thể phát hành vé điện tử."),
+    SHOWTIME_NOT_FOUND("Không tìm thấy thông tin suất chiếu."),
+    SEAT_NOT_FOUND("Không tìm thấy thông tin ghế ngồi."),
+    SEAT_ALREADY_TAKEN("Một hoặc nhiều ghế bạn chọn đã có người đặt trong suất chiếu này."),
+    TICKET_NOT_FOUND("Không tìm thấy thông tin vé điện tử."),
+    TICKET_ACCESS_DENIED("Bạn không có quyền xem thông tin vé này."),
+    QR_GENERATION_FAILED("Không thể khởi tạo hình ảnh mã QR cho vé điện tử."),
+
+    // Mã lỗi cho chức năng Soát vé QR tại phòng chiếu (FE-06.2)
+    TICKET_ALREADY_CHECKED_IN("Vé này đã được sử dụng (đã soát vé vào phòng trước đó)."),
+    TICKET_NOT_BOOKED("Vé chưa hoàn tất thanh toán hoặc đã bị hủy, không thể vào phòng chiếu."),
+    TICKET_WRONG_BRANCH("Vé này thuộc chi nhánh khác, không thể soát vé tại rạp hiện tại.");
+
     private final String message;
 
     ErrorCode(String message) {
