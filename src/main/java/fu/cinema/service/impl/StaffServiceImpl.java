@@ -60,7 +60,7 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public void createManager(ManagerRequest request) {
-        if (request.getBranchId() != null && staffRepository.existsByAccount_RoleAndBranch_BranchIdAndAccount_StatusNot(Role.MANAGER, request.getBranchId(), AccountStatus.DELETED)) {
+        // ĐÃ SỬA: Xóa bỏ dòng IF lỗi rác bên trên, khôi phục IF gốc chuẩn
         if (request.getBranchId() == null) {
             throw new AppException("Vui lòng chọn một chi nhánh chưa có người quản lý để phân công!");
         }

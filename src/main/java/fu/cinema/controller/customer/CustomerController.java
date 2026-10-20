@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.List;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
@@ -31,26 +29,15 @@ public class CustomerController {
     private final BookingService bookingService;
     private final TicketService ticketService;
 
-    // Trang tổng quan
     @GetMapping("/dashboard")
     public String customerDashboard(Model model) {
         model.addAttribute("sectionTitle", "Tổng quan");
         return "customer/dashboard";
     }
 
-    // Trang Vé của tôi (Danh sách vé điện tử)
     @GetMapping("/bookings")
-    public String myBookings(Model model,
-            @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "status", required = false) BookingStatus status) {
-
-        List<BookingHistoryResponse> bookings = bookingService.getMyBookings(keyword, status);
-        model.addAttribute("bookings", bookings);
-        model.addAttribute("keyword", keyword);
-        model.addAttribute("status", status);
     public String myBookings(Authentication authentication, Model model) {
         model.addAttribute("sectionTitle", "Vé của tôi (Lịch sử đặt vé)");
-        return "customer/my-bookings";
         if (authentication != null) {
             List<TicketResponse> myTickets = ticketService.getMyTickets(authentication.getName());
             model.addAttribute("tickets", myTickets);
@@ -58,7 +45,6 @@ public class CustomerController {
         return "customer/my-tickets";
     }
 
-    // Xem chi tiết 1 vé điện tử kèm QR Code
     @GetMapping("/tickets/{ticketId}")
     public String viewTicketDetail(@PathVariable("ticketId") Long ticketId,
                                    Authentication authentication,
@@ -68,7 +54,6 @@ public class CustomerController {
             String username = authentication != null ? authentication.getName() : null;
             TicketResponse ticket = ticketService.getTicketDetail(ticketId, username);
 
-            // Lấy thêm toàn bộ vé trong cùng đơn đặt vé để người dùng tiện chuyển đổi qua lại
             List<TicketResponse> siblingTickets = ticketService.getTicketsByBooking(ticket.getBookingId(), username);
 
             model.addAttribute("ticket", ticket);
@@ -81,8 +66,6 @@ public class CustomerController {
         }
     }
 
-    // Xem toàn bộ vé điện tử (QR Code) thuộc 1 đơn đặt vé (Booking)
-    // (Được gọi từ nút "View & Download E-Ticket" ở màn hình Booking Confirmation)
     @GetMapping("/bookings/{bookingId}/tickets")
     public String viewBookingTickets(@PathVariable("bookingId") Long bookingId,
                                      Authentication authentication,
@@ -105,7 +88,6 @@ public class CustomerController {
         }
     }
 
-    // Endpoint kích hoạt / phát hành vé điện tử (QR Code) cho 1 Booking
     @PostMapping("/bookings/{bookingId}/generate-tickets")
     public String generateBookingETickets(@PathVariable("bookingId") Long bookingId,
                                           @RequestParam(value = "showtimeId", required = false) Long showtimeId,
@@ -121,7 +103,6 @@ public class CustomerController {
         }
     }
 
-    // Trang Hồ sơ cá nhân
     @GetMapping("/profile")
     public String myProfile(Model model) {
         model.addAttribute("sectionTitle", "Hồ sơ cá nhân");
@@ -135,7 +116,6 @@ public class CustomerController {
         return "customer/promotions";
     }
 
-    // Trang Đổi mật khẩu
     @GetMapping("/change-password")
     public String changePassword(Model model) {
         model.addAttribute("sectionTitle", "Đổi mật khẩu bảo mật");

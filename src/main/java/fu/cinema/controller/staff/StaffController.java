@@ -23,7 +23,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/staff")
@@ -32,7 +31,7 @@ public class StaffController {
 
     private final AccountRepository accountRepository;
     private final BookingRepository bookingRepository;
-    private final BookingService bookingService; // GỌI SERVICE ĐÃ CÓ SẴN CỦA BẠN
+    private final BookingService bookingService;
     private final TicketService ticketService;
 
     @GetMapping("/fnb")
@@ -49,23 +48,17 @@ public class StaffController {
         return "redirect:/staff/booking/" + retailBooking.getBookingId() + "/fnb";
     }
 
-    // 1. HIỂN THỊ DANH SÁCH & LỌC TÌM KIẾM
     @GetMapping("/bookings")
     public String showStaffBookings(@RequestParam(required = false) String keyword,
                                     @RequestParam(required = false) BookingStatus status,
                                     Model model) {
-
-        // Dùng đúng hàm getAllBookings bạn đã viết trong Service
         List<BookDetailsResponse> bookingList = bookingService.getAllBookings(keyword, status);
-
         model.addAttribute("bookings", bookingList);
         model.addAttribute("keyword", keyword);
         model.addAttribute("status", status);
-
         return "staff/booking-list";
     }
 
-    // Màn hình Soát vé vào phòng bằng Camera QR & In vé vật lý
     @GetMapping("/check-in")
     public String checkInPage(Authentication authentication, Model model) {
         if (authentication != null) {
@@ -79,7 +72,6 @@ public class StaffController {
         return "staff/ticket-checkin";
     }
 
-    // API tra cứu & kiểm tra vé ngay khi Camera quét trúng mã QR
     @GetMapping("/api/tickets/validate")
     @ResponseBody
     public ResponseEntity<TicketValidationResponse> validateQrTicket(
@@ -90,7 +82,6 @@ public class StaffController {
         return ResponseEntity.ok(result);
     }
 
-    // API xác nhận Check-in (Cho khách vào phòng chiếu)
     @PostMapping("/api/tickets/{ticketId}/check-in")
     @ResponseBody
     public ResponseEntity<TicketValidationResponse> confirmCheckIn(
@@ -109,11 +100,11 @@ public class StaffController {
                             .build()
             );
         }
-    // 2. HIỂN THỊ CHI TIẾT ĐƠN HÀNG
+    } // ĐÃ SỬA: Đóng dấu ngoặc nhọn kết thúc hàm tại đây
+
     @GetMapping("/bookings/{id}")
     public String showBookingDetails(@PathVariable Long id, Model model) {
         try {
-            // Dùng đúng hàm getBookingDetail bạn đã viết
             BookDetailsResponse booking = bookingService.getBookingDetail(id);
             model.addAttribute("booking", booking);
             return "staff/booking-details";
@@ -122,17 +113,14 @@ public class StaffController {
         }
     }
 
-    // 3. CẬP NHẬT TRẠNG THÁI
     @PostMapping("/bookings/{id}/edit")
     public String updateBookingStatus(@PathVariable Long id,
                                       @RequestParam BookingStatus status,
                                       RedirectAttributes redirectAttributes) {
         try {
-            // Dùng đúng hàm updateBookingStatus bạn đã viết
             bookingService.updateBookingStatus(id, status);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật trạng thái đơn hàng thành công!");
         } catch (Exception e) {
-            // Bắt exception (ví dụ lỗi đổi trạng thái khi đơn đã Cancelled)
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/staff/bookings/" + id;
