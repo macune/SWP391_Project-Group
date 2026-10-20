@@ -181,48 +181,71 @@ public class BookingServiceImpl implements BookingService {
     public ReviewOrderResponse getReviewOrderData(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(BookingNotFoundException::new);
 
-        if(booking.getStatus()!=BookingStatus.PENDING){
+        if(booking.getStatus() != BookingStatus.PENDING){
             throw new AppException("Đơn hàng không hợp lệ hoặc đã hoàn tất.");
         }
 
-        Showtime showtime = booking.getTickets().get(0).getShowtime();
+        // Kiểm tra xem đây là đơn Kèm Vé hay Đơn Bán Lẻ
+        boolean isRetail = booking.getTickets() == null || booking.getTickets().isEmpty();
 
-        // Duyệt qua những ticket người dùng đã đặt để lấy tên ghế (VD: A1, A2)
+        String movieTitle = "---";
+        String posterUrl = "/images/default-fnb.png"; // Hiển thị ảnh ly bắp nước mặc định
+        String branchName = "---";
+        String hallName = "Mua Tại Quầy (Mang Về)";
+        LocalDateTime startTime = LocalDateTime.now();
+        LocalDateTime endTime = LocalDateTime.now();
         List<String> seatNames = new ArrayList<>();
-        for(Ticket ticket : booking.getTickets()){
-            seatNames.add(ticket.getSeat().getRowCode() + ticket.getSeat().getNumber());
-        }
-        // Giá tiền vé
-        BigDecimal ticketTotal = booking.getTotalAmount();
+        BigDecimal ticketTotal = BigDecimal.ZERO;
 
-        // Giá tiền fnb
+        if (!isRetail) {
+            // NẾU CÓ VÉ -> Lấy thông tin phim bình thường
+            Showtime showtime = booking.getTickets().get(0).getShowtime();
+            movieTitle = showtime.getMovie().getTitle();
+            posterUrl = showtime.getMovie().getPosterUrl() != null ? showtime.getMovie().getPosterUrl() : "/images/posters/default-poster.jpg";
+            branchName = showtime.getHall().getBranch().getBranchName();
+            hallName = showtime.getHall().getHallName();
+            startTime = showtime.getStartTime();
+            endTime = showtime.getEndTime();
+
+            // Tính tổng tiền vé
+            for(Ticket ticket : booking.getTickets()){
+                seatNames.add(ticket.getSeat().getRowCode() + ticket.getSeat().getNumber());
+                ticketTotal = ticketTotal.add(ticket.getPrice());
+            }
+        } else {
+            // NẾU LÀ BÁN LẺ -> Chèn dữ liệu giả để Review Order không bị sập
+            movieTitle = "Bán Lẻ Bắp Nước (Không kèm vé)";
+            if (booking.getAccount() != null && booking.getAccount().getStaff() != null) {
+                branchName = booking.getAccount().getStaff().getBranch().getBranchName();
+            }
+        }
+
+        // Giá tiền F&B
         List<String> fnbDetails = new ArrayList<>();
         BigDecimal fnbTotal = BigDecimal.ZERO;
-        if(booking.getBookingFnbs()!=null && !booking.getBookingFnbs().isEmpty()){
+        if(booking.getBookingFnbs() != null && !booking.getBookingFnbs().isEmpty()){
             for(BookingFnB bookingFnB : booking.getBookingFnbs()){
-                fnbDetails.add(bookingFnB.getQuantity() + "x" + bookingFnB.getFnbItem().getName()+ "(" + bookingFnB.getSubtotal() + "đ)");
+                fnbDetails.add(bookingFnB.getQuantity() + "x " + bookingFnB.getFnbItem().getName() + " (" + bookingFnB.getSubtotal() + "đ)");
                 fnbTotal = fnbTotal.add(bookingFnB.getSubtotal());
             }
         }
-        // Tổng giá tiền cần trả (chưa áp mã giảm giá)
-        BigDecimal totalAmountWithoutDiscount = ticketTotal.add(fnbTotal);
+
         BigDecimal discountAmount = booking.getDiscountAmount() != null ? booking.getDiscountAmount() : BigDecimal.ZERO;
 
-        // Tổng giá tiền cuối cùng người dùng phải trả
+        // Tổng giá tiền cuối cùng
         BigDecimal finalAmount = ticketTotal.add(fnbTotal).subtract(discountAmount);
-        if(finalAmount.compareTo(BigDecimal.ZERO)<0){
+        if(finalAmount.compareTo(BigDecimal.ZERO) < 0){
             finalAmount = BigDecimal.ZERO;
         }
 
-        // Trả về thông tin cần thiết cho frontend
         return ReviewOrderResponse.builder()
                 .bookingId(booking.getBookingId())
-                .movieTitle(showtime.getMovie().getTitle())
-                .posterUrl(showtime.getMovie().getPosterUrl())
-                .branchName(showtime.getHall().getBranch().getBranchName())
-                .hallName(showtime.getHall().getHallName())
-                .startTime(showtime.getStartTime())
-                .endTime(showtime.getEndTime())
+                .movieTitle(movieTitle)
+                .posterUrl(posterUrl)
+                .branchName(branchName)
+                .hallName(hallName)
+                .startTime(startTime)
+                .endTime(endTime)
                 .seatNames(seatNames)
                 .ticketTotal(ticketTotal)
                 .fnbDetails(fnbDetails)
@@ -240,8 +263,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(BookingNotFoundException::new);
         Promotion promotion = promotionRepository.findByCode(promoCode).orElseThrow(PromoNotFoundException::new);
 
-        // Kiểm tra xem mã này còn khả dụng không
-        if(promotion.getStatus()!=PromotionStatus.ACTIVE){
+        if(promotion.getStatus()!= PromotionStatus.ACTIVE){
             throw new AppException("Mã khuyến mãi này không còn khả dụng.");
         }
         if(promotion.getValidFrom()!=null && promotion.getValidFrom().isAfter(LocalDateTime.now())){
@@ -251,29 +273,37 @@ public class BookingServiceImpl implements BookingService {
             throw new AppException(("Mã khuyến mãi này đã hết hạn sử dụng."));
         }
 
-        // Tính tổng tiền người dùng phải trả (chưa có discount)
-        BigDecimal ticketTotal = booking.getTotalAmount();
+        // TÍNH LẠI CHÍNH XÁC TỔNG TIỀN VÉ GỐC
+        BigDecimal ticketTotal = BigDecimal.ZERO;
+        if (booking.getTickets() != null) {
+            for (Ticket ticket : booking.getTickets()) {
+                ticketTotal = ticketTotal.add(ticket.getPrice());
+            }
+        }
+
+        // TÍNH LẠI CHÍNH XÁC TỔNG TIỀN BẮP NƯỚC
         BigDecimal fnbTotal = BigDecimal.ZERO;
         if(booking.getBookingFnbs()!=null && !booking.getBookingFnbs().isEmpty()){
             for(BookingFnB fnB : booking.getBookingFnbs()){
                 fnbTotal = fnbTotal.add(fnB.getSubtotal());
             }
         }
+
+        // TỔNG TIỀN GỐC (CHƯA GIẢM GIÁ)
         BigDecimal totalAmountWithoutDiscount = ticketTotal.add(fnbTotal);
 
-        // Tính giảm giá (discount được tính dựa trên tiền vé + tiền fnb)
+        // TÍNH TOÁN SỐ TIỀN ĐƯỢC GIẢM
         BigDecimal discount = BigDecimal.ZERO;
         if(DiscountType.FIXED_AMOUNT.toString().equals(promotion.getDiscountType())){
             discount = BigDecimal.valueOf(promotion.getDiscountPercentage());
-            // Discount không thể lớn hơn
             if(discount.compareTo(totalAmountWithoutDiscount)>0){
                 discount = totalAmountWithoutDiscount;
             }
-        }else{
+        } else {
             discount = totalAmountWithoutDiscount
-                    .multiply(BigDecimal.valueOf(promotion.getDiscountPercentage())
-                    .divide(BigDecimal.valueOf(100)));
-            // Hạn mức tối đa được phép giảm
+                    .multiply(BigDecimal.valueOf(promotion.getDiscountPercentage()))
+                    .divide(BigDecimal.valueOf(100));
+
             if(promotion.getMaxDiscountAmount()!=null
                     && promotion.getMaxDiscountAmount().compareTo(BigDecimal.ZERO)>0
                     && promotion.getMaxDiscountAmount().compareTo(discount)<0){
@@ -281,8 +311,17 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
+        // CHỈ LƯU MÃ VÀ SỐ TIỀN GIẢM VÀO DB (Không set cứng TotalAmount ở đây)
         booking.setPromotion(promotion);
         booking.setDiscountAmount(discount);
+
+        // Cập nhật lại luôn TotalAmount chuẩn xác để tránh lỗi đồng bộ
+        BigDecimal finalTotal = totalAmountWithoutDiscount.subtract(discount);
+        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
+            finalTotal = BigDecimal.ZERO;
+        }
+        booking.setTotalAmount(finalTotal);
+
         bookingRepository.save(booking);
     }
 

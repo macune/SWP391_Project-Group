@@ -1,6 +1,6 @@
 package fu.cinema.entity;
 
-import fu.cinema.enums.PromotionStatus; // NHỚ IMPORT ENUM NÀY VÀO
+import fu.cinema.enums.PromotionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -23,7 +23,7 @@ public class Promotion {
     @Column(length = 50, unique = true)
     private String code;
 
-    @Column(name = "discount_percent", nullable = false)
+    @Column(name = "discount_percentage", nullable = false)
     private Integer discountPercentage;
 
     @Column(name = "discount_type", nullable = false)
@@ -39,7 +39,6 @@ public class Promotion {
     @Column(name = "valid_to", nullable = false)
     private LocalDateTime expiryDate;
 
-    // SỬ DỤNG ENUM THAY VÌ STRING
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     @Builder.Default

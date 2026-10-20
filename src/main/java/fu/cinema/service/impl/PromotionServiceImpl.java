@@ -21,7 +21,6 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public List<Promotion> getActivePromotions() {
-        // Sửa điều kiện cũ (p.isActive = true) thành lọc theo status và thời gian hiệu lực
         return promotionRepository.findByStatusAndExpiryDateAfter(
                 PromotionStatus.ACTIVE,
                 LocalDateTime.now()
@@ -41,14 +40,24 @@ public class PromotionServiceImpl implements PromotionService {
         }
 
         Promotion promo = opt.get();
-        if (!promo.getIsActive()) {
+
+        // ĐÃ FIX: Dùng getStatus() thay cho getIsActive() vì isActive là @Transient
+        if (promo.getStatus() != PromotionStatus.ACTIVE) {
             response.put("valid", false);
-            response.put("message", "Mã giảm giá này đã bị khóa!");
+            response.put("message", "Mã giảm giá này đã bị khóa hoặc không khả dụng!");
             return response;
         }
+
         if (promo.getExpiryDate().isBefore(LocalDateTime.now())) {
             response.put("valid", false);
             response.put("message", "Mã giảm giá đã hết hạn!");
+            return response;
+        }
+
+        // Kiểm tra thêm ngày bắt đầu nếu có
+        if (promo.getValidFrom() != null && promo.getValidFrom().isAfter(LocalDateTime.now())) {
+            response.put("valid", false);
+            response.put("message", "Mã giảm giá này chưa đến ngày sử dụng!");
             return response;
         }
 

@@ -74,8 +74,8 @@
             <div class="card border-cine shadow-sm mb-4">
                 <div class="card-header bg-cine-main border-cine d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold text-cine-primary mb-0"><i class="fa-solid fa-burger me-2"></i>2. Bắp Nước & Combo (Tùy chọn)</h5>
-                    <a th:href="@{/customer/booking/{id}/fnb(id=${data.bookingId})}" class="btn btn-sm btn-outline-cine fw-bold">
-                        <i class="fa-solid fa-plus me-1"></i>Thêm Bắp Nước
+                    <a th:href="@{/booking/route-to-fnb(bookingId=${data.bookingId})}" class="btn btn-outline-danger">
+                        + Thêm Bắp Nước
                     </a>
                 </div>
                 <div class="card-body">

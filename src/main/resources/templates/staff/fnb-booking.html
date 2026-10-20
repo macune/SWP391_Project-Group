@@ -1,142 +1,89 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      th:replace="~{layout/layout :: master(
-          title = ~{::title},
-          sidebar = ~{layout/sidebar :: staff-sidebar},
-          content = ~{::#page-content},
-          actorCss = ~{::#dummy-css},
-          actorJs = ~{::#dummy-js}
-      )}">
-<head>
-    <title>Quầy Vé POS | CineFlow Staff</title>
-</head>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout/layout :: master(title = ~{::title}, sidebar = ~{layout/sidebar :: staff-sidebar}, content = ~{::#page-content}, actorCss = ~{::#dummy-css}, actorJs = ~{::#dummy-js})}">
+<head><title>Quầy Vé POS | CineFlow Staff</title></head>
 <body>
-
-<div id="page-content" class="container-fluid">
-    <!-- Header POS -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold mb-1 text-cine-primary">
-                <i class="fa-solid fa-cash-register me-2"></i>Quầy Bán Vé & Bắp Nước (POS)
-            </h4>
-            <p class="small text-muted mb-0">
-                Nhân viên trực quầy: <strong sec:authentication="name">staff</strong> | Chi nhánh: CineFlow Hà Nội
-            </p>
-        </div>
-        <span class="badge bg-success px-3 py-2">Ca trực đang mở</span>
-    </div>
-
-    <!-- Nội dung chính -->
+<div id="page-content" class="container-fluid mt-2">
     <div class="row g-4">
-        <!-- CỘT TRÁI: MENU BẮP NƯỚC -->
         <div class="col-md-8">
             <div class="card border-0 shadow-sm p-4">
-                <h5 class="fw-bold text-cine-primary mb-4 border-bottom pb-2">
-                    <i class="fa-solid fa-burger me-2"></i>Menu Bắp Nước
-                </h5>
+                <h5 class="fw-bold text-cine-primary mb-4 border-bottom pb-2"><i class="fa-solid fa-burger me-2"></i>Menu Bắp Nước</h5>
                 <div class="row row-cols-1 row-cols-md-3 g-3">
-
                     <div class="col" th:each="stock : ${fnbList}">
                         <div class="card h-100 border-cine shadow-sm rounded-3">
                             <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 120px;">
-                                <img th:if="${stock.imageUrl != null and !stock.imageUrl.isEmpty()}"
-                                     th:src="${stock.imageUrl}"
-                                     class="img-fluid" style="max-height: 100px; object-fit: contain;">
-                                <i th:unless="${stock.imageUrl != null and !stock.imageUrl.isEmpty()}"
-                                   class="fa-solid fa-utensils text-secondary fs-1 opacity-50"></i>
+                                <img th:if="${stock.imageUrl != null and !stock.imageUrl.isEmpty()}" th:src="${stock.imageUrl}" class="img-fluid" style="max-height: 100px; object-fit: contain;" />
+                                <i th:unless="${stock.imageUrl != null and !stock.imageUrl.isEmpty()}" class="fa-solid fa-utensils text-secondary fs-1 opacity-50"></i>
                             </div>
-
                             <div class="card-body p-3 text-center d-flex flex-column">
                                 <h6 class="card-title fw-bold text-dark mb-1 fs-6" th:text="${stock.name}">Tên món</h6>
+                                <p class="small text-muted mb-2">Kho: <strong class="text-success" th:text="${stockQuantityMap.containsKey(stock.id) ? stockQuantityMap.get(stock.id) : 0}">0</strong></p>
 
-                                <!-- DÙNG FORM ĐỂ GỬI DỮ LIỆU THÊM MÓN (Thay cho gọi API) -->
                                 <form th:action="@{/staff/booking/add}" method="post" class="mt-auto">
                                     <input type="hidden" name="bookingId" th:value="${bookingId}" />
                                     <input type="hidden" name="itemId" th:value="${stock.id}" />
-
-                                    <p class="text-danger fw-bold mb-2 fs-5" th:text="${#numbers.formatDecimal(stock.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
-
+                                    <p class="text-danger fw-bold mb-2 fs-5" th:text="${stock.price != null ? #numbers.formatDecimal(stock.price, 0, 'COMMA', 0, 'POINT') : 0} + ' ₫'"></p>
                                     <div class="input-group input-group-sm mb-2 justify-content-center">
                                         <button class="btn btn-outline-secondary" type="button" onclick="this.nextElementSibling.stepDown()">-</button>
-                                        <input type="number" name="quantity" class="form-control text-center fw-bold" style="max-width: 50px;" value="1" min="1">
+                                        <input type="number" name="quantity" class="form-control text-center fw-bold" style="max-width: 50px;" value="1" min="1" th:max="${stockQuantityMap.containsKey(stock.id) ? stockQuantityMap.get(stock.id) : 0}" />
                                         <button class="btn btn-outline-secondary" type="button" onclick="this.previousElementSibling.stepUp()">+</button>
                                     </div>
-
-                                    <button type="submit" class="btn btn-sm btn-cine w-100 fw-bold shadow-sm">
+                                    <button type="submit" class="btn btn-sm btn-cine w-100 fw-bold shadow-sm text-white" style="background-color: #e50914;" th:disabled="${!stockQuantityMap.containsKey(stock.id) or stockQuantityMap.get(stock.id) le 0}">
                                         <i class="fa-solid fa-plus me-1"></i>Thêm
                                     </button>
                                 </form>
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
 
-        <!-- CỘT PHẢI: GIỎ HÀNG THỰC TẾ -->
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm p-4 sticky-top" style="top: 20px;">
+            <div class="card border-0 shadow-sm p-4 d-flex flex-column" style="height: fit-content; min-height: 400px;">
                 <h6 class="fw-bold text-cine-primary mb-3">Hóa Đơn Tạm Tính</h6>
-
-                <div class="mb-3" style="max-height: 300px; overflow-y: auto;">
-                    <p th:if="${cartItems == null or #lists.isEmpty(cartItems)}" class="small text-muted text-center my-4">
-                        Chưa có bắp nước nào được chọn.
-                    </p>
-
+                <div class="flex-grow-1 mb-3" style="max-height: 250px; overflow-y: auto;">
+                    <p th:if="${cartItems == null or #lists.isEmpty(cartItems)}" class="small text-muted text-center my-4">Chưa có bắp nước nào được chọn.</p>
                     <ul class="list-group list-group-flush" th:unless="${cartItems == null or #lists.isEmpty(cartItems)}">
                         <li class="list-group-item px-0 py-2" th:each="cartItem : ${cartItems}">
-
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0 fw-bold text-dark fs-6" th:text="${cartItem.fnbItem.name}">Tên Bắp</h6>
-                                <div class="fw-bold text-danger" th:text="${#numbers.formatDecimal(cartItem.subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+                                <h6 class="mb-0 fw-bold text-dark fs-6" th:text="${cartItem != null and cartItem.fnbItem != null ? cartItem.fnbItem.name : 'Món ăn'}">Tên Bắp</h6>
+                                <div class="fw-bold text-danger" th:text="${cartItem != null and cartItem.subtotal != null ? #numbers.formatDecimal(cartItem.subtotal, 0, 'COMMA', 0, 'POINT') : 0} + ' ₫'"></div>
                             </div>
-
-                            <div class="d-flex justify-content-between align-items-center">
-                                <!-- FORM CẬP NHẬT SỐ LƯỢNG (Thay cho gọi API) -->
+                            <div class="d-flex justify-content-between align-items-center" th:if="${cartItem != null}">
                                 <form th:action="@{/staff/booking/update}" method="post" class="d-flex align-items-center">
                                     <input type="hidden" name="bookingId" th:value="${bookingId}" />
+                                    <!-- ID CHUẨN ĐỂ KHÔNG SẬP 500 -->
                                     <input type="hidden" name="bookingFnbId" th:value="${cartItem.bookingFnbId}" />
                                     <div class="input-group input-group-sm" style="max-width: 90px;">
-                                        <input type="number" name="quantity" class="form-control text-center px-1 py-0" th:value="${cartItem.quantity}" min="0">
-                                        <button type="submit" class="btn btn-outline-secondary px-2 py-0" title="Cập nhật">
-                                            <i class="fa-solid fa-rotate"></i>
-                                        </button>
+                                        <input type="number" name="quantity" class="form-control text-center px-1 py-0" th:value="${cartItem.quantity}" min="0" />
+                                        <button type="submit" class="btn btn-outline-secondary px-2 py-0" title="Cập nhật"><i class="fa-solid fa-rotate fa-xs"></i></button>
                                     </div>
                                 </form>
-
-                                <!-- FORM XÓA MÓN (Thay cho gọi API) -->
                                 <form th:action="@{/staff/booking/remove}" method="post">
                                     <input type="hidden" name="bookingId" th:value="${bookingId}" />
                                     <input type="hidden" name="bookingFnbId" th:value="${cartItem.bookingFnbId}" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa món này?');">
-                                        <i class="fa-solid fa-trash fa-xs"></i>
-                                    </button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Xóa"><i class="fa-solid fa-trash fa-xs"></i></button>
                                 </form>
                             </div>
                         </li>
                     </ul>
                 </div>
 
-                <hr/>
+                <div class="mt-auto">
+                    <hr/>
+                    <div class="d-flex justify-content-between fw-bold mb-3 fs-5">
+                        <span>Tổng cộng:</span>
+                        <span class="text-danger" th:text="${totalAmount != null ? #numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT') : 0} + ' ₫'">0 ₫</span>
+                    </div>
 
-                <div class="d-flex justify-content-between fw-bold mb-3 fs-5">
-                    <span>Tổng cộng:</span>
-                    <span class="text-danger" th:text="${totalAmount != null ? #numbers.formatDecimal(totalAmount, 0, 'COMMA', 0, 'POINT') : 0} + ' ₫'">0 ₫</span>
+                    <a th:href="@{/booking/review(bookingId=${bookingId})}" class="btn w-100 fw-bold fs-6 text-white py-2" style="background-color: #198754;">
+                        Trở lại Hóa Đơn <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
                 </div>
-
-                <!-- Nút sang trang Thanh toán của Staff -->
-                <a th:href="@{/staff/booking/review(bookingId=${bookingId})}" class="btn btn-cine w-100 fw-bold fs-6">
-                    Tiếp tục thanh toán <i class="fa-solid fa-arrow-right ms-1"></i>
-                </a>
             </div>
         </div>
     </div>
 </div>
-
-<th:block id="dummy-css"></th:block>
-<th:block id="dummy-js"></th:block>
-
-</body>
-</html>
+<th:block id="dummy-css"></th:block><th:block id="dummy-js"></th:block>
+</body></html>

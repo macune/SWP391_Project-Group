@@ -1,16 +1,23 @@
 package fu.cinema.controller.staff;
 
+import fu.cinema.entity.Account;
 import fu.cinema.entity.Booking;
 import fu.cinema.dto.response.FnBItemResponse;
+import fu.cinema.repository.AccountRepository;
 import fu.cinema.repository.BookingRepository;
 import fu.cinema.service.BookingFnBService;
+import fu.cinema.service.BranchStockService;
 import fu.cinema.service.FnBItemService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/staff/booking")
@@ -18,30 +25,41 @@ import java.util.List;
 public class StaffBookingController {
 
     private final FnBItemService fnBItemService;
+    private final BranchStockService branchStockService;
     private final BookingRepository bookingRepository;
     private final BookingFnBService bookingFnBService;
-
-
-    // HIỂN THỊ GIAO DIỆN QUẦY POS
+    private final AccountRepository accountRepository;
 
     @GetMapping("/{bookingId}/fnb")
-    public String showPosFnBPage(@PathVariable Long bookingId, Model model) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+    public String showPosFnBPage(@PathVariable Long bookingId, Model model, Authentication auth) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow();
+        Long branchId;
+        if (booking.getTickets() != null && !booking.getTickets().isEmpty()) {
+            branchId = booking.getTickets().get(0).getShowtime().getHall().getBranch().getBranchId();
+        } else {
+            Account staffAcc = accountRepository.findByUsername(auth.getName()).orElseThrow();
+            branchId = staffAcc.getStaff().getBranch().getBranchId();
+        }
 
-        List<FnBItemResponse> availableItems = fnBItemService.GetAllItems().stream()
+        List<Long> availableItemIds = new ArrayList<>();
+        Map<Long, Integer> stockQuantityMap = new HashMap<>();
+        branchStockService.getStockByBranch(branchId).forEach(stock -> {
+            availableItemIds.add(stock.getItemId());
+            stockQuantityMap.put(stock.getItemId(), stock.getQuantity() != null ? stock.getQuantity() : 0);
+        });
+
+        List<FnBItemResponse> fnbList = fnBItemService.GetAllItems().stream()
                 .filter(FnBItemResponse::getIsAvailable)
+                .filter(item -> availableItemIds.contains(item.getId()))
                 .toList();
 
-        model.addAttribute("fnbList", availableItems);
+        model.addAttribute("fnbList", fnbList);
+        model.addAttribute("stockQuantityMap", stockQuantityMap);
         model.addAttribute("bookingId", bookingId);
         model.addAttribute("cartItems", booking.getBookingFnbs());
         model.addAttribute("totalAmount", booking.getTotalAmount());
-
         return "staff/fnb-booking";
     }
-
-    // THÊM/SỬA/XÓA BẮP NƯỚC
 
     @PostMapping("/add")
     public String addFnB(@RequestParam Long bookingId, @RequestParam Long itemId, @RequestParam int quantity) {
@@ -57,11 +75,8 @@ public class StaffBookingController {
 
     @PostMapping("/update")
     public String updateFnBQuantity(@RequestParam Long bookingId, @RequestParam Long bookingFnbId, @RequestParam int quantity) {
-        if (quantity <= 0) {
-            bookingFnBService.removeFnBFromBooking(bookingFnbId);
-        } else {
-            bookingFnBService.updateFnBQuantity(bookingFnbId, quantity);
-        }
+        if (quantity <= 0) bookingFnBService.removeFnBFromBooking(bookingFnbId);
+        else bookingFnBService.updateFnBQuantity(bookingFnbId, quantity);
         return "redirect:/staff/booking/" + bookingId + "/fnb";
     }
 }
