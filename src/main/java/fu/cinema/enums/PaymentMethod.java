@@ -1,7 +1,8 @@
 package fu.cinema.enums;
 
 public enum PaymentMethod {
-    ONLINE_QR,
+    VNPAY,
+    CASH,
     E_WALLET,
-    CASH
+    ONLINE_QR
 }

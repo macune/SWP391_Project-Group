@@ -329,9 +329,21 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public void cancelBooking(Long bookingId) {
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow(BookingNotFoundException::new);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException("Không tìm thấy đơn đặt vé"));
 
-        bookingRepository.delete(booking);
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new AppException("Chỉ có thể hủy đơn hàng đang chờ thanh toán.");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+
+        if (booking.getTickets() != null && !booking.getTickets().isEmpty()) {
+            for (Ticket ticket : booking.getTickets()) {
+                ticket.setStatus(fu.cinema.enums.TicketStatus.CANCELLED);
+            }
+        }
     }
 
     // Danh sách bookings (Staff)
@@ -518,5 +530,18 @@ public class BookingServiceImpl implements BookingService {
             bookingRepository.delete(booking);
             throw new AppException("Đã hết thời gian giữ ghế (10 phút). Vui lòng đặt lại đơn.");
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getFnbDetailsByBookingId(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new AppException("Không tìm thấy đơn hàng"));
+        List<String> fnbDetails = new ArrayList<>();
+        if (booking.getBookingFnbs() != null && !booking.getBookingFnbs().isEmpty()) {
+            for (fu.cinema.entity.BookingFnB fnB : booking.getBookingFnbs()) {
+                fnbDetails.add(fnB.getQuantity() + "x " + fnB.getFnbItem().getName() + " (" + fnB.getSubtotal() + "đ)");
+            }
+        }
+        return fnbDetails;
     }
 }

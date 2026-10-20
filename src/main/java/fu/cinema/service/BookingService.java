@@ -44,5 +44,7 @@ public interface BookingService {
 
     // Hàm dùng để kiểm tra khi người dùng bấm nút xác nhận thanh toán, đi đến trang payment thì lúc đó ghế hết hạn chưa
     void confirmBooking(Long bookingId);
+
+    List<String> getFnbDetailsByBookingId(Long bookingId);
 }
 

@@ -163,9 +163,9 @@
                         <!-- Nút Chốt đơn đặt vé -->
                         <form th:action="@{/booking/confirm}" method="post">
                             <input type="hidden" name="bookingId" th:value="${data.bookingId}">
-                            <button type="submit" class="btn btn-cine w-100 py-3 fw-bold fs-5 shadow-sm text-center">
-                                <i class="fa-solid fa-check me-2"></i>Xác Nhận Đặt Vé
-                            </button>
+                            <a th:href="@{/payment/method(bookingId=${data.bookingId})}" class="btn btn-danger w-100 fs-5 fw-bold py-2">
+                                Tiếp tục thanh toán <i class="fa-solid fa-arrow-right ms-2"></i>
+                            </a>
                         </form>
 
                         <!-- Nút Hủy đơn (Giải phóng ghế) -->

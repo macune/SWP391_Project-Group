@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(title=~{::title}, sidebar=~{::#sidebar-fragment}, content=~{::#page-content}, actorCss=~{}, actorJs=~{})}">
+<head>
+    <title>Phương thức Thanh toán | CineFlow</title>
+</head>
+<body>
+
+<!-- Khối xử lý Sidebar an toàn: Dựa vào biến isStaff để gọi đúng file sidebar -->
+<div id="sidebar-fragment">
+    <th:block th:if="${isStaff}">
+        <div th:replace="~{layout/sidebar :: staff-sidebar}"></div>
+    </th:block>
+    <th:block th:unless="${isStaff}">
+        <div th:replace="~{layout/sidebar :: customer-sidebar}"></div>
+    </th:block>
+</div>
+
+<div id="page-content" class="container-fluid py-3" style="max-width: 800px;">
+
+    <div class="d-flex align-items-center mb-4 pb-2 border-bottom border-cine">
+        <a th:href="@{/booking/review(bookingId=${data.bookingId})}" class="btn btn-sm btn-outline-secondary me-3">
+            <i class="fa-solid fa-arrow-left"></i> Quay lại
+        </a>
+        <h4 class="fw-bold mb-0 text-cine-primary">Lựa chọn Phương thức Thanh toán</h4>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span></div>
+
+    <div class="row g-4">
+        <!-- Cột tóm tắt đơn hàng -->
+        <div class="col-md-5">
+            <div class="card shadow-sm border-cine bg-cine-dark text-white p-4 h-100">
+                <h5 class="fw-bold text-cine-primary mb-3">Tóm tắt đơn hàng</h5>
+                <p class="mb-1 text-light">Mã đơn: <strong th:text="'#' + ${data.bookingId}"></strong></p>
+                <p class="mb-1 text-light">Phim: <span th:text="${data.movieTitle}"></span></p>
+                <p class="mb-3 text-light">Suất: <span th:text="${#temporals.format(data.startTime, 'HH:mm - dd/MM/yyyy')}"></span></p>
+                <hr class="border-secondary">
+                <h4 class="fw-bold text-cine-primary text-end">
+                    Tổng: <span th:text="${#numbers.formatDecimal(data.finalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                </h4>
+            </div>
+        </div>
+
+        <!-- Cột chọn phương thức -->
+        <div class="col-md-7">
+
+            <!-- VNPay (Cho cả Customer và Staff) -->
+            <div class="card shadow-sm border-cine mb-3 p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="fw-bold mb-1"><i class="fa-solid fa-qrcode text-primary me-2"></i>Ví VNPay / QR Code</h6>
+                        <small class="text-muted">Quét mã QR qua App ngân hàng hoặc Ví điện tử</small>
+                    </div>
+                    <form th:action="@{/payment/vnpay/create}" method="post">
+                        <input type="hidden" name="bookingId" th:value="${data.bookingId}">
+                        <button type="submit" class="btn btn-primary px-4"><i class="fa-solid fa-arrow-right"></i> Thanh toán</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tiền mặt (CHỈ HIỆN CHO STAFF) -->
+            <div th:if="${isStaff}" class="card shadow-sm border-success mb-3 p-3 bg-light">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="fw-bold text-success mb-1"><i class="fa-solid fa-money-bill-wave me-2"></i>Thu tiền mặt tại quầy</h6>
+                        <small class="text-muted">Nhân viên nhận tiền trực tiếp từ khách</small>
+                    </div>
+                    <button type="button" class="btn btn-success px-4" data-bs-toggle="modal" data-bs-target="#cashModal">
+                        <i class="fa-solid fa-check"></i> Xác nhận thu
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal Xác nhận thu tiền mặt (Staff) -->
+    <div th:if="${isStaff}" class="modal fade" id="cashModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold text-success"><i class="fa-solid fa-sack-dollar me-2"></i>Xác nhận thu tiền</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center pb-0">
+                    <p>Khách hàng cần thanh toán số tiền:</p>
+                    <h2 class="fw-bold text-danger mb-4" th:text="${#numbers.formatDecimal(data.finalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></h2>
+                </div>
+                <div class="modal-footer border-top-0 justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Hủy</button>
+                    <form th:action="@{/payment/cash/confirm}" method="post">
+                        <input type="hidden" name="bookingId" th:value="${data.bookingId}">
+                        <button type="submit" class="btn btn-success px-4"><i class="fa-solid fa-check me-1"></i> Đã nhận đủ tiền</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

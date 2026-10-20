@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/customer")
@@ -39,8 +40,13 @@ public class CustomerController {
     public String myBookings(Authentication authentication, Model model) {
         model.addAttribute("sectionTitle", "Vé của tôi (Lịch sử đặt vé)");
         if (authentication != null) {
-            List<TicketResponse> myTickets = ticketService.getMyTickets(authentication.getName());
-            model.addAttribute("tickets", myTickets);
+            List<TicketResponse> allTickets = ticketService.getMyTickets(authentication.getName());
+
+            List<TicketResponse> activeTickets = allTickets.stream()
+                    .filter(t -> t.getStatus() != fu.cinema.enums.TicketStatus.CANCELLED)
+                    .collect(Collectors.toList());
+
+            model.addAttribute("tickets", activeTickets);
         }
         return "customer/my-tickets";
     }
@@ -54,10 +60,23 @@ public class CustomerController {
             String username = authentication != null ? authentication.getName() : null;
             TicketResponse ticket = ticketService.getTicketDetail(ticketId, username);
 
+            if (ticket.getStatus() == fu.cinema.enums.TicketStatus.LOCKED) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Vé này chưa được thanh toán. Vui lòng thanh toán để nhận mã QR.");
+                return "redirect:/payment/method?bookingId=" + ticket.getBookingId();
+            }
+
+            if (ticket.getStatus() == fu.cinema.enums.TicketStatus.CANCELLED) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Vé này đã bị hủy do quá hạn thanh toán.");
+                return "redirect:/customer/bookings";
+            }
+
             List<TicketResponse> siblingTickets = ticketService.getTicketsByBooking(ticket.getBookingId(), username);
+
+            List<String> fnbDetails = bookingService.getFnbDetailsByBookingId(ticket.getBookingId());
 
             model.addAttribute("ticket", ticket);
             model.addAttribute("bookingTickets", siblingTickets);
+            model.addAttribute("fnbDetails", fnbDetails); // Chuyen danh sach F&B xuong View
             model.addAttribute("sectionTitle", "Chi tiết Vé điện tử #" + ticket.getTicketId());
             return "customer/ticket-detail";
         } catch (AppException e) {
@@ -88,20 +107,6 @@ public class CustomerController {
         }
     }
 
-    @PostMapping("/bookings/{bookingId}/generate-tickets")
-    public String generateBookingETickets(@PathVariable("bookingId") Long bookingId,
-                                          @RequestParam(value = "showtimeId", required = false) Long showtimeId,
-                                          @RequestParam(value = "seatIds", required = false) List<Long> seatIds,
-                                          RedirectAttributes redirectAttributes) {
-        try {
-            ticketService.generateETicketsForBooking(bookingId, showtimeId, seatIds);
-            redirectAttributes.addFlashAttribute("successMessage", "Khởi tạo vé điện tử và mã QR thành công!");
-            return "redirect:/customer/bookings/" + bookingId + "/tickets";
-        } catch (AppException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/customer/bookings";
-        }
-    }
 
     @GetMapping("/profile")
     public String myProfile(Model model) {

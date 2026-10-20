@@ -65,9 +65,7 @@
                     <!-- Cột thông tin tóm tắt -->
                     <div class="col-sm-9 p-3 d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                            <span class="badge bg-cine-soft" th:text="'Đơn #' + ${t.bookingId} + ' • Vé #' + ${t.ticketId}">
-                                Đơn #1 • Vé #1
-                            </span>
+                            <span class="badge bg-cine-soft" th:text="'Đơn #' + ${t.bookingId} + ' • Vé #' + ${t.ticketId}"></span>
 
                             <span th:if="${t.status.name() == 'BOOKED'}" class="badge bg-success">
                                 <i class="fa-solid fa-qrcode me-1"></i>Sẵn sàng quét QR
@@ -83,34 +81,45 @@
                             </span>
                         </div>
 
-                        <h5 class="fw-bold text-cine-primary mb-1" th:text="${t.movieTitle}">Tên Phim</h5>
+                        <h5 class="fw-bold text-cine-primary mb-1" th:text="${t.movieTitle}"></h5>
 
                         <div class="small text-cine-pastel mb-2">
                             <div>
                                 <i class="fa-solid fa-building me-1 text-cine-primary"></i>
-                                <strong th:text="${t.branchName}">Chi nhánh</strong> -
-                                <span th:text="${t.hallName}">Phòng chiếu</span>
+                                <strong th:text="${t.branchName}"></strong> -
+                                <span th:text="${t.hallName}"></span>
                             </div>
                             <div>
                                 <i class="fa-regular fa-clock me-1 text-cine-primary"></i>
                                 Suất chiếu:
-                                <strong th:text="${t.startTime != null ? #temporals.format(t.startTime, 'HH:mm - dd/MM/yyyy') : ''}">
-                                    19:30 - 20/10/2026
-                                </strong>
+                                <strong th:text="${t.startTime != null ? #temporals.format(t.startTime, 'HH:mm - dd/MM/yyyy') : ''}"></strong>
                             </div>
                         </div>
 
                         <div class="mt-auto pt-2 border-top border-cine d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <div>
-                                <span class="badge bg-cine-primary px-2 py-1 me-1" th:text="'Ghế ' + ${t.seatLabel}">Ghế A1</span>
-                                <span class="small text-cine-pastel" th:text="'(' + ${t.seatTypeDisplay} + ')'">(Ghế VIP)</span>
+                                <span class="badge bg-cine-primary px-2 py-1 me-1" th:text="'Ghế ' + ${t.seatLabel}"></span>
+                                <span class="small text-cine-pastel" th:text="'(' + ${t.seatTypeDisplay} + ')'"></span>
                                 <span class="fw-bold text-cine-primary ms-2"
-                                      th:text="${#numbers.formatDecimal(t.price, 0, 'POINT', 0, 'COMMA')} + ' đ'">85.000 đ</span>
+                                      th:text="${#numbers.formatDecimal(t.price, 0, 'POINT', 0, 'COMMA')} + ' đ'"></span>
                             </div>
 
-                            <a th:href="@{/customer/tickets/{id}(id=${t.ticketId})}" class="btn btn-cine btn-sm px-3">
-                                <i class="fa-solid fa-qrcode me-1"></i>Xem chi tiết & QR
-                            </a>
+                            <!-- PHÂN LƯỒNG NÚT BẤM DỰA VÀO TRẠNG THÁI -->
+                            <th:block th:if="${t.status.name() == 'LOCKED'}">
+                                <a th:href="@{/booking/review(bookingId=${t.bookingId})}" class="btn btn-warning btn-sm px-3 text-dark fw-bold">
+                                    <i class="fa-solid fa-file-invoice me-1"></i>Xem lại & Thanh toán
+                                </a>
+                            </th:block>
+
+                            <th:block th:if="${t.status.name() == 'BOOKED' or t.status.name() == 'CHECKED_IN'}">
+                                <a th:href="@{/customer/tickets/{id}(id=${t.ticketId})}" class="btn btn-cine btn-sm px-3">
+                                    <i class="fa-solid fa-qrcode me-1"></i>Xem chi tiết & QR
+                                </a>
+                            </th:block>
+
+                            <th:block th:if="${t.status.name() == 'CANCELLED'}">
+                                <button class="btn btn-secondary btn-sm px-3" disabled>Đã hủy</button>
+                            </th:block>
                         </div>
                     </div>
                 </div>

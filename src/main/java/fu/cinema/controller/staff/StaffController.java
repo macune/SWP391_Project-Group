@@ -106,7 +106,12 @@ public class StaffController {
     public String showBookingDetails(@PathVariable Long id, Model model) {
         try {
             BookDetailsResponse booking = bookingService.getBookingDetail(id);
+
+            List<String> fnbDetails = bookingService.getFnbDetailsByBookingId(id);
+
             model.addAttribute("booking", booking);
+            model.addAttribute("fnbDetails", fnbDetails);
+
             return "staff/booking-details";
         } catch (Exception e) {
             return "redirect:/staff/bookings";

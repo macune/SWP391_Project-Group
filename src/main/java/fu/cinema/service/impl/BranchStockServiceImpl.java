@@ -27,13 +27,13 @@ public class BranchStockServiceImpl implements BranchStockService {
 
     @Override
     public List<BranchStockResponse> getStockByBranch(Long branchId) {
-        List<BranchStock> stocks = branchStockRepository.findByBranchId(branchId);
+        List<BranchStock> stocks = branchStockRepository.findByBranch_BranchId(branchId);
 
         return stocks.stream().map(stock -> BranchStockResponse.builder()
                 .id(stock.getId())
                 .branchId(stock.getBranch().getBranchId())
                 .branchName(stock.getBranch().getBranchName())
-                .itemId(stock.getItem().getItemId())
+                .itemId(stock.getItem().getItemId()) // Sửa lại thành getItem()
                 .itemName(stock.getItem().getName())
                 .itemCategory(stock.getItem().getCategory().name())
                 .quantity(stock.getQuantity())
@@ -48,7 +48,7 @@ public class BranchStockServiceImpl implements BranchStockService {
     @Transactional
     public void importStock(BranchStockRequest request) {
         BranchStock stock = branchStockRepository
-                .findByBranchIdAndItemId(request.getBranchId(), request.getItemId())
+                .findByBranch_BranchIdAndItem_ItemId(request.getBranchId(), request.getItemId())
                 .orElse(null);
 
         if (stock != null) {
@@ -63,15 +63,13 @@ public class BranchStockServiceImpl implements BranchStockService {
 
             BranchStock newStock = BranchStock.builder()
                     .branch(branch)
-                    .item(item)
+                    .item(item) // Sửa lại thành .item()
                     .quantity(request.getQuantityToAdd())
                     .lastUpdated(LocalDateTime.now())
                     .build();
             branchStockRepository.save(newStock);
         }
     }
-
-    // --- THÊM LOGIC SỬA VÀ XÓA ---
 
     @Override
     @Transactional
