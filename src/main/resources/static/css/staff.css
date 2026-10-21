@@ -1,6 +1,5 @@
 /* =========================================================
    FILE CSS DÀNH RIÊNG CHO PHÂN HỆ: STAFF (Bán vé POS / Soát vé)
-   Thành viên phụ trách Staff chỉ viết thêm class vào đây.
    ========================================================= */
 
 /* Khung Camera quét QR */
@@ -30,12 +29,6 @@
     padding: 10px 14px;
     height: 100%;
 }
-
-/* Khu vực mẫu vé in vật lý (Ẩn trên màn hình thường, chỉ hiển thị khi bấm In vé) */
-#printable-ticket-stub {
-    display: none;
-}
-
 
 /* STAFF DASHBOARD */
 .staff-dashboard {

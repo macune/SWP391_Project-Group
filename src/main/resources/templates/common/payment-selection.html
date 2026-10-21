@@ -32,9 +32,9 @@
         <div class="col-md-5">
             <div class="card shadow-sm border-cine bg-cine-dark text-white p-4 h-100">
                 <h5 class="fw-bold text-cine-primary mb-3">Tóm tắt đơn hàng</h5>
-                <p class="mb-1 text-light">Mã đơn: <strong th:text="'#' + ${data.bookingId}"></strong></p>
-                <p class="mb-1 text-light">Phim: <span th:text="${data.movieTitle}"></span></p>
-                <p class="mb-3 text-light">Suất: <span th:text="${#temporals.format(data.startTime, 'HH:mm - dd/MM/yyyy')}"></span></p>
+                <p class="mb-1 text-cine-main">Mã đơn: <strong th:text="'#' + ${data.bookingId}"></strong></p>
+                <p class="mb-1 text-cine-main">Phim: <span th:text="${data.movieTitle}"></span></p>
+                <p class="mb-3 text-cine-main">Suất: <span th:text="${#temporals.format(data.startTime, 'HH:mm - dd/MM/yyyy')}"></span></p>
                 <hr class="border-secondary">
                 <h4 class="fw-bold text-cine-primary text-end">
                     Tổng: <span th:text="${#numbers.formatDecimal(data.finalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>

@@ -620,7 +620,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             comparator = comparator.reversed();
         }
 
-        return branchStockRepository.findByBranchId(branchId)
+        return branchStockRepository.findByBranch_BranchId(branchId)
                 .stream()
                 .map(stock -> {
                     FnBItem item = stock.getItem();
@@ -663,7 +663,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
             String sortDir
     ) {
         boolean itemExists = branchStockRepository
-                .findByBranchIdAndItemId(branchId, itemId)
+                .findByBranch_BranchIdAndItem_ItemId(branchId,itemId)
                 .isPresent();
 
         if (!itemExists) {

@@ -14,20 +14,33 @@
             </a>
         </li>
         <li class="nav-item">
+            <a th:href="@{/admin/revenue}" class="nav-link">
+                <i class="fa-solid fa-chart-pie me-2"></i>Báo cáo doanh thu
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a th:href="@{/admin/showtime-analytics}" class="nav-link">
+                <i class="fa-solid fa-chart-column me-2"></i>Showtime Analytics
+            </a>
+        </li>
+        <li class="my-2 border-top border-cine" ></li>
+        <li class="nav-item">
+            <a th:href="@{/admin/accounts}" class="nav-link">
+                <i class="fa-solid fa-users me-2"></i>Quản lý Tài Khoản
+            </a>
+        </li>
+        <li class="nav-item">
             <a th:href="@{/admin/branches}" class="nav-link">
                 <i class="fa-solid fa-building me-2"></i>Quản lý Chi nhánh
             </a>
         </li>
         <li class="nav-item">
             <a th:href="@{/admin/managers}" class="nav-link">
-                <i class="fa-solid fa-user-tie me-2"></i>Quản lý Quản lý Rạp
+                <i class="fa-solid fa-user-tie me-2"></i>Quản lý Manager
             </a>
         </li>
-        <li class="nav-item">
-            <a th:href="@{/admin/accounts}" class="nav-link">
-                <i class="fa-solid fa-users me-2"></i>Quản lý Tài Khoản
-            </a>
-        </li>
+        <li class="my-2 border-top border-cine" ></li>
         <li class="nav-item">
             <a th:href="@{/admin/movies}" class="nav-link">
                 <i class="fa-solid fa-film me-2"></i>Kho Phim Hệ thống
@@ -35,7 +48,7 @@
         </li>
         <li class="nav-item">
             <a th:href="@{/admin/fnb-items}" class="nav-link">
-                <i class="fa-solid fa-burger me-2"></i>Quản lý Bắp nước
+                <i class="fa-solid fa-burger me-2"></i>Quản lý F&B
             </a>
         </li>
         <li class="nav-item">
@@ -43,20 +56,7 @@
                 <i class="fa-solid fa-tags me-2"></i>Quản lý Khuyến Mãi
             </a>
         </li>
-        <li class="nav-item">
-            <a th:href="@{/admin/revenue}" class="nav-link">
-                <i class="fa-solid fa-chart-pie me-2"></i>
-                Báo cáo doanh thu
-            </a>
-        </li>
-
-        <li class="nav-item">
-            <a th:href="@{/admin/showtime-analytics}" class="nav-link">
-                <i class="fa-solid fa-chart-column me-2"></i>
-                Showtime Analytics
-            </a>
-        </li>
-
+        <li class="my-2 border-top border-cine" ></li>
     </ul>
 </aside>
 
@@ -78,6 +78,17 @@
             </a>
         </li>
         <li class="nav-item">
+            <a th:href="@{/manager/revenue}" class="nav-link">
+                <i class="fa-solid fa-chart-line me-2"></i>Báo cáo doanh thu
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/manager/showtime-analytics}" class="nav-link">
+                <i class="fa-solid fa-chart-column me-2"></i>Showtime Analytics
+            </a>
+        </li>
+        <li class="my-2 border-top border-cine" ></li>
+        <li class="nav-item">
             <a th:href="@{/manager/showtimes}" class="nav-link">
                 <i class="fa-regular fa-calendar-days me-2"></i>Xếp lịch chiếu rạp
             </a>
@@ -88,35 +99,22 @@
             </a>
         </li>
         <li class="nav-item">
-            <a th:href="@{/manager/staffs}" class="nav-link">
-                <i class="fa-solid fa-user-group me-2"></i>Nhân viên chi nhánh
-            </a>
-        </li>
-        <li class="nav-item">
             <a th:href="@{/manager/inventory}" class="nav-link">
                 <i class="fa-solid fa-boxes-stacked me-2"></i>Quản lý Tồn Kho
             </a>
         </li>
-
-        <li class="nav-item">
-            <a th:href="@{/manager/revenue}" class="nav-link">
-                <i class="fa-solid fa-chart-line me-2"></i>
-                Báo cáo doanh thu
-            </a>
-        </li>
-        <li>
-        <a th:href="@{/manager/showtime-analytics}"
-           class="nav-link">
-            <i class="fa-solid fa-chart-column me-2"></i>
-            <span>Showtime Analytics</span>
-        </a>
-
-        </li>
-        <li class="nav-item mt-3 border-top border-cine pt-2">
-            <a th:href="@{/manager/branch-settings}" class="nav-link fw-bold text-cine-primary">
+        <li class="my-2 border-top border-cine" ></li>
+        <li >
+            <a th:href="@{/manager/branch-settings}" class="nav-link">
                 <i class="fa-solid fa-building-circle-check me-2"></i>Thông tin Chi nhánh
             </a>
         </li>
+        <li class="nav-item">
+            <a th:href="@{/manager/staffs}" class="nav-link">
+                <i class="fa-solid fa-user-group me-2"></i>Nhân viên chi nhánh
+            </a>
+        </li>
+        <li class="my-2 border-top border-cine" ></li>
     </ul>
 </aside>
 
@@ -128,30 +126,32 @@
     <ul class="nav nav-pills flex-column gap-1">
         <li class="nav-item">
             <a th:href="@{/staff/dashboard}" class="nav-link">
-                <i class="fa-solid fa-gauge-high me-3 text-cine-primary"></i>
-                Dashboard
+                <i class="fa-solid fa-gauge-high me-2 "></i>Dashboard
+            </a>
+        </li>
+        <li class="my-2 border-top border-cine" ></li>
+        <li class="nav-item">
+            <a th:href="@{/staff/movies/today}" class="nav-link">
+                <i class="fa-solid fa-ticket me-2 "></i>Lịch Chiếu Hôm Nay
             </a>
         </li>
         <li class="nav-item">
             <a th:href="@{/staff/fnb}" class="nav-link">
-                <i class="fa-solid fa-burger me-3 text-cine-primary"></i>Quầy Bắp Nước
+                <i class="fa-solid fa-burger me-2 "></i>Quầy Bắp Nước
             </a>
         </li>
-        <li class="nav-item">
-            <a th:href="@{/staff/movies/today}" class="nav-link">
-                <i class="fa-solid fa-ticket me-3 text-cine-primary"></i>Lịch Chiếu Hôm Nay
-            </a>
-        </li>
+        <li class="my-2 border-top border-cine" ></li>
         <li class="nav-item">
             <a th:href="@{/staff/bookings}" class="nav-link">
-                <i class="fa-solid fa-receipt me-3 text-cine-primary"></i>Quản lý Đặt Vé
+                <i class="fa-solid fa-receipt me-2 "></i>Quản lý Đặt Vé
             </a>
         </li>
         <li class="nav-item">
             <a th:href="@{/staff/check-in}" class="nav-link">
-                <i class="fa-solid fa-qrcode me-2 text-cine-primary"></i>Soát vé vào phòng
+                <i class="fa-solid fa-qrcode me-2 "></i>Soát vé vào phòng
             </a>
         </li>
+        <li class="my-2 border-top border-cine" ></li>
     </ul>
 </aside>
 
@@ -161,6 +161,12 @@
         <span class="badge bg-cine-primary w-100 py-2">THÀNH VIÊN CINEFLOW</span>
     </div>
     <ul class="nav nav-pills flex-column gap-1">
+        <li class="nav-item">
+            <a th:href="@{/customer/dashboard}" class="nav-link">
+                <i class="fa-solid fa-gauge-high me-2 "></i>Dashboard
+            </a>
+        </li>
+        <li class="my-2 border-top border-cine" ></li>
         <li class="nav-item">
             <a th:href="@{/customer/list-movies}" class="nav-link">
                 <i class="fa-solid fa-film me-2"></i>Phim đang chiếu
@@ -172,13 +178,14 @@
             </a>
         </li>
         <li class="nav-item">
-            <a th:href="@{/customer/profile}" class="nav-link">
-                <i class="fa-regular fa-id-card me-2"></i>Hồ sơ cá nhân
-            </a>
-        </li>
-        <li class="nav-item">
             <a th:href="@{/customer/promotions}" class="nav-link">
                 <i class="fa-solid fa-gift me-2"></i>Ưu đãi & Khuyến mãi
+            </a>
+        </li>
+        <li class="my-2 border-top border-cine" ></li>
+        <li class="nav-item">
+            <a th:href="@{/customer/profile}" class="nav-link">
+                <i class="fa-regular fa-id-card me-2"></i>Hồ sơ cá nhân
             </a>
         </li>
         <li class="nav-item">
@@ -186,6 +193,7 @@
                 <i class="fa-solid fa-key me-2"></i>Đổi mật khẩu
             </a>
         </li>
+        <li class="my-2 border-top border-cine" ></li>
     </ul>
 </aside>
 
