@@ -133,9 +133,7 @@ public class BookingFnBServiceImpl implements BookingFnBService {
             }
         }
 
-        // Cập nhật lại số tiền giảm giá mới vào DB
         booking.setDiscountAmount(discountAmount);
-
         // 5. Tính tổng thanh toán cuối cùng
         BigDecimal finalTotal = subtotal.subtract(discountAmount);
         if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
