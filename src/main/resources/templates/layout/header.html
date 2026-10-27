@@ -31,10 +31,9 @@
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('STAFF')">
-                <a class="nav-link text-cine-pastel fw-medium" th:href="@{/staff/dashboard}">
-                    <i class="fa-solid fa-cash-register me-1"></i>
-                    Quầy vé POS
-                </a>
+                    <a class="nav-link text-cine-pastel fw-medium" th:href="@{/staff/dashboard}">
+                        <i class="fa-solid fa-cash-register me-1"></i>Quầy vé POS
+                    </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('CUSTOMER')">
                     <a class="nav-link text-cine-pastel fw-medium" th:href="@{/customer/dashboard}">
@@ -56,6 +55,15 @@
 
                 <!-- Đã đăng nhập: Ẩn Đăng nhập & Đăng ký, hiển thị thông tin tài khoản và nút Đăng xuất -->
                 <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-3">
+                    <a th:href="@{/customer/notifications}" class="btn btn-outline-cine btn-sm position-relative px-2" title="Thông báo của tôi">
+                        <i class="fa-solid fa-bell"></i>
+                        <span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              th:text="${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}">
+                            0
+                        </span>
+                    </a>
+
                     <span class="text-light small fw-medium">
                         <i class="fa-regular fa-circle-user me-1 text-cine-primary"></i>
                         <span sec:authentication="name" class="text-cine-pastel">Tài khoản</span>

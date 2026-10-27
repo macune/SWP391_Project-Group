@@ -7,6 +7,7 @@ import fu.cinema.enums.*;
 import fu.cinema.exception.*;
 import fu.cinema.repository.*;
 import fu.cinema.service.BookingService;
+import fu.cinema.service.NotificationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -30,6 +31,7 @@ public class BookingServiceImpl implements BookingService {
     BookingRepository bookingRepository;
     AccountRepository accountRepository;
     PromotionRepository promotionRepository;
+    NotificationService notificationService;
 
     // Tính tiền cho từng ghế (giá vé = giá base + giá ghế)
     private BigDecimal calculateSeatPrice(SeatType seatType, BigDecimal basePrice){
@@ -325,7 +327,7 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.save(booking);
     }
 
-    // Hàm chạy khi người dùng bấm hủy đơn (giải phóng ghế)
+    // Hàm chạy khi người dùng bấm hủy đơn (giải phóng ghế) + Gửi thông báo FE-10.1
     @Override
     @Transactional
     public void cancelBooking(Long bookingId) {
@@ -344,6 +346,9 @@ public class BookingServiceImpl implements BookingService {
                 ticket.setStatus(fu.cinema.enums.TicketStatus.CANCELLED);
             }
         }
+
+        // FE-10.1: Gửi thông báo hủy đơn đặt vé
+        notificationService.sendBookingCancelledAlert(booking);
     }
 
     // Danh sách bookings (Staff)
@@ -432,8 +437,9 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-    // Chỉnh sửa trạng thái đơn hàng (dành riêng cho Staff)
+    // Chỉnh sửa trạng thái đơn hàng (dành riêng cho Staff) + Gửi thông báo
     @Override
+    @Transactional
     public void updateBookingStatus(Long bookingId, BookingStatus newStatus) {
         Booking booking = bookingRepository.findById((bookingId)).orElseThrow(BookingNotFoundException::new);
 
@@ -456,7 +462,16 @@ public class BookingServiceImpl implements BookingService {
                 ticket.setStatus(TicketStatus.BOOKED);
             }
         }
-        bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
+
+        // FE-10.1: Gửi thông báo cập nhật trạng thái đơn hàng
+        if (newStatus == BookingStatus.CANCELLED) {
+            notificationService.sendBookingCancelledAlert(saved);
+        } else if (newStatus == BookingStatus.CONFIRMED) {
+            notificationService.sendBookingConfirmedAlert(saved);
+        } else {
+            notificationService.sendBookingStatusUpdatedAlert(saved);
+        }
     }
 
     // Lấy lịch sử mua vé của người dùng

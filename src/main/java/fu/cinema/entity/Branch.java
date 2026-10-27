@@ -29,7 +29,7 @@ public class Branch {
     @Column(name = "address", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String address;
 
-    @Column(name = "hotline", nullable = false, length = 20)
+    @Column(name = "hotline", nullable = false, length = 10)
     private String hotline;
 
     @Column(name = "opening_time", nullable = false)

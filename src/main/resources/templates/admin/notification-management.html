@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: admin-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{::script}
+      )}">
+<head>
+    <title>Quản lý Thông báo & Cấu hình Email | CineFlow Admin</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid py-3">
+
+    <!-- Header & Các nút tác vụ nhanh -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h4 class="fw-bold mb-1 text-cine-primary">
+                <i class="fa-solid fa-envelope-open-text me-2"></i>Quản trị Thông báo & Cấu hình Email Hệ thống
+            </h4>
+            <p class="text-muted small mb-0">Quản lý lịch sử thông báo (FE-10.1 → FE-10.4), mẫu Template Email và cấu hình Gmail SMTP (FE-10.5)</p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <!-- Nút kích hoạt chạy ngay JOB-03 & JOB-04 để demo -->
+            <form th:action="@{/admin/notifications/run-jobs}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-outline-cine btn-sm px-3" title="Quét nhắc lịch chiếu 2h (JOB-03) và thông báo hẹn giờ (JOB-04)">
+                    <i class="fa-solid fa-bolt me-1"></i>Chạy quét JOB-03 & JOB-04 ngay
+                </button>
+            </form>
+
+            <button type="button" class="btn btn-outline-cine btn-sm px-3" data-bs-toggle="modal" data-bs-target="#broadcastPromoModal">
+                <i class="fa-solid fa-bullhorn me-1"></i>Phát thông báo Khuyến mãi
+            </button>
+
+            <button type="button" class="btn btn-cine btn-sm px-3" data-bs-toggle="modal" data-bs-target="#sendCustomModal">
+                <i class="fa-solid fa-paper-plane me-1"></i>Tạo & Hẹn giờ Thông báo
+            </button>
+        </div>
+    </div>
+
+    <!-- Thông báo kết quả -->
+    <div th:if="${successMessage}" class="alert bg-cine-soft border-cine alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert bg-cine-hot text-white alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Thẻ thống kê nhanh -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-cine shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Đã gửi thành công (SENT)</div>
+                        <h4 class="fw-bold text-success mb-0" th:text="${totalSent}">0</h4>
+                    </div>
+                    <i class="fa-solid fa-circle-check fs-2 text-success opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-cine shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Đang hẹn giờ chờ gửi (SCHEDULED - JOB-04)</div>
+                        <h4 class="fw-bold text-warning mb-0" th:text="${totalScheduled}">0</h4>
+                    </div>
+                    <i class="fa-solid fa-clock fs-2 text-warning opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-cine shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Gửi thất bại (FAILED)</div>
+                        <h4 class="fw-bold text-danger mb-0" th:text="${totalFailed}">0</h4>
+                    </div>
+                    <i class="fa-solid fa-triangle-exclamation fs-2 text-danger opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thanh điều hướng 3 Tabs (Phương án 4A) -->
+    <ul class="nav nav-tabs mb-3 border-cine">
+        <li class="nav-item">
+            <a class="nav-link fw-semibold"
+               th:classappend="${activeTab == 'history' ? 'active text-cine-primary' : 'text-secondary'}"
+               th:href="@{/admin/notifications(tab='history')}">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i>1. Lịch sử Gửi & Hẹn giờ Thông báo
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link fw-semibold"
+               th:classappend="${activeTab == 'templates' ? 'active text-cine-primary' : 'text-secondary'}"
+               th:href="@{/admin/notifications(tab='templates')}">
+                <i class="fa-solid fa-file-code me-1"></i>2. Quản lý Template Email ({{...}})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link fw-semibold"
+               th:classappend="${activeTab == 'config' ? 'active text-cine-primary' : 'text-secondary'}"
+               th:href="@{/admin/notifications(tab='config')}">
+                <i class="fa-solid fa-gears me-1"></i>3. Cấu hình Hệ thống Mail (SMTP)
+            </a>
+        </li>
+    </ul>
+
+    <!-- =========================================================================
+         TAB 1: LỊCH SỬ GỬI & HẸN GIỜ THÔNG BÁO
+         ========================================================================= -->
+    <div th:if="${activeTab == 'history'}">
+        <div class="card border-cine shadow-sm p-3 mb-3">
+            <form th:action="@{/admin/notifications}" method="get" class="row g-2 align-items-center">
+                <input type="hidden" name="tab" value="history">
+                <div class="col-md-4">
+                    <input type="text" name="keyword" th:value="${keyword}" class="form-control border-cine"
+                           placeholder="🔍 Tìm theo tiêu đề, nội dung, username hoặc email...">
+                </div>
+                <div class="col-md-3">
+                    <select name="type" class="form-select border-cine">
+                        <option value="">-- Tất cả phân loại --</option>
+                        <option th:each="t : ${types}" th:value="${t}" th:text="${t}"
+                                th:selected="${selectedType == t}"></option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select border-cine">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option th:each="st : ${statuses}" th:value="${st}" th:text="${st}"
+                                th:selected="${selectedStatus == st}"></option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-cine w-100"><i class="fa-solid fa-filter me-1"></i>Lọc</button>
+                    <a th:href="@{/admin/notifications(tab='history')}" class="btn btn-outline-secondary" title="Xóa lọc">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="card border-cine shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-cine table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th class="ps-3">ID</th>
+                        <th>Người nhận</th>
+                        <th>Phân loại</th>
+                        <th>Tiêu đề & Nội dung</th>
+                        <th>Trạng thái</th>
+                        <th>Email SMTP</th>
+                        <th>Thời gian</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(notifications)}">
+                        <td colspan="7" class="text-center py-4 text-muted">Chưa có bản ghi thông báo nào.</td>
+                    </tr>
+                    <tr th:each="n : ${notifications}">
+                        <td class="ps-3 fw-bold" th:text="'#' + ${n.notificationId}">#1</td>
+                        <td>
+                            <div class="fw-semibold" th:text="${n.recipient != null ? n.recipient.username : 'Hệ thống'}">user</div>
+                            <small class="text-muted" th:text="${n.recipientEmail}">email@gmail.com</small>
+                        </td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${n.type.name() == 'BOOKING' ? 'bg-primary' :
+                                                   (n.type.name() == 'PAYMENT' ? 'bg-success' :
+                                                   (n.type.name() == 'SHOWTIME' ? 'bg-warning text-dark' : 'bg-danger'))}"
+                                  th:text="${n.type}">BOOKING</span>
+                            <div class="small text-muted mt-1" th:text="${n.templateCode}"></div>
+                        </td>
+                        <td style="max-width: 360px;">
+                            <div class="fw-bold text-cine-primary text-truncate" th:text="${n.title}">Tiêu đề</div>
+                            <div class="small text-secondary" th:text="${n.message}">Nội dung</div>
+                            <div th:if="${n.errorMessage != null}" class="small text-danger mt-1">
+                                <i class="fa-solid fa-circle-exclamation me-1"></i><span th:text="${n.errorMessage}"></span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${n.status.name() == 'SENT' ? 'bg-success' :
+                                                   (n.status.name() == 'SCHEDULED' ? 'bg-warning text-dark' : 'bg-danger')}"
+                                  th:text="${n.status}">SENT</span>
+                        </td>
+                        <td>
+                            <span th:if="${n.emailSent}" class="badge bg-info text-dark">
+                                <i class="fa-solid fa-check me-1"></i>Đã gửi Mail
+                            </span>
+                            <span th:unless="${n.emailSent}" class="badge bg-secondary">In-App</span>
+                        </td>
+                        <td class="small">
+                            <div th:if="${n.sentAt != null}">
+                                <strong>Gửi:</strong> <span th:text="${#temporals.format(n.sentAt, 'HH:mm dd/MM/yyyy')}"></span>
+                            </div>
+                            <div th:if="${n.scheduledAt != null}" class="text-warning-emphasis">
+                                <strong>Hẹn:</strong> <span th:text="${#temporals.format(n.scheduledAt, 'HH:mm dd/MM/yyyy')}"></span>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         TAB 2: QUẢN LÝ TEMPLATE EMAIL & THÔNG BÁO (FE-10.5)
+         ========================================================================= -->
+    <div th:if="${activeTab == 'templates'}">
+        <div class="alert bg-cine-soft border-cine mb-3 small">
+            <i class="fa-solid fa-circle-info me-2"></i>
+            <strong>Biến động hỗ trợ trong Template:</strong>
+            <code>{{customerName}}</code>, <code>{{bookingId}}</code>, <code>{{movieTitle}}</code>,
+            <code>{{branchName}}</code>, <code>{{hallName}}</code>, <code>{{showtime}}</code>,
+            <code>{{seats}}</code>, <code>{{totalAmount}}</code>, <code>{{paymentMethod}}</code>,
+            <code>{{transactionNo}}</code>, <code>{{promoCode}}</code>, <code>{{discountInfo}}</code>,
+            <code>{{validFrom}}</code>, <code>{{expiryDate}}</code>.
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12" th:each="tpl : ${templates}">
+                <div class="card border-cine shadow-sm">
+                    <form th:action="@{/admin/notifications/templates/update}" method="post">
+                        <input type="hidden" name="templateId" th:value="${tpl.templateId}">
+                        <div class="card-header d-flex flex-wrap justify-content-between align-items-center bg-light">
+                            <div>
+                                <span class="badge bg-cine-primary me-2" th:text="${tpl.type}">BOOKING</span>
+                                <strong th:text="${tpl.templateName}">Tên mẫu</strong>
+                                <code class="ms-2 small" th:text="'(' + ${tpl.templateCode} + ')'"></code>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" name="emailEnabled" value="true"
+                                           th:checked="${tpl.emailEnabled}">
+                                    <label class="form-check-label small fw-semibold">Gửi kèm Email SMTP</label>
+                                </div>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" name="active" value="true"
+                                           th:checked="${tpl.active}">
+                                    <label class="form-check-label small fw-semibold">Kích hoạt mẫu</label>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-cine px-3">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i>Lưu mẫu
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold mb-1">Tiêu đề Email & Thông báo (Subject):</label>
+                                <input type="text" name="subject" th:value="${tpl.subject}" class="form-control form-control-sm border-cine" required>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-semibold mb-1">Nội dung thông báo trên Web (In-App):</label>
+                                    <textarea name="inAppTemplate" rows="4" class="form-control form-control-sm border-cine"
+                                              th:text="${tpl.inAppTemplate}" required></textarea>
+                                </div>
+                                <div class="col-md-7">
+                                    <label class="form-label small fw-semibold mb-1">Nội dung Email HTML:</label>
+                                    <textarea name="emailHtmlTemplate" rows="4" class="form-control form-control-sm border-cine font-monospace"
+                                              th:text="${tpl.emailHtmlTemplate}" required></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         TAB 3: CẤU HÌNH HỆ THỐNG MAIL (GMAIL SMTP - FE-10.5)
+         ========================================================================= -->
+    <div th:if="${activeTab == 'config'}">
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="card border-cine shadow-sm">
+                    <div class="card-header bg-light fw-bold">
+                        <i class="fa-solid fa-server me-2 text-cine-primary"></i>Cấu hình Máy chủ Gmail SMTP
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/admin/notifications/email-config/update}" th:object="${emailConfig}" method="post">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-medium">SMTP Host <span class="text-danger">*</span></label>
+                                    <input type="text" th:field="*{host}" class="form-control border-cine" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">SMTP Port <span class="text-danger">*</span></label>
+                                    <input type="number" th:field="*{port}" class="form-control border-cine" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Tên hiển thị Người gửi (Sender Name) <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{senderName}" class="form-control border-cine" required>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium">Tài khoản Gmail (Username) <span class="text-danger">*</span></label>
+                                    <input type="email" th:field="*{username}" class="form-control border-cine" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium">Mật khẩu ứng dụng (App Password 16 ký tự)</label>
+                                    <input type="text" th:field="*{password}" class="form-control border-cine"
+                                           placeholder="Nhập App Password Gmail">
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-4 mb-4 pt-2 border-top">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" th:field="*{smtpAuth}">
+                                    <label class="form-check-label">Yêu cầu xác thực SMTP (Auth)</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" th:field="*{starttlsEnable}">
+                                    <label class="form-check-label">Bật mã hóa STARTTLS</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" th:field="*{globalEmailEnabled}">
+                                    <label class="form-check-label fw-bold text-cine-primary">Bật gửi Email toàn hệ thống</label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-cine px-4">
+                                <i class="fa-solid fa-floppy-disk me-1"></i>Lưu cấu hình SMTP
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card border-cine shadow-sm">
+                    <div class="card-header bg-light fw-bold">
+                        <i class="fa-solid fa-paper-plane me-2 text-success"></i>Gửi Email Kiểm Tra (Test SMTP)
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted">
+                            Sử dụng công cụ này để kiểm tra ngay xem cấu hình Gmail SMTP hiện tại có gửi được thư đến hộp thư thực tế hay không.
+                        </p>
+                        <form th:action="@{/admin/notifications/email-config/test}" method="post">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">Nhập địa chỉ Email nhận thử nghiệm:</label>
+                                <input type="email" name="testEmail" class="form-control border-cine"
+                                       placeholder="ví dụ: customer@gmail.com" required>
+                            </div>
+                            <button type="submit" class="btn btn-outline-cine w-100">
+                                <i class="fa-solid fa-envelope-circle-check me-1"></i>Gửi Email Kiểm Tra Ngay
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         MODAL 1: PHÁT THÔNG BÁO MÃ KHUYẾN MÃI HÀNG LOẠT (FE-10.4)
+         ========================================================================= -->
+    <div class="modal fade" id="broadcastPromoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-cine">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-cine-primary">
+                        <i class="fa-solid fa-bullhorn me-2"></i>Phát thông báo Chương trình Khuyến mãi
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/admin/notifications/broadcast-promotion}" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Chọn Mã Khuyến Mãi (Coupon) <span class="text-danger">*</span></label>
+                            <select name="promotionId" class="form-select border-cine" required>
+                                <option value="">-- Chọn mã giảm giá cần gửi thông báo --</option>
+                                <option th:each="p : ${promotions}"
+                                        th:value="${p.id}"
+                                        th:text="${p.code + ' - Giảm ' + p.discountPercentage + (p.discountType == 'FIXED_AMOUNT' ? 'đ' : '%') + ' (' + p.status + ')'}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Thời điểm phát hành (Để trống nếu muốn gửi ngay):</label>
+                            <input type="datetime-local" name="scheduledAt" class="form-control border-cine">
+                            <small class="text-muted">Nếu chọn thời gian trong tương lai, thông báo sẽ ở trạng thái <strong>SCHEDULED</strong> và được <strong>JOB-04</strong> tự động gửi khi đến giờ.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-cine px-4">Xác nhận Phát hành</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         MODAL 2: TẠO & HẸN GIỜ THÔNG BÁO TÙY CHỈNH
+         ========================================================================= -->
+    <div class="modal fade" id="sendCustomModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content border-cine">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-cine-primary">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Tạo & Hẹn giờ Gửi Thông báo Hệ thống
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/admin/notifications/send-custom}" method="post">
+                    <div class="modal-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Người nhận <span class="text-danger">*</span></label>
+                                <select name="recipientUsername" class="form-select border-cine" required>
+                                    <option value="ALL">📢 Tất cả tài khoản đang hoạt động (ALL)</option>
+                                    <option th:each="acc : ${accounts}"
+                                            th:value="${acc.username}"
+                                            th:text="${acc.username + ' (' + acc.email + ')'}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Phân loại thông báo <span class="text-danger">*</span></label>
+                                <select name="type" class="form-select border-cine" required>
+                                    <option th:each="t : ${types}" th:value="${t}" th:text="${t}"></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Tiêu đề thông báo / Email <span class="text-danger">*</span></label>
+                            <input type="text" name="title" class="form-control border-cine"
+                                   placeholder="Nhập tiêu đề thông báo..." required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Nội dung chi tiết <span class="text-danger">*</span></label>
+                            <textarea name="message" rows="4" class="form-control border-cine"
+                                      placeholder="Nhập nội dung thông báo gửi tới khách hàng..." required></textarea>
+                        </div>
+
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Hẹn giờ gửi (Tùy chọn - Phục vụ JOB-04):</label>
+                                <input type="datetime-local" name="scheduledAt" class="form-control border-cine">
+                            </div>
+                            <div class="col-md-6 pt-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="sendEmail" value="true" checked>
+                                    <label class="form-check-label fw-semibold">Đồng thời gửi Email qua Gmail SMTP</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-cine px-4">Lưu & Phát hành</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+</body>
+</html>
