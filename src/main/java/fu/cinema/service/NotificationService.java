@@ -1,6 +1,10 @@
 package fu.cinema.service;
 
-import fu.cinema.entity.*;
+import fu.cinema.config.EmailConfig;
+import fu.cinema.entity.Booking;
+import fu.cinema.entity.Notification;
+import fu.cinema.entity.Promotion;
+import fu.cinema.entity.Showtime;
 import fu.cinema.enums.NotificationStatus;
 import fu.cinema.enums.NotificationType;
 import fu.cinema.enums.PaymentMethod;
@@ -38,7 +42,7 @@ public interface NotificationService {
 
     // Admin FE-10.5: Email & Notification Management (UC-43)
     List<Notification> getAllNotificationsForAdmin(NotificationType type, NotificationStatus status, String keyword);
-    List<NotificationTemplate> getAllTemplates();
+    List<EmailConfig.TemplateItem> getAllTemplates();
     void updateTemplate(Long templateId, String subject, String inAppTemplate, String emailHtmlTemplate,
                         boolean emailEnabled, boolean active);
     EmailConfig getEmailConfig();

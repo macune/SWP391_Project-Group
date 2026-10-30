@@ -1,8 +1,7 @@
 package fu.cinema.controller.admin;
 
-import fu.cinema.entity.EmailConfig;
+import fu.cinema.config.EmailConfig;
 import fu.cinema.entity.Notification;
-import fu.cinema.entity.NotificationTemplate;
 import fu.cinema.enums.AccountStatus;
 import fu.cinema.enums.NotificationStatus;
 import fu.cinema.enums.NotificationType;
@@ -32,7 +31,7 @@ public class AdminNotificationController {
     private final PromotionRepository promotionRepository;
     private final AccountRepository accountRepository;
 
-    // Giao diện All-in-One 3 Tabs (Phương án 4A)
+    // Giao diện All-in-One 3 Tabs
     @GetMapping("/admin/notifications")
     @PreAuthorize("hasRole('ADMIN')")
     public String viewNotificationManagement(
@@ -43,7 +42,7 @@ public class AdminNotificationController {
             Model model) {
 
         List<Notification> history = notificationService.getAllNotificationsForAdmin(type, status, keyword);
-        List<NotificationTemplate> templates = notificationService.getAllTemplates();
+        List<EmailConfig.TemplateItem> templates = notificationService.getAllTemplates();
         EmailConfig emailConfig = notificationService.getEmailConfig();
 
         model.addAttribute("activeTab", activeTab);
@@ -67,7 +66,7 @@ public class AdminNotificationController {
         return "admin/notification-management";
     }
 
-    // Gửi thông báo tùy chỉnh hoặc hẹn giờ gửi (JOB-04)
+    // Gửi thông báo tùy chỉnh hoặc hẹn giờ gửi
     @PostMapping("/admin/notifications/send-custom")
     @PreAuthorize("hasRole('ADMIN')")
     public String sendCustomNotification(
@@ -95,7 +94,7 @@ public class AdminNotificationController {
         return "redirect:/admin/notifications?tab=history";
     }
 
-    // Phát thông báo Khuyến mãi / Mã giảm giá hàng loạt (FE-10.4)
+    // Phát thông báo Khuyến mãi / Mã giảm giá hàng loạt
     @PostMapping("/admin/notifications/broadcast-promotion")
     @PreAuthorize("hasRole('ADMIN')")
     public String broadcastPromotion(
@@ -118,7 +117,7 @@ public class AdminNotificationController {
         return "redirect:/admin/notifications?tab=history";
     }
 
-    // Nút kích hoạt chạy ngay JOB-03 & JOB-04 phục vụ Demo
+    // Nút kích hoạt chạy ngay JOB-03 & JOB-04
     @PostMapping("/admin/notifications/run-jobs")
     @PreAuthorize("hasRole('ADMIN')")
     public String triggerBackgroundJobsNow(RedirectAttributes redirectAttributes) {
@@ -133,7 +132,7 @@ public class AdminNotificationController {
         return "redirect:/admin/notifications?tab=history";
     }
 
-    // Cập nhật Mẫu Template Email/In-App (Tab 2 - FE-10.5)
+    // Cập nhật Mẫu Template Email/In-App
     @PostMapping("/admin/notifications/templates/update")
     @PreAuthorize("hasRole('ADMIN')")
     public String updateTemplate(
@@ -153,7 +152,7 @@ public class AdminNotificationController {
         return "redirect:/admin/notifications?tab=templates";
     }
 
-    // Cập nhật Cấu hình máy chủ Gmail SMTP (Tab 3 - FE-10.5)
+    // Cập nhật Cấu hình máy chủ Gmail SMTP
     @PostMapping("/admin/notifications/email-config/update")
     @PreAuthorize("hasRole('ADMIN')")
     public String updateEmailConfig(@ModelAttribute EmailConfig emailConfig, RedirectAttributes redirectAttributes) {
@@ -166,7 +165,7 @@ public class AdminNotificationController {
         return "redirect:/admin/notifications?tab=config";
     }
 
-    // Gửi Email Kiểm Tra (Test Mail) tại Tab 3
+    // Gửi Email Kiểm Tra
     @PostMapping("/admin/notifications/email-config/test")
     @PreAuthorize("hasRole('ADMIN')")
     public String sendTestEmail(@RequestParam("testEmail") String testEmail, RedirectAttributes redirectAttributes) {
@@ -180,7 +179,6 @@ public class AdminNotificationController {
         return "redirect:/admin/notifications?tab=config";
     }
 
-    // API-05 chuẩn đặc tả SRS (Mục 5.5: POST /api/v1/notifications/send)
     @PostMapping("/api/v1/notifications/send")
     @ResponseBody
     public ResponseEntity<?> sendNotificationApi(@RequestBody Map<String, Object> payload) {
