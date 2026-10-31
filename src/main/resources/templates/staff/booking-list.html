@@ -90,11 +90,27 @@
                                 <i class="fa-regular fa-eye me-1"></i>Chi tiết
                             </a>
 
-                            <!-- BỔ SUNG: Nút Thanh toán cho những đơn đang PENDING -->
+                            <!-- NẾU ĐƠN PENDING -> Cho phép Xem lại đơn HOẶC Xóa rác -->
                             <th:block th:if="${b.status.name() == 'PENDING'}">
                                 <a th:href="@{/booking/review(bookingId=${b.bookingId})}" class="btn btn-sm btn-cine px-3">
-                                    <i class="fa-solid fa-file-invoice me-1"></i>Xem lại đơn
+                                    <i class="fa-solid fa-file-invoice me-1"></i>Xem lại
                                 </a>
+                                <form th:action="@{/staff/bookings/{id}/hard-delete(id=${b.bookingId})}" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bạn có chắc muốn xóa cứng đơn hàng chờ thanh toán này không?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger px-3">
+                                        <i class="fa-solid fa-trash me-1"></i>Xóa
+                                    </button>
+                                </form>
+                            </th:block>
+
+                            <!-- NẾU ĐƠN ĐÃ CONFIRMED -> Cho phép Hủy vé hợp lệ -->
+                            <th:block th:if="${b.status.name() == 'CONFIRMED'}">
+                                <form th:action="@{/staff/bookings/{id}/cancel-confirmed(id=${b.bookingId})}" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bạn có chắc muốn hủy đơn đặt vé này?\n- Ghế sẽ được giải phóng\n- Bắp nước hoàn lại kho\n- Doanh thu sẽ bị trừ');">
+                                    <button type="submit" class="btn btn-sm btn-danger px-3">
+                                        <i class="fa-solid fa-ban me-1"></i>Hủy vé
+                                    </button>
+                                </form>
                             </th:block>
                         </div>
                     </td>

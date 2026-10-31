@@ -91,14 +91,25 @@ public class StaffController {
     @GetMapping("/fnb")
     public String fnbBookingPage(Authentication auth) {
         Account staffAcc = accountRepository.findByUsername(auth.getName()).orElseThrow();
-        Booking retailBooking = Booking.builder()
-                .account(staffAcc)
-                .bookingTime(LocalDateTime.now())
-                .createdAt(LocalDateTime.now())
-                .totalAmount(BigDecimal.ZERO)
-                .status(BookingStatus.PENDING)
-                .build();
-        bookingRepository.save(retailBooking);
+
+        List<Booking> staffBookings = bookingRepository.findByAccount_AccountIdOrderByCreatedAtDesc(staffAcc.getAccountId());
+
+       Booking retailBooking = staffBookings.stream()
+                .filter(b -> b.getStatus() == BookingStatus.PENDING && (b.getTickets() == null || b.getTickets().isEmpty()))
+                .findFirst()
+                .orElse(null);
+
+        if (retailBooking == null) {
+            retailBooking = Booking.builder()
+                    .account(staffAcc)
+                    .bookingTime(LocalDateTime.now())
+                    .createdAt(LocalDateTime.now())
+                    .totalAmount(BigDecimal.ZERO)
+                    .status(BookingStatus.PENDING)
+                    .build();
+            bookingRepository.save(retailBooking);
+        }
+
         return "redirect:/staff/booking/" + retailBooking.getBookingId() + "/fnb";
     }
 
@@ -169,16 +180,4 @@ public class StaffController {
         }
     }
 
-    @PostMapping("/bookings/{id}/edit")
-    public String updateBookingStatus(@PathVariable Long id,
-                                      @RequestParam BookingStatus status,
-                                      RedirectAttributes redirectAttributes) {
-        try {
-            bookingService.updateBookingStatus(id, status);
-            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật trạng thái đơn hàng thành công!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        }
-        return "redirect:/staff/bookings/" + id;
-    }
 }

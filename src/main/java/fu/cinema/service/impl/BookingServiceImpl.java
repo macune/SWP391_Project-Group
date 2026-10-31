@@ -30,6 +30,9 @@ public class BookingServiceImpl implements BookingService {
     BookingRepository bookingRepository;
     AccountRepository accountRepository;
     PromotionRepository promotionRepository;
+    BookingFnBRepository bookingFnbRepository;
+    PaymentRepository paymentRepository;
+    BranchStockRepository branchStockRepository;
 
     // Tính tiền cho từng ghế (giá vé = giá base + giá ghế)
     private BigDecimal calculateSeatPrice(SeatType seatType, BigDecimal basePrice){
@@ -325,7 +328,7 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.save(booking);
     }
 
-    // Hàm chạy khi người dùng bấm hủy đơn (giải phóng ghế)
+    // Hàm chạy khi khách hàng bấm hủy đơn ở màn hình Review (giải phóng ghế và xóa rác)
     @Override
     @Transactional
     public void cancelBooking(Long bookingId) {
@@ -336,14 +339,19 @@ public class BookingServiceImpl implements BookingService {
             throw new AppException("Chỉ có thể hủy đơn hàng đang chờ thanh toán.");
         }
 
-        booking.setStatus(BookingStatus.CANCELLED);
-        bookingRepository.save(booking);
-
         if (booking.getTickets() != null && !booking.getTickets().isEmpty()) {
-            for (Ticket ticket : booking.getTickets()) {
-                ticket.setStatus(fu.cinema.enums.TicketStatus.CANCELLED);
-            }
+            ticketRepository.deleteAll(booking.getTickets());
         }
+
+        List<BookingFnB> fnbList = bookingFnbRepository.findByBooking_BookingId(bookingId);
+        if (fnbList != null && !fnbList.isEmpty()) {
+            bookingFnbRepository.deleteAll(fnbList);
+        }
+
+       paymentRepository.findByBooking_BookingId(bookingId)
+                .ifPresent(paymentRepository::delete);
+
+        bookingRepository.delete(booking);
     }
 
     // Danh sách bookings (Staff)
@@ -359,6 +367,11 @@ public class BookingServiceImpl implements BookingService {
                 continue;
             }
 
+            boolean isRetail = (b.getTickets() == null || b.getTickets().isEmpty());
+            boolean isEmptyFnb = (b.getBookingFnbs() == null || b.getBookingFnbs().isEmpty());
+            if (b.getStatus() == BookingStatus.PENDING && isRetail && isEmptyFnb) {
+                continue;
+            }
             String customerName = "---";
             String customerPhone = "---";
             if (b.getAccount() != null) {
@@ -432,30 +445,73 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-    // Chỉnh sửa trạng thái đơn hàng (dành riêng cho Staff)
+    // --- XÓA CỨNG ĐƠN HÀNG RÁC (PENDING) ---
     @Override
-    public void updateBookingStatus(Long bookingId, BookingStatus newStatus) {
-        Booking booking = bookingRepository.findById((bookingId)).orElseThrow(BookingNotFoundException::new);
+    @Transactional
+    public void hardDeletePendingBooking(Long bookingId, Long staffBranchId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException("Không tìm thấy đơn hàng"));
 
-        // Nếu booking đã bị hủy, ngăn không cho đổi trạng thái
-        if (booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new AppException("Đơn đặt vé này đã bị hủy, không thể thay đổi trạng thái!");
+        Long bookingBranchId = booking.getTickets().isEmpty() ? staffBranchId : booking.getTickets().get(0).getShowtime().getHall().getBranch().getBranchId();
+        if (!bookingBranchId.equals(staffBranchId)) {
+            throw new AppException("Đơn hàng này không thuộc chi nhánh của bạn!");
         }
 
-        booking.setStatus(newStatus);
-        // Đơn hàng hết hạn thì toàn bộ vé ứng với đơn hàng đó về trạng thái Cancelled
-        if(newStatus == BookingStatus.CANCELLED){
-            for(Ticket ticket : booking.getTickets()){
-                ticket.setStatus(TicketStatus.CANCELLED);
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new AppException("Chỉ được phép xóa cứng các đơn hàng rác (Chờ thanh toán).");
+        }
+
+        // Xóa thủ công dữ liệu con để tránh lỗi khóa ngoại
+        if (booking.getTickets() != null) {
+            ticketRepository.deleteAll(booking.getTickets());
+        }
+
+        List<BookingFnB> fnbList = bookingFnbRepository.findByBooking_BookingId(bookingId);
+        if (fnbList != null && !fnbList.isEmpty()) {
+            bookingFnbRepository.deleteAll(fnbList);
+        }
+
+        paymentRepository.findByBooking_BookingId(bookingId).ifPresent(paymentRepository::delete);
+
+        bookingRepository.delete(booking);
+    }
+
+    // --- HỦY VÀ HOÀN TIỀN ĐƠN HÀNG HỢP LỆ (CONFIRMED) ---
+    @Override
+    @Transactional
+    public void cancelConfirmedBooking(Long bookingId, Long staffBranchId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException("Không tìm thấy đơn hàng"));
+
+        Long bookingBranchId = booking.getTickets().isEmpty() ? staffBranchId : booking.getTickets().get(0).getShowtime().getHall().getBranch().getBranchId();
+        if (!bookingBranchId.equals(staffBranchId)) {
+            throw new AppException("Đơn hàng này không thuộc chi nhánh của bạn!");
+        }
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new AppException("Chỉ có thể hủy đơn đã thanh toán thành công!");
+        }
+
+        boolean isUsed = booking.getTickets().stream().anyMatch(t -> t.getStatus() == TicketStatus.CHECKED_IN);
+        if (isUsed) {
+            throw new AppException("Đơn hàng này đã có vé được soát. Tuyệt đối không thể hủy!");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.getTickets().forEach(t -> t.setStatus(TicketStatus.CANCELLED));
+
+        // Hoàn bắp nước lại kho
+        List<BookingFnB> fnbList = bookingFnbRepository.findByBooking_BookingId(bookingId);
+        if (fnbList != null && !fnbList.isEmpty()) {
+            for (BookingFnB fnb : fnbList) {
+                branchStockRepository.findByBranch_BranchIdAndItem_ItemId(bookingBranchId, fnb.getFnbItem().getItemId())
+                        .ifPresent(stock -> {
+                            stock.setQuantity(stock.getQuantity() + fnb.getQuantity());
+                            branchStockRepository.save(stock);
+                        });
             }
         }
 
-        // Tương tự về trạng thái Booked
-        if(newStatus == BookingStatus.CONFIRMED){
-            for(Ticket ticket : booking.getTickets()){
-                ticket.setStatus(TicketStatus.BOOKED);
-            }
-        }
         bookingRepository.save(booking);
     }
 

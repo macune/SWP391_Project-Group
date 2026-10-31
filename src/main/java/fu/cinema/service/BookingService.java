@@ -37,7 +37,8 @@ public interface BookingService {
     BookDetailsResponse getBookingDetail(Long bookingId);
 
     // Staff: Đổi trạng thái đơn (Xác nhận hoặc Hủy đơn)
-    void updateBookingStatus(Long bookingId, BookingStatus newStatus);
+    void hardDeletePendingBooking(Long bookingId, Long staffBranchId);
+    void cancelConfirmedBooking(Long bookingId, Long staffBranchId);
 
     // Lịch sử vé người dùng
     List<BookingHistoryResponse> getMyBookings(String keyword, BookingStatus status);

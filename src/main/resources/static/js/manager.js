@@ -113,17 +113,61 @@ function updateSeatCounters() {
 
 function saveSeatConfiguration(btn) {
     const hallId = btn.getAttribute('data-hall-id');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu...';
 
     const payload = [];
+    const sweetboxByRow = {};
+
     document.querySelectorAll('.seat-box').forEach(seatEl => {
+        const type = seatEl.getAttribute('data-type');
+        const status = seatEl.getAttribute('data-status');
+        const rowCode = seatEl.getAttribute('data-row');
+
+        const seatText = seatEl.innerText.trim();
+        const seatNumber = parseInt(seatText.replace(rowCode, ''));
+
         payload.push({
             seatId: parseInt(seatEl.getAttribute('data-seat-id')),
-            type: seatEl.getAttribute('data-type'),
-            status: seatEl.getAttribute('data-status')
+            type: type,
+            status: status
         });
+
+        if (type === 'SWEETBOX' && status !== 'BROKEN') {
+            if (!sweetboxByRow[rowCode]) {
+                sweetboxByRow[rowCode] = [];
+            }
+            sweetboxByRow[rowCode].push(seatNumber);
+        }
     });
+
+    let isValidSweetbox = true;
+    let errorDetail = "";
+
+    for (const row in sweetboxByRow) {
+        const seats = sweetboxByRow[row].sort((a, b) => a - b);
+
+        if (seats.length % 2 !== 0) {
+            isValidSweetbox = false;
+            errorDetail = `Hàng ${row} đang có ${seats.length} ghế đôi (bắt buộc phải là số chẵn).`;
+            break;
+        }
+
+       for (let i = 0; i < seats.length; i += 2) {
+            if (seats[i + 1] - seats[i] !== 1) {
+                isValidSweetbox = false;
+                errorDetail = `Tại hàng ${row}, ghế ${row}${seats[i]} và ${row}${seats[i+1]} được cấu hình là ghế đôi nhưng không nằm liền kề nhau.`;
+                break;
+            }
+        }
+        if (!isValidSweetbox) break;
+    }
+
+    if (!isValidSweetbox) {
+        alert("❌ Lỗi cấu hình ghế đôi (Sweetbox):\n" + errorDetail + "\n\nVui lòng điều chỉnh lại sơ đồ trước khi lưu!");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang lưu...';
 
     fetch(`/manager/halls/${hallId}/seats/save`, {
         method: 'POST',
