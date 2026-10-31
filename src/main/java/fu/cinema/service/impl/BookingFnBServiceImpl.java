@@ -54,7 +54,7 @@ public class BookingFnBServiceImpl implements BookingFnBService {
                     .pricePerItem(item.getPrice())
                     .subtotal(item.getPrice().multiply(BigDecimal.valueOf(quantity)))
                     .build();
-            // Lưu vào DB và đồng thời add vào List trên RAM để giao diện nhận diện được ngay
+            // Lưu vào DB và đồng thời add vào List để giao diện nhận diện được ngay
             newFnB = bookingFnbRepository.save(newFnB);
             booking.getBookingFnbs().add(newFnB);
         }
@@ -83,7 +83,7 @@ public class BookingFnBServiceImpl implements BookingFnBService {
                 .orElseThrow(() -> new RuntimeException("Chi tiết món không tồn tại"));
         Booking booking = bFnb.getBooking();
 
-        // Gỡ khỏi list trên RAM
+
         if (booking.getBookingFnbs() != null) {
             booking.getBookingFnbs().removeIf(b -> b.getBookingFnbId().equals(bookingFnbId));
         }
@@ -93,6 +93,7 @@ public class BookingFnBServiceImpl implements BookingFnBService {
     }
 
     private void recalculateBookingTotal(Booking booking) {
+        // 1. Tính tổng tiền bắp nước
         BigDecimal fnbTotal = BigDecimal.ZERO;
         if (booking.getBookingFnbs() != null) {
             fnbTotal = booking.getBookingFnbs().stream()
@@ -100,6 +101,7 @@ public class BookingFnBServiceImpl implements BookingFnBService {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
+        // 2. Tính tổng tiền vé
         BigDecimal ticketTotal = BigDecimal.ZERO;
         if (booking.getTickets() != null) {
             for (Ticket t : booking.getTickets()) {
@@ -109,9 +111,34 @@ public class BookingFnBServiceImpl implements BookingFnBService {
             }
         }
 
-        BigDecimal discount = booking.getDiscountAmount() != null ? booking.getDiscountAmount() : BigDecimal.ZERO;
-        BigDecimal finalTotal = ticketTotal.add(fnbTotal).subtract(discount);
-        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) finalTotal = BigDecimal.ZERO;
+        // 3. Tính tổng tiền gốc (Subtotal)
+        BigDecimal subtotal = ticketTotal.add(fnbTotal);
+
+        // 4. Tính toán lại mức giảm giá dựa trên Promotion
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        if (booking.getPromotion() != null) {
+            fu.cinema.entity.Promotion promo = booking.getPromotion();
+
+            // Nếu loại giảm giá là PERCENTAGE
+            if ("PERCENTAGE".equalsIgnoreCase(promo.getDiscountType())) {
+
+                BigDecimal percentage = BigDecimal.valueOf(promo.getDiscountPercentage());
+                discountAmount = subtotal.multiply(percentage).divide(BigDecimal.valueOf(100));
+
+                BigDecimal maxDiscount = promo.getMaxDiscountAmount();
+                if (maxDiscount != null && maxDiscount.compareTo(BigDecimal.ZERO) > 0
+                        && discountAmount.compareTo(maxDiscount) > 0) {
+                    discountAmount = maxDiscount;
+                }
+            }
+        }
+
+        booking.setDiscountAmount(discountAmount);
+        // 5. Tính tổng thanh toán cuối cùng
+        BigDecimal finalTotal = subtotal.subtract(discountAmount);
+        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
+            finalTotal = BigDecimal.ZERO;
+        }
 
         booking.setTotalAmount(finalTotal);
         bookingRepository.save(booking);

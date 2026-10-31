@@ -33,7 +33,7 @@ public class BranchStockServiceImpl implements BranchStockService {
                 .id(stock.getId())
                 .branchId(stock.getBranch().getBranchId())
                 .branchName(stock.getBranch().getBranchName())
-                .itemId(stock.getItem().getItemId()) // Sửa lại thành getItem()
+                .itemId(stock.getItem().getItemId())
                 .itemName(stock.getItem().getName())
                 .itemCategory(stock.getItem().getCategory().name())
                 .quantity(stock.getQuantity())
@@ -63,7 +63,7 @@ public class BranchStockServiceImpl implements BranchStockService {
 
             BranchStock newStock = BranchStock.builder()
                     .branch(branch)
-                    .item(item) // Sửa lại thành .item()
+                    .item(item)
                     .quantity(request.getQuantityToAdd())
                     .lastUpdated(LocalDateTime.now())
                     .build();

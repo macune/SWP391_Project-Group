@@ -13,11 +13,7 @@ public class FnBItemMapper {
                 .name(fnBItemRequest.getName())
                 .category(fnBItemRequest.getCategory())
                 .price(fnBItemRequest.getPrice())
-                .isAvailable(
-                        fnBItemRequest.getIsAvailable() != null
-                                ? fnBItemRequest.getIsAvailable()
-                                : true
-                )
+                .isAvailable(fnBItemRequest.getIsAvailable() != null ? fnBItemRequest.getIsAvailable() : true)
                 .imageUrl(fnBItemRequest.getImageUrl())
                 .build();
     }
