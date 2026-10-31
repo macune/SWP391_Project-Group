@@ -94,17 +94,24 @@ public class FnBItemServiceImpl implements FnBItemService {
         return fnBItemMapper.toResponse(updateItem);
     }
     @Override
-    public List<FnBItemResponse> searchItems(
-            String name,
-            FnBCategory category) {
+    public List<FnBItemResponse> searchItems(String name, FnBCategory category) {
 
-        if (name != null && name.trim().isEmpty()) {
-            name = null;
+        List<FnBItem> resultItems;
+        boolean hasName = (name != null && !name.trim().isEmpty());
+        boolean hasCategory = (category != null);
+
+        if (hasName && hasCategory) {
+            resultItems = fnBItemRepository.findByNameContainingIgnoreCaseAndCategory(name.trim(), category);
+        } else if (hasName) {
+            resultItems = fnBItemRepository.findByNameContainingIgnoreCase(name.trim());
+        } else if (hasCategory) {
+            resultItems = fnBItemRepository.findByCategory(category);
+        } else {
+            resultItems = fnBItemRepository.findAll();
         }
 
-        return fnBItemRepository
-                .searchItems(name, category)
-                .stream()
+
+        return resultItems.stream()
                 .map(fnBItemMapper::toResponse)
                 .toList();
     }

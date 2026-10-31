@@ -54,7 +54,7 @@ public class BookingFnBServiceImpl implements BookingFnBService {
                     .pricePerItem(item.getPrice())
                     .subtotal(item.getPrice().multiply(BigDecimal.valueOf(quantity)))
                     .build();
-            // Lưu vào DB và đồng thời add vào List trên RAM để giao diện nhận diện được ngay
+            // Lưu vào DB và đồng thời add vào List để giao diện nhận diện được ngay
             newFnB = bookingFnbRepository.save(newFnB);
             booking.getBookingFnbs().add(newFnB);
         }

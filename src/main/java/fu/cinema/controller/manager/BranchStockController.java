@@ -3,10 +3,10 @@ package fu.cinema.controller.manager;
 import fu.cinema.dto.request.BranchStockRequest;
 import fu.cinema.entity.Account;
 import fu.cinema.entity.FnBItem;
-import fu.cinema.entity.Staff; // ĐÃ SỬA THÀNH Staff
+import fu.cinema.entity.Staff;
 import fu.cinema.repository.AccountRepository;
 import fu.cinema.repository.FnBItemRepository;
-import fu.cinema.repository.StaffRepository; // ĐÃ SỬA THÀNH StaffRepository
+import fu.cinema.repository.StaffRepository;
 import fu.cinema.service.BranchStockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -25,25 +25,19 @@ public class BranchStockController {
 
     private final BranchStockService branchStockService;
     private final FnBItemRepository fnbItemRepository;
-
-    // Inject các Repository với đúng tên theo cấu trúc của bạn
     private final AccountRepository accountRepository;
     private final StaffRepository staffRepository;
 
-    /**
-     * Hàm phụ trợ lấy ĐÚNG Branch ID của Manager đang đăng nhập
-     */
+    // Lấy chính xác ID chi nhánh của Quản lý đang đăng nhập từ Security Context
     private Long getCurrentManagerBranchId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
             String username = auth.getName();
 
-            // Tìm tài khoản
             Account acc = accountRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
 
-            // Dùng StaffRepository để tìm nhân viên dựa trên Account ID
             Staff manager = staffRepository.findById(acc.getAccountId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin nhân viên"));
 
@@ -53,17 +47,19 @@ public class BranchStockController {
         throw new RuntimeException("Yêu cầu đăng nhập");
     }
 
-    // 1. Xem danh sách Tồn kho (Đã tự động tách biệt kho 100%)
+    // 1. Xem danh sách Tồn kho (Chỉ lấy dữ liệu kho của đúng rạp mà Manager đó quản lý)
     @GetMapping
     public String viewInventory(Model model) {
         Long managerBranchId = getCurrentManagerBranchId();
         model.addAttribute("stocks", branchStockService.getStockByBranch(managerBranchId));
 
+        // Chỉ load lên form nhập các món bắp nước đang được Admin cho phép bán
         List<FnBItem> fnbItems = fnbItemRepository.findAll().stream()
                 .filter(FnBItem::getIsAvailable)
                 .toList();
         model.addAttribute("fnbItems", fnbItems);
 
+        // Chuẩn bị form nhập kho rỗng, ghim sẵn ID chi nhánh để chống nhập nhầm rạp
         if (!model.containsAttribute("stockRequest")) {
             BranchStockRequest request = new BranchStockRequest();
             request.setBranchId(managerBranchId);
@@ -73,10 +69,11 @@ public class BranchStockController {
         return "manager/inventory-management";
     }
 
-    // 2. Nhập kho
+    // 2. Nhập thêm hàng mới vào kho rạp
     @PostMapping("/import")
     public String importStock(@ModelAttribute("stockRequest") BranchStockRequest request, RedirectAttributes redirectAttributes) {
         try {
+            // Ghi đè lại ID rạp một lần nữa ở Backend để bảo mật, đề phòng HTML bị hack đổi ID
             request.setBranchId(getCurrentManagerBranchId());
 
             branchStockService.importStock(request);
@@ -87,7 +84,7 @@ public class BranchStockController {
         return "redirect:/manager/inventory";
     }
 
-    // 3. Cập nhật số lượng
+    // 3. Cập nhật/Kiểm kê lại số lượng hàng (Ghi đè số lượng mới)
     @PostMapping("/update/{id}")
     public String updateStock(@PathVariable Long id, @RequestParam Integer quantity, RedirectAttributes redirectAttributes) {
         try {
@@ -99,7 +96,7 @@ public class BranchStockController {
         return "redirect:/manager/inventory";
     }
 
-    // 4. Xóa món
+    // 4. Xóa mặt hàng khỏi kho của rạp
     @PostMapping("/delete/{id}")
     public String deleteStock(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {

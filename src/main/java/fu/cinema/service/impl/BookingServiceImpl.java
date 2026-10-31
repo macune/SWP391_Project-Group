@@ -263,15 +263,39 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(BookingNotFoundException::new);
         Promotion promotion = promotionRepository.findByCode(promoCode).orElseThrow(PromoNotFoundException::new);
 
-        if(promotion.getStatus()!= PromotionStatus.ACTIVE){
+        if (promotion.getStatus() != PromotionStatus.ACTIVE) {
             throw new AppException("Mã khuyến mãi này không còn khả dụng.");
         }
-        if(promotion.getValidFrom()!=null && promotion.getValidFrom().isAfter(LocalDateTime.now())){
+        if (promotion.getValidFrom() != null && promotion.getValidFrom().isAfter(LocalDateTime.now())) {
             throw new AppException("Mã khuyến mãi này chưa đến ngày bắt đầu sử dụng.");
         }
-        if(promotion.getExpiryDate()!=null && promotion.getExpiryDate().isBefore(LocalDateTime.now())){
+        if (promotion.getExpiryDate() != null && promotion.getExpiryDate().isBefore(LocalDateTime.now())) {
             throw new AppException(("Mã khuyến mãi này đã hết hạn sử dụng."));
         }
+
+        // =================================================================
+        // CHỐT CHẶN THÉP: KIỂM TRA LỊCH SỬ DÙNG MÃ CỦA USER
+        // =================================================================
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        if (username != null && !username.equals("anonymousUser")) {
+            Account currentUser = accountRepository.findByUsername(username)
+                    .orElseThrow(() -> new AppException("Không tìm thấy thông tin tài khoản!"));
+
+            // Bỏ qua các đơn bị hủy (CANCELLED) và bỏ qua chính đơn hàng này (bookingId)
+            boolean isAlreadyUsed = bookingRepository.existsByAccount_AccountIdAndPromotion_IdAndStatusNotAndBookingIdNot(
+                    currentUser.getAccountId(),
+                    promotion.getId(),
+                    BookingStatus.CANCELLED,
+                    bookingId
+            );
+
+            if (isAlreadyUsed) {
+                throw new AppException("Tài khoản của bạn đã sử dụng mã giảm giá này cho một đơn hàng khác!");
+            }
+        } else {
+            throw new AppException("Vui lòng đăng nhập để sử dụng mã khuyến mãi!");
+        }
+        // =================================================================
 
         // TÍNH LẠI CHÍNH XÁC TỔNG TIỀN VÉ GỐC
         BigDecimal ticketTotal = BigDecimal.ZERO;
@@ -283,8 +307,8 @@ public class BookingServiceImpl implements BookingService {
 
         // TÍNH LẠI CHÍNH XÁC TỔNG TIỀN BẮP NƯỚC
         BigDecimal fnbTotal = BigDecimal.ZERO;
-        if(booking.getBookingFnbs()!=null && !booking.getBookingFnbs().isEmpty()){
-            for(BookingFnB fnB : booking.getBookingFnbs()){
+        if (booking.getBookingFnbs() != null && !booking.getBookingFnbs().isEmpty()) {
+            for (BookingFnB fnB : booking.getBookingFnbs()) {
                 fnbTotal = fnbTotal.add(fnB.getSubtotal());
             }
         }
@@ -294,9 +318,9 @@ public class BookingServiceImpl implements BookingService {
 
         // TÍNH TOÁN SỐ TIỀN ĐƯỢC GIẢM
         BigDecimal discount = BigDecimal.ZERO;
-        if(DiscountType.FIXED_AMOUNT.toString().equals(promotion.getDiscountType())){
+        if (DiscountType.FIXED_AMOUNT.toString().equals(promotion.getDiscountType())) {
             discount = BigDecimal.valueOf(promotion.getDiscountPercentage());
-            if(discount.compareTo(totalAmountWithoutDiscount)>0){
+            if (discount.compareTo(totalAmountWithoutDiscount) > 0) {
                 discount = totalAmountWithoutDiscount;
             }
         } else {
@@ -304,9 +328,9 @@ public class BookingServiceImpl implements BookingService {
                     .multiply(BigDecimal.valueOf(promotion.getDiscountPercentage()))
                     .divide(BigDecimal.valueOf(100));
 
-            if(promotion.getMaxDiscountAmount()!=null
-                    && promotion.getMaxDiscountAmount().compareTo(BigDecimal.ZERO)>0
-                    && promotion.getMaxDiscountAmount().compareTo(discount)<0){
+            if (promotion.getMaxDiscountAmount() != null
+                    && promotion.getMaxDiscountAmount().compareTo(BigDecimal.ZERO) > 0
+                    && promotion.getMaxDiscountAmount().compareTo(discount) < 0) {
                 discount = promotion.getMaxDiscountAmount();
             }
         }
@@ -324,7 +348,6 @@ public class BookingServiceImpl implements BookingService {
 
         bookingRepository.save(booking);
     }
-
     // Hàm chạy khi người dùng bấm hủy đơn (giải phóng ghế)
     @Override
     @Transactional
