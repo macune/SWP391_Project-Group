@@ -72,24 +72,30 @@ public class PromotionServiceImpl implements PromotionService {
         // =================================================================
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-
         if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
             Optional<Account> currentUserOpt = accountRepository.findByUsername(auth.getName());
 
             if (currentUserOpt.isPresent()) {
                 Account currentUser = currentUserOpt.get();
 
-                // Đã sửa: Gọi hàm 3 tham số để không bị báo lỗi thiếu bookingId
-                boolean alreadyUsed = bookingRepository.existsByAccount_AccountIdAndPromotion_IdAndStatusNot(
-                        currentUser.getAccountId(),
-                        promo.getId(),
-                        BookingStatus.CANCELLED
-                );
+                // Kiểm tra Role
+                boolean isStaffOrManager = auth.getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_STAFF") || a.getAuthority().equals("ROLE_MANAGER"));
 
-                if (alreadyUsed) {
-                    response.put("valid", false);
-                    response.put("message", "Tài khoản của bạn đã sử dụng mã giảm giá này rồi!");
-                    return response;
+                // Chỉ chặn nếu là Khách hàng (Customer)
+                if (!isStaffOrManager) {
+                    // Đã sửa: Gọi hàm 3 tham số để không bị báo lỗi thiếu bookingId
+                    boolean alreadyUsed = bookingRepository.existsByAccount_AccountIdAndPromotion_IdAndStatusNot(
+                            currentUser.getAccountId(),
+                            promo.getId(),
+                            BookingStatus.CANCELLED
+                    );
+
+                    if (alreadyUsed) {
+                        response.put("valid", false);
+                        response.put("message", "Tài khoản của bạn đã sử dụng mã giảm giá này rồi!");
+                        return response;
+                    }
                 }
             }
         } else {
@@ -103,6 +109,10 @@ public class PromotionServiceImpl implements PromotionService {
         response.put("message", "Áp dụng mã thành công!");
         response.put("discountPercentage", promo.getDiscountPercentage());
         response.put("maxDiscountAmount", promo.getMaxDiscountAmount());
+
+        // FIX BUG: Trả về loại khuyến mãi để frontend biết mà tính toán không bị âm tiền
+        response.put("discountType", promo.getDiscountType());
+
         return response;
     }
 }

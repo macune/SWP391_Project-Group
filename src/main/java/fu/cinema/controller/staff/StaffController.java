@@ -60,8 +60,16 @@ public class StaffController {
                 BookingStatus.CONFIRMED, startOfDay, endOfDay);
 
         BigDecimal dailyRevenue = confirmedBookings.stream()
+                .filter(b -> {
+                    if (b.getTickets() != null && !b.getTickets().isEmpty()) {
+                        return b.getTickets().get(0).getShowtime().getHall().getBranch().getBranchId().equals(branchId);
+                    } else if (b.getAccount() != null && b.getAccount().getStaff() != null) {
+                        return b.getAccount().getStaff().getBranch().getBranchId().equals(branchId);
+                    }
+                    return false;
+                })
                 .map(Booking::getTotalAmount)
-                .filter(amount -> amount != null)
+                .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         model.addAttribute("dailyRevenue", dailyRevenue);

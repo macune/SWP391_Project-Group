@@ -1,8 +1,6 @@
 package fu.cinema.service.impl;
 
-import fu.cinema.dto.request.CustomerCreationRequest;
-import fu.cinema.dto.request.ForgotPasswordRequest;
-import fu.cinema.dto.request.ResetPasswordRequest;
+import fu.cinema.dto.request.*;
 import fu.cinema.dto.response.CustomerResponse;
 import fu.cinema.entity.Account;
 import fu.cinema.entity.Customer;
@@ -201,5 +199,55 @@ public class CustomerServiceImpl implements CustomerService {
         account.setVerificationToken(null);
         accountRepository.save(account);
         verificationTokenRepository.delete(verificationToken);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerRequest getCustomerProfile(String username) {
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException("Không tìm thấy tài khoản"));
+
+        CustomerRequest request = new CustomerRequest();
+        if (account.getCustomer() != null) {
+            request.setFullName(account.getCustomer().getFullName());
+            request.setPhone(account.getCustomer().getPhone());
+        }
+        return request;
+    }
+
+    @Override
+    @Transactional
+    public void updateCustomerProfile(String username, CustomerRequest request) {
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException("Không tìm thấy tài khoản"));
+
+        Customer customer = account.getCustomer();
+        if (customer == null) {
+            customer = new Customer();
+            customer.setAccount(account);
+            account.setCustomer(customer);
+        }
+
+        customer.setFullName(request.getFullName().trim());
+        customer.setPhone(request.getPhone().trim());
+        customerRepository.save(customer);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new AppException("Mật khẩu xác nhận không khớp!");
+        }
+
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException("Không tìm thấy tài khoản"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), account.getPasswordHash())) {
+            throw new AppException("Mật khẩu hiện tại không chính xác!");
+        }
+
+        account.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        accountRepository.save(account);
     }
 }

@@ -1,8 +1,6 @@
 package fu.cinema.service;
 
-import fu.cinema.dto.request.CustomerCreationRequest;
-import fu.cinema.dto.request.ForgotPasswordRequest;
-import fu.cinema.dto.request.ResetPasswordRequest;
+import fu.cinema.dto.request.*;
 import fu.cinema.dto.response.CustomerResponse;
 import fu.cinema.entity.Customer;
 import fu.cinema.enums.AccountStatus;
@@ -19,4 +17,10 @@ public interface CustomerService {
     void validateResetPasswordToken(String token);
 
     void resetPassword(ResetPasswordRequest resetPasswordRequest);
+
+    CustomerRequest getCustomerProfile(String username);
+
+    void updateCustomerProfile(String username, CustomerRequest request);
+
+    void changePassword(String username, ChangePasswordRequest request);
 }

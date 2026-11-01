@@ -4,6 +4,7 @@ import fu.cinema.entity.Booking;
 import fu.cinema.entity.BookingFnB;
 import fu.cinema.entity.FnBItem;
 import fu.cinema.entity.Ticket;
+import fu.cinema.enums.BookingStatus;
 import fu.cinema.enums.TicketStatus;
 import fu.cinema.repository.BookingFnBRepository;
 import fu.cinema.repository.BookingRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -30,6 +32,12 @@ public class BookingFnBServiceImpl implements BookingFnBService {
     public void addFnBToBooking(Long bookingId, Long itemId, int quantity) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn với ID: " + bookingId));
+
+        // Chặn không cho sửa giỏ hàng khi đơn đã thanh toán hoặc đã hủy
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể thêm bắp nước khi đơn hàng đang chờ thanh toán!");
+        }
+
         FnBItem item = fnbItemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy món ăn với ID: " + itemId));
 
@@ -71,6 +79,11 @@ public class BookingFnBServiceImpl implements BookingFnBService {
         BookingFnB bFnb = bookingFnbRepository.findById(bookingFnbId)
                 .orElseThrow(() -> new RuntimeException("Chi tiết món không tồn tại"));
 
+        // Chặn không cho sửa giỏ hàng khi đơn đã thanh toán hoặc đã hủy
+        if (bFnb.getBooking().getStatus() != BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể cập nhật số lượng khi đơn hàng đang chờ thanh toán!");
+        }
+
         bFnb.setQuantity(newQuantity);
         bFnb.setSubtotal(bFnb.getPricePerItem().multiply(BigDecimal.valueOf(newQuantity)));
         bookingFnbRepository.save(bFnb);
@@ -83,6 +96,10 @@ public class BookingFnBServiceImpl implements BookingFnBService {
                 .orElseThrow(() -> new RuntimeException("Chi tiết món không tồn tại"));
         Booking booking = bFnb.getBooking();
 
+        // Chặn không cho sửa giỏ hàng khi đơn đã thanh toán hoặc đã hủy
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể xóa bắp nước khi đơn hàng đang chờ thanh toán!");
+        }
 
         if (booking.getBookingFnbs() != null) {
             booking.getBookingFnbs().removeIf(b -> b.getBookingFnbId().equals(bookingFnbId));
@@ -119,11 +136,19 @@ public class BookingFnBServiceImpl implements BookingFnBService {
         if (booking.getPromotion() != null) {
             fu.cinema.entity.Promotion promo = booking.getPromotion();
 
-            // Nếu loại giảm giá là PERCENTAGE
-            if ("PERCENTAGE".equalsIgnoreCase(promo.getDiscountType())) {
-
+            // BỔ SUNG LỖI THIẾU LOẠI FIXED_AMOUNT
+            if ("FIXED_AMOUNT".equalsIgnoreCase(promo.getDiscountType()) || "FIXED_AMOUNT".equals(promo.getDiscountType())) {
+                discountAmount = BigDecimal.valueOf(promo.getDiscountPercentage());
+                if (discountAmount.compareTo(subtotal) > 0) {
+                    discountAmount = subtotal; // Không giảm quá tổng tiền
+                }
+            }
+            // NẾU LÀ GIẢM THEO PHẦN TRĂM (PERCENTAGE)
+            else {
                 BigDecimal percentage = BigDecimal.valueOf(promo.getDiscountPercentage());
-                discountAmount = subtotal.multiply(percentage).divide(BigDecimal.valueOf(100));
+
+                // THÊM RoundingMode.HALF_UP ĐỂ TRÁNH LỖI CRASH KHI CHIA SỐ THẬP PHÂN VÔ HẠN
+                discountAmount = subtotal.multiply(percentage).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
                 BigDecimal maxDiscount = promo.getMaxDiscountAmount();
                 if (maxDiscount != null && maxDiscount.compareTo(BigDecimal.ZERO) > 0
@@ -134,6 +159,7 @@ public class BookingFnBServiceImpl implements BookingFnBService {
         }
 
         booking.setDiscountAmount(discountAmount);
+
         // 5. Tính tổng thanh toán cuối cùng
         BigDecimal finalTotal = subtotal.subtract(discountAmount);
         if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {

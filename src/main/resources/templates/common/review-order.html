@@ -33,7 +33,7 @@
         <h4 class="fw-bold mb-1 text-cine-primary">
             <i class="fa-solid fa-clipboard-check me-2"></i>Xem Lại Đơn Hàng (Review Order)
         </h4>
-        <p class="small text-muted mb-0">Rà soát lại thông tin vé, bắp nước và mã giảm giá trước khi hoàn tất đặt vé.</p>
+        <p class="small text-muted mb-0">Rà soát lại thông tin vé, đồ ăn, thức uống và mã giảm giá trước khi hoàn tất đặt vé.</p>
     </div>
 
     <div class="row g-4">
@@ -70,18 +70,18 @@
                 </div>
             </div>
 
-            <!-- 2. BẮP NƯỚC (F&B) TÙY CHỌN (ĐIỂM NỐI VỚI BẠN LÀM F&B) -->
+            <!-- 2. BẮP NƯỚC (F&B) TÙY CHỌN -->
             <div class="card border-cine shadow-sm mb-4">
                 <div class="card-header bg-cine-main border-cine d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold text-cine-primary mb-0"><i class="fa-solid fa-burger me-2"></i>2. Bắp Nước & Combo (Tùy chọn)</h5>
+                    <h5 class="fw-bold text-cine-primary mb-0"><i class="fa-solid fa-burger me-2"></i>2. Đồ ăn,Thức uống & Combo (Tùy chọn)</h5>
                     <a th:href="@{/booking/route-to-fnb(bookingId=${data.bookingId})}" class="btn btn-outline-danger">
-                        + Thêm Bắp Nước
+                        + Thêm Đồ ăn & Thức uống
                     </a>
                 </div>
                 <div class="card-body">
                     <!-- Nếu chưa chọn F&B -->
                     <div th:if="${#lists.isEmpty(data.fnbDetails)}" class="text-muted small fst-italic py-2">
-                        <i class="fa-solid fa-circle-info me-1"></i>Bạn chưa chọn bắp nước. Bấm nút phía trên nếu muốn mua thêm!
+                        <i class="fa-solid fa-circle-info me-1"></i>Bạn chưa chọn đồ ăn & thức uống. Bấm nút phía trên nếu muốn mua thêm!
                     </div>
 
                     <!-- Nếu đã có F&B (khi module F&B đã cắm vào) -->
@@ -92,14 +92,14 @@
                             </li>
                         </ul>
                         <div class="d-flex justify-content-between pt-2 fw-bold">
-                            <span>Tiền bắp nước:</span>
+                            <span>Tiền Đồ ăn & Thức uống:</span>
                             <span class="text-cine-main" th:text="${#numbers.formatDecimal(data.fnbTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'">50,000 đ</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. KHUNG ÁP DỤNG MÃ KHUYẾN MÃI -->
+            <!-- 3. KHUNG ÁP DỤNG MÃ KHUYẾN MÃI (ĐÃ PHÂN QUYỀN) -->
             <div class="card border-cine shadow-sm mb-4">
                 <div class="card-header bg-cine-main border-cine">
                     <h5 class="fw-bold text-cine-primary mb-0"><i class="fa-solid fa-tags me-2"></i>3. Mã Khuyến Mãi (Voucher)</h5>
@@ -107,13 +107,32 @@
                 <div class="card-body">
                     <form th:action="@{/booking/apply-promotion}" method="post" class="d-flex gap-2">
                         <input type="hidden" name="bookingId" th:value="${data.bookingId}">
-                        <input type="text" name="promoCode" class="form-control border-cine text-uppercase fw-bold"
-                               placeholder="Nhập mã voucher (ví dụ: GIAM20)..."
-                               th:value="${data.appliedPromoCode}">
+
+                        <!-- 3A. GIAO DIỆN CHO STAFF / MANAGER (Bấm chọn từ danh sách Dropdown) -->
+                        <th:block sec:authorize="hasAnyRole('STAFF', 'MANAGER')">
+                            <select name="promoCode" class="form-select border-cine text-uppercase fw-bold">
+                                <option value="">-- Chọn mã khuyến mãi --</option>
+                                <option th:each="promo : ${activePromotions}"
+                                        th:value="${promo.code}"
+                                        th:text="${promo.code} + ' - Giảm ' + (${promo.discountType == 'FIXED_AMOUNT'} ? ${#numbers.formatDecimal(promo.discountPercentage, 0, 'COMMA', 0, 'POINT')} + 'đ' : ${promo.discountPercentage} + '%')"
+                                        th:selected="${promo.code == data.appliedPromoCode}">
+                                </option>
+                            </select>
+                        </th:block>
+
+                        <!-- 3B. GIAO DIỆN CHO CUSTOMER THƯỜNG (Tự gõ mã vào Input) -->
+                        <th:block sec:authorize="!hasAnyRole('STAFF', 'MANAGER')">
+                            <input type="text" name="promoCode" class="form-control border-cine text-uppercase fw-bold"
+                                   placeholder="Nhập mã voucher (ví dụ: GIAM20)..."
+                                   th:value="${data.appliedPromoCode}">
+                        </th:block>
+
+                        <!-- Nút Áp dụng chung cho cả 2 form -->
                         <button type="submit" class="btn btn-cine fw-bold text-nowrap px-4">
                             Áp dụng
                         </button>
                     </form>
+
                     <div th:if="${data.appliedPromoCode != null}" class="text-success small fw-bold mt-2">
                         <i class="fa-solid fa-check me-1"></i>Đang áp dụng mã: <span th:text="${data.appliedPromoCode}"></span>
                     </div>
@@ -137,7 +156,7 @@
 
                     <!-- 2. Tiền F&B -->
                     <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Tiền bắp nước (F&B):</span>
+                        <span class="text-muted">Tiền Đồ ăn & Thức uống (F&B):</span>
                         <strong th:text="${#numbers.formatDecimal(data.fnbTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</strong>
                     </div>
 
@@ -163,6 +182,7 @@
                         <!-- Nút Chốt đơn đặt vé -->
                         <form th:action="@{/booking/confirm}" method="post">
                             <input type="hidden" name="bookingId" th:value="${data.bookingId}">
+                            <!-- Tạm thời trỏ link href để chạy test FE, khi ráp BE chạy form submit như bt -->
                             <a th:href="@{/payment/method(bookingId=${data.bookingId})}" class="btn btn-danger w-100 fs-5 fw-bold py-2">
                                 Tiếp tục thanh toán <i class="fa-solid fa-arrow-right ms-2"></i>
                             </a>

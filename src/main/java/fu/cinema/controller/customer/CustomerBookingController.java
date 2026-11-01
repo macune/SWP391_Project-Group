@@ -35,6 +35,10 @@ public class CustomerBookingController {
             Booking booking = bookingRepository.findById(bookingId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng để thêm bắp nước!"));
 
+            if (booking.getTickets() == null || booking.getTickets().isEmpty()) {
+                throw new RuntimeException("Đơn hàng chưa có vé, không thể xác định chi nhánh để mua bắp nước!");
+            }
+
             Long branchId = booking.getTickets().get(0).getShowtime().getHall().getBranch().getBranchId();
 
             List<Long> availableItemIds = new ArrayList<>();

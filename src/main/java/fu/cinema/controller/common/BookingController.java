@@ -4,6 +4,7 @@ import fu.cinema.dto.request.SeatLockRequest;
 import fu.cinema.dto.response.ReviewOrderResponse;
 import fu.cinema.dto.response.SeatSelectionResponse;
 import fu.cinema.service.BookingService;
+import fu.cinema.service.PromotionService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/booking")
 public class BookingController {
     BookingService bookingService;
+    PromotionService promotionService;
 
     @GetMapping("/seat-selection")
     public String showSeatSelection(@RequestParam("showtimeId") Long showtimeId, Model model) {
@@ -47,7 +49,6 @@ public class BookingController {
         }
     }
 
-    // HÀM TRUNG GIAN DẪN VÀO TRANG BẮP NƯỚC DÀNH CHO NÚT "+ THÊM BẮP NƯỚC" TRONG TRANG REVIEW
     @GetMapping("/route-to-fnb")
     public String routeToFnB(@RequestParam("bookingId") Long bookingId, Authentication auth) {
         boolean isStaff = auth != null && auth.getAuthorities().stream()
@@ -61,6 +62,16 @@ public class BookingController {
         try {
             ReviewOrderResponse reviewOrderResponse = bookingService.getReviewOrderData(bookingId);
             model.addAttribute("data", reviewOrderResponse);
+
+            // BƠM DANH SÁCH MÃ KHUYẾN MÃI NẾU NGƯỜI DÙNG LÀ NHÂN VIÊN/QUẢN LÝ
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            boolean isStaffOrManager = auth != null && auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_STAFF") || a.getAuthority().equals("ROLE_MANAGER"));
+
+            if (isStaffOrManager) {
+                model.addAttribute("activePromotions", promotionService.getActivePromotions());
+            }
+
             return "common/review-order";
         } catch (Exception e) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();

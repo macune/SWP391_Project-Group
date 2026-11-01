@@ -7,7 +7,7 @@
     <div class="row g-4">
         <div class="col-md-8">
             <div class="card border-0 shadow-sm p-4">
-                <h5 class="fw-bold text-cine-primary mb-4 border-bottom pb-2"><i class="fa-solid fa-burger me-2"></i>Menu Bắp Nước</h5>
+                <h5 class="fw-bold text-cine-primary mb-4 border-bottom pb-2"><i class="fa-solid fa-burger me-2"></i>Menu Đồ ăn & Thức uống</h5>
                 <div class="row row-cols-1 row-cols-md-3 g-3">
                     <div class="col" th:each="stock : ${fnbList}">
                         <div class="card h-100 border-cine shadow-sm rounded-3">
@@ -43,7 +43,7 @@
             <div class="card border-0 shadow-sm p-4 d-flex flex-column" style="height: fit-content; min-height: 400px;">
                 <h6 class="fw-bold text-cine-primary mb-3">Hóa Đơn Tạm Tính</h6>
                 <div class="flex-grow-1 mb-3" style="max-height: 250px; overflow-y: auto;">
-                    <p th:if="${cartItems == null or #lists.isEmpty(cartItems)}" class="small text-muted text-center my-4">Chưa có bắp nước nào được chọn.</p>
+                    <p th:if="${cartItems == null or #lists.isEmpty(cartItems)}" class="small text-muted text-center my-4">Chưa có đồ ăn/thức uống nào được chọn.</p>
                     <ul class="list-group list-group-flush" th:unless="${cartItems == null or #lists.isEmpty(cartItems)}">
                         <li class="list-group-item px-0 py-2" th:each="cartItem : ${cartItems}">
                             <div class="d-flex justify-content-between align-items-start mb-2">

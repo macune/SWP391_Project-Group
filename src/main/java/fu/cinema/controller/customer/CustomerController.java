@@ -1,5 +1,7 @@
 package fu.cinema.controller.customer;
 
+import fu.cinema.dto.request.ChangePasswordRequest;
+import fu.cinema.dto.request.CustomerRequest;
 import fu.cinema.dto.response.MovieResponse;
 import fu.cinema.entity.Ticket;
 import fu.cinema.enums.BookingStatus;
@@ -10,9 +12,11 @@ import fu.cinema.repository.TicketRepository;
 import fu.cinema.dto.response.TicketResponse;
 import fu.cinema.exception.AppException;
 import fu.cinema.service.BookingService;
+import fu.cinema.service.CustomerService;
 import fu.cinema.service.PromotionService;
 import fu.cinema.service.PublicMovieService;
 import fu.cinema.service.TicketService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,10 +25,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
@@ -44,6 +46,7 @@ public class CustomerController {
     private final TicketRepository ticketRepository;
     private final BookingService bookingService;
     private final TicketService ticketService;
+    private final CustomerService customerService;
 
     @GetMapping("/bookings")
     public String myBookings(Authentication authentication, Model model) {
@@ -113,12 +116,6 @@ public class CustomerController {
         }
     }
 
-    @GetMapping("/profile")
-    public String myProfile(Model model) {
-        model.addAttribute("sectionTitle", "Hồ sơ cá nhân");
-        return "customer/dashboard";
-    }
-
     @GetMapping("/promotions")
     public String myPromotions(Model model) {
         model.addAttribute("sectionTitle", "Ưu đãi & Khuyến mãi của tôi");
@@ -126,10 +123,65 @@ public class CustomerController {
         return "customer/promotions";
     }
 
+    @GetMapping("/profile")
+    public String myProfile(Model model, Authentication authentication) {
+        model.addAttribute("sectionTitle", "Hồ sơ cá nhân");
+        String username = authentication.getName();
+
+        if (!model.containsAttribute("profileReq")) {
+            model.addAttribute("profileReq", customerService.getCustomerProfile(username));
+        }
+        model.addAttribute("username", username);
+        return "customer/profile"; // Trả về file profile.html
+    }
+
+    @PostMapping("/profile")
+    public String updateProfile(@Valid @ModelAttribute("profileReq") CustomerRequest request,
+                                BindingResult bindingResult,
+                                Authentication authentication,
+                                RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.profileReq", bindingResult);
+            redirectAttributes.addFlashAttribute("profileReq", request);
+            return "redirect:/customer/profile";
+        }
+
+        try {
+            customerService.updateCustomerProfile(authentication.getName(), request);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/customer/profile";
+    }
+
     @GetMapping("/change-password")
     public String changePassword(Model model) {
         model.addAttribute("sectionTitle", "Đổi mật khẩu bảo mật");
-        return "customer/dashboard";
+        if (!model.containsAttribute("changePasswordRequest")) {
+            model.addAttribute("changePasswordRequest", new ChangePasswordRequest());
+        }
+        return "customer/change-password";
+    }
+
+    @PostMapping("/change-password")
+    public String processChangePassword(@Valid @ModelAttribute("changePasswordRequest") ChangePasswordRequest request,
+                                        BindingResult bindingResult,
+                                        Authentication authentication,
+                                        RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.changePasswordRequest", bindingResult);
+            redirectAttributes.addFlashAttribute("changePasswordRequest", request);
+            return "redirect:/customer/change-password";
+        }
+
+        try {
+            customerService.changePassword(authentication.getName(), request);
+            redirectAttributes.addFlashAttribute("successMessage", "Đổi mật khẩu thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/customer/change-password";
     }
 
     @GetMapping("/dashboard")

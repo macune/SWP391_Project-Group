@@ -10,6 +10,7 @@ import fu.cinema.entity.Seat;
 import fu.cinema.enums.HallStatus;
 import fu.cinema.enums.SeatStatus;
 import fu.cinema.enums.SeatType;
+import fu.cinema.exception.AppException;
 import fu.cinema.repository.BranchRepository;
 import fu.cinema.repository.HallRepository;
 import fu.cinema.repository.SeatRepository;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,16 +116,9 @@ public class HallServiceImpl implements HallService {
         return toResponse(hallRepository.save(existing));
     }
 
-    /**
-     * Thuật toán điều chỉnh ma trận ghế thông minh:
-     * 1. Ghế cũ nằm trong phạm vi (newRows x newCols) -> Giữ nguyên loại ghế (VIP, SWEETBOX, BROKEN...) & trạng thái.
-     * 2. Vị trí mới mở rộng -> Tạo ghế mới (loại mặc định STANDARD & ACTIVE).
-     * 3. Ghế cũ vượt quá kích thước mới -> Xóa bỏ.
-     */
     private void adjustSeatsMatrix(Hall hall, int newRows, int newCols) {
         List<Seat> existingSeats = seatRepository.findByHallHallIdOrderByRowCodeAscNumberAsc(hall.getHallId());
 
-        // Đánh chỉ mục ghế hiện có theo tọa độ "HÀNG_SỐGHẾ" (Ví dụ: "A_1", "B_5")
         Map<String, Seat> seatMap = existingSeats.stream()
                 .collect(Collectors.toMap(
                         s -> s.getRowCode() + "_" + s.getNumber(),
@@ -133,17 +128,14 @@ public class HallServiceImpl implements HallService {
         List<Seat> seatsToSave = new ArrayList<>();
         List<Seat> seatsToDelete = new ArrayList<>();
 
-        // Duyệt ma trận theo kích thước mới
         for (int r = 0; r < newRows; r++) {
             String rowCode = String.valueOf((char) ('A' + r));
             for (int num = 1; num <= newCols; num++) {
                 String key = rowCode + "_" + num;
                 if (seatMap.containsKey(key)) {
-                    // Đã có ghế cũ ở vị trí này -> Giữ nguyên cài đặt (Bảo lưu VIP, BROKEN...)
                     seatsToSave.add(seatMap.get(key));
-                    seatMap.remove(key); // Đánh dấu đã giữ lại
+                    seatMap.remove(key);
                 } else {
-                    // Vị trí mở rộng chưa có ghế -> Sinh ghế mới mặc định STANDARD
                     Seat newSeat = Seat.builder()
                             .hall(hall)
                             .rowCode(rowCode)
@@ -156,7 +148,6 @@ public class HallServiceImpl implements HallService {
             }
         }
 
-        // Các ghế còn lại trong seatMap là ghế dôi ra ngoài kích thước mới -> Xóa bớt
         seatsToDelete.addAll(seatMap.values());
 
         if (!seatsToDelete.isEmpty()) {
@@ -168,7 +159,6 @@ public class HallServiceImpl implements HallService {
             seatRepository.saveAll(seatsToSave);
         }
 
-        // Cập nhật lại sức chứa phòng chiếu dựa trên số ghế ACTIVE
         int activeSeats = (int) seatsToSave.stream()
                 .filter(s -> s.getStatus() == SeatStatus.ACTIVE)
                 .count();
@@ -216,6 +206,9 @@ public class HallServiceImpl implements HallService {
         Map<Long, Seat> seatById = seats.stream()
                 .collect(Collectors.toMap(Seat::getSeatId, Function.identity()));
 
+        // Tạm gán dữ liệu mới vào List để kiểm tra logic trước khi lưu
+        List<Seat> updatedSeats = new ArrayList<>();
+
         for (SeatUpdateItem item : seatUpdates) {
             Seat seat = seatById.get(item.getSeatId());
             if (seat != null) {
@@ -225,8 +218,41 @@ public class HallServiceImpl implements HallService {
                 if (item.getStatus() != null) {
                     seat.setStatus(item.getStatus());
                 }
+                updatedSeats.add(seat);
             }
         }
+
+        // ====================================================================
+        // CHỐT CHẶN BACKEND: KIỂM TRA SƠ ĐỒ GHẾ ĐÔI LÚC TẠO/CẬP NHẬT
+        // ====================================================================
+        List<Seat> sweetboxes = updatedSeats.stream()
+                .filter(s -> s.getType() == SeatType.SWEETBOX && s.getStatus() != SeatStatus.BROKEN)
+                .toList();
+
+        Map<String, List<Seat>> sweetboxByRow = sweetboxes.stream()
+                .collect(Collectors.groupingBy(Seat::getRowCode));
+
+        for (Map.Entry<String, List<Seat>> entry : sweetboxByRow.entrySet()) {
+            String rowCode = entry.getKey();
+            List<Seat> rowSeats = entry.getValue();
+
+            // Ràng buộc A: Tổng số ghế Sweetbox trong 1 hàng phải là số CHẴN
+            if (rowSeats.size() % 2 != 0) {
+                throw new AppException("Cấu hình lỗi: Hàng " + rowCode + " đang có " + rowSeats.size() + " ghế đôi. Bắt buộc phải là số chẵn để tạo thành các cặp!");
+            }
+
+            // Ràng buộc B: 2 ghế tạo thành 1 cặp phải LIỀN KỀ NHAU (VD: H1-H2 là đúng, H1-H3 là sai)
+            rowSeats.sort(Comparator.comparing(Seat::getNumber));
+
+            for (int i = 0; i < rowSeats.size(); i += 2) {
+                if (rowSeats.get(i + 1).getNumber() - rowSeats.get(i).getNumber() != 1) {
+                    throw new AppException("Cấu hình lỗi: Tại hàng " + rowCode + ", ghế số "
+                            + rowSeats.get(i).getNumber() + " và " + rowSeats.get(i + 1).getNumber()
+                            + " được gán là ghế đôi nhưng không nằm liền kề nhau!");
+                }
+            }
+        }
+        // ====================================================================
 
         seatRepository.saveAll(seats);
 

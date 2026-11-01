@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: customer-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::#actorCss},
+          actorJs = ~{::#actorJs}
+      )}">
+<head>
+    <title>Hồ Sơ Cá Nhân | CineFlow</title>
+    <th:block id="actorCss">
+        <link rel="stylesheet" th:href="@{/css/customer.css}">
+    </th:block>
+</head>
+<body>
+
+<div id="page-content" class="container-fluid py-4">
+
+    <!-- Thông báo lỗi/thành công -->
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-exclamation me-2"></i><strong th:text="${errorMessage}">Lỗi</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i><strong th:text="${successMessage}">Thành công</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-cine shadow-sm">
+                <div class="card-header bg-cine-main border-cine">
+                    <h5 class="fw-bold text-cine-primary mb-0"><i class="fa-solid fa-user-pen me-2"></i>Hồ Sơ Cá Nhân</h5>
+                </div>
+                <div class="card-body p-4">
+
+                    <form th:action="@{/customer/profile}" th:object="${profileReq}" method="post">
+
+                        <!-- Username (Chỉ đọc) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted">Tên Đăng Nhập</label>
+                            <input type="text" class="form-control bg-light text-muted" th:value="${username}" readonly disabled>
+                            <small class="text-muted fst-italic">Tên đăng nhập không thể thay đổi.</small>
+                        </div>
+
+                        <!-- Họ và tên (Mapping với CustomerRequest.fullName) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Họ và tên <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control border-cine" th:field="*{fullName}" placeholder="Nhập họ và tên...">
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                        </div>
+
+                        <!-- Số điện thoại (Mapping với CustomerRequest.phone) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Số điện thoại <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control border-cine" th:field="*{phone}" placeholder="Nhập số điện thoại...">
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-cine w-100 fw-bold py-2">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Thay Đổi
+                        </button>
+
+                        <div class="mt-3 text-center border-top pt-3">
+                            <p class="small text-muted mb-2">Bạn muốn thay đổi mật khẩu bảo mật?</p>
+                            <a th:href="@{/customer/change-password}" class="btn btn-outline-secondary w-100 fw-bold py-2">
+                                <i class="fa-solid fa-key me-1"></i> Đổi Mật Khẩu
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<th:block id="actorJs"></th:block>
+</body>
+</html>
