@@ -215,6 +215,82 @@
             </table>
         </div>
     </div>
+
+    <!-- Pagination -->
+    <div th:if="${totalPages > 1}"
+         class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-3">
+
+        <!-- Thông tin số lượng -->
+        <small class="text-muted">
+            Hiển thị
+            <strong th:text="${currentPage * pageSize + 1}"></strong>
+            -
+            <strong th:text="${T(java.lang.Math).min((currentPage + 1) * pageSize, totalElements)}"></strong>
+            trên tổng
+            <strong th:text="${totalElements}"></strong>
+            suất chiếu
+        </small>
+
+        <!-- Các nút phân trang -->
+        <nav aria-label="Phân trang suất chiếu">
+            <ul class="pagination pagination-sm mb-0">
+
+                <!-- Trang trước -->
+                <li class="page-item"
+                    th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+
+                    <a class="page-link"
+                       th:href="@{/manager/showtimes(
+                       page=${currentPage - 1},
+                       hallId=${hallId},
+                       status=${status},
+                       showDate=${showDate != null ? #temporals.format(showDate, 'dd/MM/yyyy') : null},
+                       month=${month},
+                       year=${year}
+                   )}">
+                        Trước
+                    </a>
+                </li>
+
+                <!-- Số trang -->
+                <li class="page-item"
+                    th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                    th:classappend="${currentPage == i ? 'active' : ''}">
+
+                    <a class="page-link"
+                       th:text="${i + 1}"
+                       th:href="@{/manager/showtimes(
+                       page=${i},
+                       hallId=${hallId},
+                       status=${status},
+                       showDate=${showDate != null ? #temporals.format(showDate, 'dd/MM/yyyy') : null},
+                       month=${month},
+                       year=${year}
+                   )}">
+                    </a>
+                </li>
+
+                <!-- Trang sau -->
+                <li class="page-item"
+                    th:classappend="${currentPage >= totalPages - 1 ? 'disabled' : ''}">
+
+                    <a class="page-link"
+                       th:href="@{/manager/showtimes(
+                       page=${currentPage + 1},
+                       hallId=${hallId},
+                       status=${status},
+                       showDate=${showDate != null ? #temporals.format(showDate, 'dd/MM/yyyy') : null},
+                       month=${month},
+                       year=${year}
+                   )}">
+                        Sau
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+    </div>
+
 </div>
         <th:block id="actorJs">
             <script th:src="@{/js/manager.js}"></script>

@@ -17,6 +17,9 @@ import fu.cinema.service.ShowtimeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -88,35 +91,100 @@ public class ManagerShowtimeController {
         }
     }
 
+
     @GetMapping
     public String showSchedule(
             @RequestParam(required = false) Long hallId,
             @RequestParam(required = false) ShowtimeStatus status,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate showDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate showDate,
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year,
+            @RequestParam(defaultValue = "0") int page,
             Model model) {
 
         Long branchId = getCurrentManagerBranchId();
+
         List<Hall> halls = hallRepository.findByBranchBranchId(branchId);
-        List<Showtime> showtimes = showtimeRepository.findByHall_Branch_BranchIdOrderByStartTimeAsc(branchId);
 
-        if (status != null) showtimes = showtimes.stream().filter(s -> s.getStatus() == status).toList();
-        if (hallId != null) showtimes = showtimes.stream().filter(s -> s.getHall().getHallId().equals(hallId)).toList();
-        if (showDate != null) showtimes = showtimes.stream().filter(s -> s.getStartTime().toLocalDate().equals(showDate)).toList();
-        if (month != null) showtimes = showtimes.stream().filter(s -> s.getStartTime().getMonthValue() == month).toList();
-        if (year != null) showtimes = showtimes.stream().filter(s -> s.getStartTime().getYear() == year).toList();
+        List<Showtime> showtimes =
+                showtimeRepository.findByHall_Branch_BranchIdOrderByStartTimeAsc(branchId);
 
+        // 1. Lọc trạng thái
+        if (status != null) {
+            showtimes = showtimes.stream()
+                    .filter(s -> s.getStatus() == status)
+                    .toList();
+        }
+
+        // 2. Lọc phòng chiếu
+        if (hallId != null) {
+            showtimes = showtimes.stream()
+                    .filter(s -> s.getHall().getHallId().equals(hallId))
+                    .toList();
+        }
+
+        // 3. Lọc ngày cụ thể
+        if (showDate != null) {
+            showtimes = showtimes.stream()
+                    .filter(s -> s.getStartTime().toLocalDate().equals(showDate))
+                    .toList();
+        }
+
+        // 4. Lọc tháng
+        if (month != null) {
+            showtimes = showtimes.stream()
+                    .filter(s -> s.getStartTime().getMonthValue() == month)
+                    .toList();
+        }
+
+        // 5. Lọc năm
+        if (year != null) {
+            showtimes = showtimes.stream()
+                    .filter(s -> s.getStartTime().getYear() == year)
+                    .toList();
+        }
+
+        // 6. Phân trang
+        int pageSize = 10;
+        int totalElements = showtimes.size();
+
+        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+
+        // Tránh trường hợp người dùng truy cập trang không tồn tại
+        int currentPage = totalPages == 0
+                ? 0
+                : Math.max(0, Math.min(page, totalPages - 1));
+
+        PageRequest pageable = PageRequest.of(currentPage, pageSize);
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageSize, totalElements);
+
+        Page<Showtime> showtimePage = new PageImpl<>(
+                showtimes.subList(start, end),
+                pageable,
+                totalElements
+        );
+
+        // 7. Đưa dữ liệu ra View
         model.addAttribute("halls", halls);
         model.addAttribute("hallId", hallId);
         model.addAttribute("showDate", showDate);
         model.addAttribute("month", month);
         model.addAttribute("year", year);
-        model.addAttribute("showtimes", showtimes);
         model.addAttribute("status", status);
         model.addAttribute("statuses", ShowtimeStatus.values());
+
+        model.addAttribute("showtimes", showtimePage.getContent());
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("totalElements", totalElements);
+        model.addAttribute("pageSize", pageSize);
+
         return "manager/showtime-schedule";
     }
+
 
     private void loadFormData(Model model, Long branchId) {
         model.addAttribute("today", LocalDate.now().toString());

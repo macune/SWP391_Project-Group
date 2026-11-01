@@ -247,4 +247,25 @@ public class ShowtimeServiceImpl implements ShowtimeService {
             );
         }
     }
+    @Override
+    @Transactional
+    public void updateShowtimeStatuses() {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // Cập nhật suất chiếu đã kết thúc
+        showtimeRepository.updateCompletedShowtimes(
+                now,
+                ShowtimeStatus.SCHEDULED,
+                ShowtimeStatus.SHOWING,
+                ShowtimeStatus.COMPLETED
+        );
+
+        // Cập nhật suất chiếu đang chiếu
+        showtimeRepository.updateShowingShowtimes(
+                now,
+                ShowtimeStatus.SCHEDULED,
+                ShowtimeStatus.SHOWING
+        );
+    }
 }

@@ -64,24 +64,32 @@
                             <div class="text-danger small mt-1" th:if="${#fields.hasErrors('hallId')}" th:errors="*{hallId}"></div>
                         </div>
 
-                        <!-- Showtime date -->
                         <div class="mb-3">
-                            <label for="showDate" class="form-label">Ngày chiếu <span class="text-danger">*</span></label>
-                            <input type="text" id="showDate" name="showDate" class="form-control" placeholder="dd/mm/yyyy" autocomplete="off"
-                                   th:value="${showtime.showDate != null ? #temporals.format(showtime.showDate, 'dd/MM/yyyy') : ''}" required>
-                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('showDate')}" th:errors="*{showDate}"></div>
-                        </div>
+                            <label class="form-label">
+                                Các khoảng ngày chiếu <span class="text-danger">*</span>
+                            </label>
 
-                        <div class="mb-3">
-                            <label class="form-label">Các ngày chiếu bổ sung</label>
+                            <div id="date-ranges" class="d-flex flex-column gap-3"></div>
+
+                            <button type="button" id="add-date-range"
+                                    class="btn btn-outline-cine btn-sm mt-2">
+                                <i class="fa-solid fa-plus me-1"></i> Thêm khoảng ngày
+                            </button>
+
+                            <input type="hidden" id="showDate" name="showDate"
+                                   th:value="${showtime.showDate != null ? #temporals.format(showtime.showDate, 'dd/MM/yyyy') : ''}">
+
                             <div id="duplicate-dates">
-                                <!-- Hiển thị lại các ngày đã chọn nếu nhập lỗi -->
-                                <input th:each="dupDate : *{duplicateDates}" type="text" name="duplicateDates" class="form-control mb-2 duplicate-date" placeholder="dd/mm/yyyy" autocomplete="off" th:value="${#temporals.format(dupDate, 'dd/MM/yyyy')}">
-                                <!-- Ô nhập mặc định -->
-                                <input type="text" name="duplicateDates" class="form-control mb-2 duplicate-date" placeholder="dd/mm/yyyy" autocomplete="off">
+                                <input th:each="dupDate : *{duplicateDates}"
+                                       type="hidden"
+                                       name="duplicateDates"
+                                       class="duplicate-date"
+                                       th:value="${#temporals.format(dupDate, 'dd/MM/yyyy')}">
                             </div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addDateInput()">+ Thêm ngày chiếu</button>
-                            <small class="text-muted d-block mt-2">Các ngày bổ sung sẽ sử dụng cùng phim, phòng chiếu, giờ bắt đầu và giá vé với ngày chính.</small>
+
+                            <small class="text-muted d-block mt-2">
+                                Mỗi ngày trong các khoảng đã chọn sẽ tạo một suất chiếu.
+                            </small>
                         </div>
 
                         <!-- Start time -->
@@ -111,58 +119,126 @@
             <script th:src="@{/js/manager.js}"></script>
             <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
             <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
+
             <script>
                 (function () {
-                    function initDatePicker(input) {
-                        if (!input) return;
-                        if (input._flatpickr) {
-                            input._flatpickr.destroy();
+                    function initDateRangePicker() {
+                        const container = document.getElementById("date-ranges");
+                        const addButton = document.getElementById("add-date-range");
+                        const showDate = document.getElementById("showDate");
+                        const duplicateDates = document.getElementById("duplicate-dates");
+
+                        if (!container || !addButton || !showDate || !duplicateDates) return;
+
+                        function formatDate(date) {
+                            return String(date.getDate()).padStart(2, "0") + "/" +
+                                String(date.getMonth() + 1).padStart(2, "0") + "/" +
+                                date.getFullYear();
                         }
-                        flatpickr(input, {
-                            dateFormat: "d/m/Y",
-                            allowInput: true,
-                            clickOpens: true,
-                            minDate: "today",
-                            locale: {
-                                ...flatpickr.l10ns.vn,
-                                firstDayOfWeek: 1,
-                                months: {
-                                    shorthand: ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6", "Th7", "Th8", "Th9", "Th10", "Th11", "Th12"],
-                                    longhand: ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"]
+
+                        function syncHidden() {
+                            const dates = new Map();
+
+                            container.querySelectorAll(".date-range-input").forEach(input => {
+                                const selected = input._flatpickr.selectedDates;
+                                if (!selected.length) return;
+
+                                const start = selected[0];
+                                const end = selected.length > 1 ? selected[1] : selected[0];
+
+                                const current = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                                const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+                                while (current <= last) {
+                                    dates.set(formatDate(current), new Date(current));
+                                    current.setDate(current.getDate() + 1);
                                 }
-                            },
-                            monthSelectorType: "dropdown"
-                        });
-                    }
+                            });
 
-                    function initPage() {
-                        initDatePicker(document.getElementById("showDate"));
-                        document.querySelectorAll(".duplicate-date").forEach(initDatePicker);
-                    }
+                            const allDates = [...dates.entries()]
+                                .sort((a, b) => a[1] - b[1])
+                                .map(item => item[0]);
 
-                    window.addDateInput = function () {
-                        const container = document.getElementById("duplicate-dates");
-                        if (!container) return;
-                        const input = document.createElement("input");
-                        input.type = "text";
-                        input.name = "duplicateDates";
-                        input.className = "form-control mb-2 duplicate-date";
-                        input.placeholder = "dd/mm/yyyy";
-                        input.autocomplete = "off";
-                        container.appendChild(input);
-                        initDatePicker(input);
-                    };
+                            showDate.value = allDates[0] || "";
+                            duplicateDates.innerHTML = "";
+
+                            allDates.slice(1).forEach(date => {
+                                const input = document.createElement("input");
+                                input.type = "hidden";
+                                input.name = "duplicateDates";
+                                input.value = date;
+                                input.className = "duplicate-date";
+                                duplicateDates.appendChild(input);
+                            });
+                        }
+
+                        function updateTitles() {
+                            container.querySelectorAll(".date-range-item").forEach((item, index) => {
+                                item.querySelector(".range-title").textContent = "Khoảng ngày " + (index + 1);
+                            });
+                        }
+
+                        function addRange(defaultDates = []) {
+                            const item = document.createElement("div");
+                            item.className = "date-range-item border rounded p-3";
+
+                            item.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="range-title fw-semibold"></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-range">
+                        <i class="fa-solid fa-trash-can me-1"></i>Xóa
+                    </button>
+                </div>
+                <input type="text" class="form-control date-range-input"
+                       placeholder="dd/mm/yyyy - dd/mm/yyyy"
+                       autocomplete="off" readonly>
+            `;
+
+                            container.appendChild(item);
+
+                            item.querySelector(".remove-range").addEventListener("click", () => {
+                                item.remove();
+                                if (!container.querySelector(".date-range-item")) addRange();
+                                updateTitles();
+                                syncHidden();
+                            });
+
+                            flatpickr(item.querySelector(".date-range-input"), {
+                                mode: "range",
+                                dateFormat: "d/m/Y",
+                                rangeSeparator: " - ",
+                                allowInput: false,
+                                minDate: "today",
+                                defaultDate: defaultDates,
+                                locale: {
+                                    ...flatpickr.l10ns.vn,
+                                    firstDayOfWeek: 1,
+                                    months: {
+                                        shorthand: ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6",
+                                            "Th7", "Th8", "Th9", "Th10", "Th11", "Th12"],
+                                        longhand: ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4",
+                                            "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8",
+                                            "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"]
+                                    }
+                                },
+                                monthSelectorType: "dropdown",
+                                onChange: syncHidden
+                            });
+
+                            updateTitles();
+                        }
+
+                        addRange();
+
+                        addButton.addEventListener("click", () => addRange());
+                    }
 
                     if (typeof window.flatpickr === "function") {
-                        initPage();
-                    } else {
-                        const script = document.createElement("script");
-                        script.src = "https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js";
-                        script.onload = initPage;
-                        document.head.appendChild(script);
+                        initDateRangePicker();
                     }
                 })();
             </script>
+
         </th:block>
     </th:block>
 </div>
