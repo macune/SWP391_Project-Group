@@ -234,22 +234,11 @@ public class AdminRevenueController {
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("category", category);
-        int pageSize = 10;
-        int totalRows = items.size();
-        int totalPages = Math.max(1, (int) Math.ceil(totalRows / (double) pageSize));
-        page = Math.max(0, Math.min(page, totalPages - 1));
-        int from = page * pageSize;
-        int to = Math.min(from + pageSize, totalRows);
-        List<FnbProductRevenueResponse> pageItems = items.subList(from, to);
 
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("sortDir", sortDir);
-        model.addAttribute("items", pageItems);
+        model.addAttribute("items", items);
         model.addAttribute("allItems", items);
-        model.addAttribute("currentPage", page);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("totalRows", totalRows);
-        model.addAttribute("totalPages", totalPages);
         return "admin/revenue-fnb";
     }
 
@@ -266,12 +255,31 @@ public class AdminRevenueController {
 
         validateBranchId(branchId);
         List<FnbRevenueRowResponse> transactions = new ArrayList<>();
+        Map<Long, String> transactionBranchNames = new HashMap<>();
+
         for (BranchResponse branch : branchesFor(branchId)) {
             try {
-                transactions.addAll(revenueReportService.getFnbItemTransactions(branch.getBranchId(), itemId,
-                        startDate, endDate, paymentMethod, sortDir));
+                List<FnbRevenueRowResponse> branchRows =
+                        revenueReportService.getFnbItemTransactions(
+                                branch.getBranchId(),
+                                itemId,
+                                startDate,
+                                endDate,
+                                paymentMethod,
+                                sortDir
+                        );
+
+                transactions.addAll(branchRows);
+
+                for (FnbRevenueRowResponse row : branchRows) {
+                    transactionBranchNames.put(
+                            row.paymentId(),
+                            branch.getBranchName()
+                    );
+                }
+
             } catch (IllegalArgumentException ignored) {
-                // Item không có trong kho chi nhánh này; tiếp tục kiểm tra các chi nhánh khác.
+                // Item không có trong kho chi nhánh này.
             }
         }
         transactions.sort(Comparator.comparing(FnbRevenueRowResponse::transactionTime,
@@ -283,7 +291,7 @@ public class AdminRevenueController {
         page = Math.max(0, Math.min(page, totalPages - 1));
         int from = page * pageSize;
         int to = Math.min(from + pageSize, transactions.size());
-
+        model.addAttribute("transactionBranchNames", transactionBranchNames);
         model.addAttribute("branches", branchService.getAllBranches());
         model.addAttribute("selectedBranchId", branchId);
         model.addAttribute("currentBranch", findBranch(branchId));
