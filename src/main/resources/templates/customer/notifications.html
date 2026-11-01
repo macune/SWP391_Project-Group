@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/layout :: master(
+          title = ~{::title},
+          sidebar = ~{layout/sidebar :: customer-sidebar},
+          content = ~{::#page-content},
+          actorCss = ~{::link},
+          actorJs = ~{::script}
+      )}">
+<head>
+  <title>Thông báo của tôi | CineFlow</title>
+  <link rel="stylesheet" th:href="@{/css/customer.css}">
+</head>
+<body>
+
+<div id="page-content" class="container-fluid py-3">
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h4 class="fw-bold mb-1 text-cine-primary">
+        <i class="fa-solid fa-bell me-2"></i>Hộp thư Thông báo của tôi
+      </h4>
+      <p class="text-muted small mb-0">Theo dõi xác nhận đặt vé, thanh toán, nhắc lịch chiếu và ưu đãi mới nhất</p>
+    </div>
+
+    <form th:action="@{/customer/notifications/read-all}" method="post">
+      <button type="submit" class="btn btn-outline-cine btn-sm px-3">
+        <i class="fa-solid fa-check-double me-1"></i>Đánh dấu tất cả đã đọc
+      </button>
+    </form>
+  </div>
+
+  <div th:if="${successMessage}" class="alert bg-cine-soft border-cine alert-dismissible fade show" role="alert">
+    <i class="fa-solid fa-circle-check me-2"></i><span th:text="${successMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+
+  <!-- Bộ lọc theo phân loại thông báo (FE-10.1 -> FE-10.4) -->
+  <div class="card border-cine shadow-sm mb-4">
+    <div class="card-body py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="d-flex flex-wrap gap-2">
+        <a th:href="@{/customer/notifications}"
+           class="btn btn-sm"
+           th:classappend="${selectedType == null ? 'btn-cine' : 'btn-outline-cine'}">
+          Tất cả
+        </a>
+        <a th:href="@{/customer/notifications(type='BOOKING')}"
+           class="btn btn-sm"
+           th:classappend="${selectedType != null and selectedType.name() == 'BOOKING' ? 'btn-cine' : 'btn-outline-cine'}">
+          <i class="fa-solid fa-ticket me-1"></i>Đặt vé
+        </a>
+        <a th:href="@{/customer/notifications(type='PAYMENT')}"
+           class="btn btn-sm"
+           th:classappend="${selectedType != null and selectedType.name() == 'PAYMENT' ? 'btn-cine' : 'btn-outline-cine'}">
+          <i class="fa-solid fa-credit-card me-1"></i>Thanh toán
+        </a>
+        <a th:href="@{/customer/notifications(type='SHOWTIME')}"
+           class="btn btn-sm"
+           th:classappend="${selectedType != null and selectedType.name() == 'SHOWTIME' ? 'btn-cine' : 'btn-outline-cine'}">
+          <i class="fa-solid fa-clock me-1"></i>Suất chiếu
+        </a>
+        <a th:href="@{/customer/notifications(type='PROMOTION')}"
+           class="btn btn-sm"
+           th:classappend="${selectedType != null and selectedType.name() == 'PROMOTION' ? 'btn-cine' : 'btn-outline-cine'}">
+          <i class="fa-solid fa-gift me-1"></i>Khuyến mãi
+        </a>
+      </div>
+
+      <div>
+        <a th:href="@{/customer/notifications(type=${selectedType}, unreadOnly=${!unreadOnly})}"
+           class="btn btn-sm"
+           th:classappend="${unreadOnly ? 'btn-warning text-dark fw-semibold' : 'btn-outline-secondary'}">
+          <i class="fa-solid fa-filter me-1"></i>Chỉ hiện chưa đọc
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danh sách thông báo -->
+  <div class="card border-cine shadow-sm">
+    <div class="list-group list-group-flush">
+      <div th:if="${#lists.isEmpty(notifications)}" class="text-center py-5 text-muted">
+        <i class="fa-regular fa-bell-slash fs-1 mb-2 d-block"></i>
+        Hiện tại bạn chưa có thông báo nào trong mục này.
+      </div>
+
+      <div th:each="n : ${notifications}"
+           class="list-group-item p-3 border-bottom d-flex justify-content-between align-items-start gap-3"
+           th:classappend="${!n.isRead ? 'bg-light border-start border-4 border-danger' : ''}">
+
+        <div class="d-flex align-items-start gap-3">
+          <div class="rounded-circle p-2 text-center" style="width: 42px; height: 42px;"
+               th:classappend="${n.type.name() == 'BOOKING' ? 'bg-primary text-white' :
+                                          (n.type.name() == 'PAYMENT' ? 'bg-success text-white' :
+                                          (n.type.name() == 'SHOWTIME' ? 'bg-warning text-dark' : 'bg-danger text-white'))}">
+            <i class="fa-solid"
+               th:classappend="${n.type.name() == 'BOOKING' ? 'fa-ticket' :
+                                            (n.type.name() == 'PAYMENT' ? 'fa-credit-card' :
+                                            (n.type.name() == 'SHOWTIME' ? 'fa-clock' : 'fa-gift'))}"></i>
+          </div>
+
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge"
+                                  th:classappend="${n.type.name() == 'BOOKING' ? 'bg-primary' :
+                                                   (n.type.name() == 'PAYMENT' ? 'bg-success' :
+                                                   (n.type.name() == 'SHOWTIME' ? 'bg-warning text-dark' : 'bg-danger'))}"
+                                  th:text="${n.type}">BOOKING</span>
+              <span th:if="${!n.isRead}" class="badge bg-danger">Mới</span>
+              <small class="text-muted" th:text="${#temporals.format(n.createdAt, 'HH:mm - dd/MM/yyyy')}"></small>
+            </div>
+
+            <h6 class="mb-1" th:classappend="${!n.isRead ? 'fw-bold text-dark' : 'fw-semibold text-secondary'}"
+                th:text="${n.title}">Tiêu đề thông báo</h6>
+            <p class="mb-0 text-secondary small" th:text="${n.message}">Nội dung chi tiết thông báo</p>
+          </div>
+        </div>
+
+        <div th:if="${!n.isRead}">
+          <form th:action="@{/customer/notifications/read/{id}(id=${n.notificationId})}" method="post">
+            <button type="submit" class="btn btn-sm btn-outline-cine text-nowrap" title="Đánh dấu đã đọc">
+              <i class="fa-solid fa-check me-1"></i>Đã đọc
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script></script>
+</body>
+</html>

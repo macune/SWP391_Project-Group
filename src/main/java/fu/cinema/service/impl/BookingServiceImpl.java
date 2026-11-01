@@ -7,6 +7,7 @@ import fu.cinema.enums.*;
 import fu.cinema.exception.*;
 import fu.cinema.repository.*;
 import fu.cinema.service.BookingService;
+import fu.cinema.service.NotificationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -35,6 +36,7 @@ public class BookingServiceImpl implements BookingService {
     BookingFnBRepository bookingFnbRepository;
     PaymentRepository paymentRepository;
     BranchStockRepository branchStockRepository;
+    NotificationService notificationService;
 
     private BigDecimal calculateSeatPrice(SeatType seatType, BigDecimal basePrice){
         if(seatType == SeatType.VIP){
@@ -51,19 +53,29 @@ public class BookingServiceImpl implements BookingService {
     @Transactional(readOnly = true)
     public SeatSelectionResponse getSeatSelectionData(Long showtimeId) {
         Showtime showtime = showtimeRepository.findById(showtimeId).orElseThrow(ShowtimeNotFoundException::new);
+
+        // Lấy danh sách seatIds của các ghế đã được Booked/Locked/CheckedIn
         List<TicketStatus> statuses = List.of(TicketStatus.BOOKED, TicketStatus.LOCKED, TicketStatus.CHECKED_IN);
         List<Long> bookedSeatIds = ticketRepository.findBookedSeatIdsByShowtimeId(showtimeId, statuses);
+
+        // Lấy tất cả các ghế của hall đó
         Long hallId = showtime.getHall().getHallId();
         List<Seat> allSeatsInHall = seatRepository.findByHallHallIdOrderByRowCodeAscNumberAsc(hallId);
+
+        // Gom ghế theo hàng (Key là hàng A,B,C,... còn Value là danh sách ghế của các hàng đó)
         Map<String, List<BookingSeatResponse>> seatMap = new LinkedHashMap<>();
 
+        // Vòng lặp đưa ghế vào các hàng
         for(Seat seat : allSeatsInHall){
             String row = seat.getRowCode();
+
             if(!seatMap.containsKey(row)){
                 seatMap.put(row, new ArrayList<>());
             }
+
             boolean isBooked = bookedSeatIds.contains(seat.getSeatId());
             boolean isBroken = seat.getStatus() == SeatStatus.BROKEN;
+
             BigDecimal price = calculateSeatPrice(seat.getType(), showtime.getBasePrice());
 
             BookingSeatResponse bookingSeatResponse = BookingSeatResponse.builder()
@@ -80,6 +92,7 @@ public class BookingServiceImpl implements BookingService {
             seatMap.get(row).add(bookingSeatResponse);
         }
 
+        // Trả về thông tin cần thiết cho giao diện người dùng
         return SeatSelectionResponse.builder()
                 .showtimeId(showtime.getShowtimeId())
                 .movieTitle(showtime.getMovie().getTitle())
@@ -94,7 +107,7 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-    // Hàm xử lí các request khóa ghế mà người dùng chọn (ĐÃ NÂNG CẤP CHẶN GHẾ ĐÔI CHÉO CẶP)
+    // Hàm xử lí các request khóa ghế mà người dùng chọn
     @Override
     @Transactional
     public Long lockSeats(SeatLockRequest request) {
@@ -106,9 +119,11 @@ public class BookingServiceImpl implements BookingService {
         Account currentAccount = accountRepository.findByUsername(auth.getName()).orElseThrow(AccountNotFoundException::new);
         Showtime showtime = showtimeRepository.findById(request.getShowtimeId()).orElseThrow(ShowtimeNotFoundException::new);
 
+        // Tìm những ghế đã bị khóa
         List<TicketStatus> statuses = List.of(TicketStatus.BOOKED, TicketStatus.LOCKED, TicketStatus.CHECKED_IN);
         List<Long> unavailableSeatIds = ticketRepository.findBookedSeatIdsByShowtimeId(request.getShowtimeId(), statuses);
 
+        // Kiểm tra xem ghế đó đã có người nào chọn chưa, tránh 1 ghế có 2 vé trong cùng 1 showtime
         for(Long seatId : request.getSeatIds()){
             if(unavailableSeatIds.contains(seatId)){
                 throw new AppException("Ghế bạn chọn đã có người khác giữ trước hoặc đang không khả dụng. Vui lòng chọn ghế khác!");
@@ -313,13 +328,13 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(BookingNotFoundException::new);
         Promotion promotion = promotionRepository.findByCode(promoCode).orElseThrow(PromoNotFoundException::new);
 
-        if (promotion.getStatus() != PromotionStatus.ACTIVE) {
+        if(promotion.getStatus()!= PromotionStatus.ACTIVE){
             throw new AppException("Mã khuyến mãi này không còn khả dụng.");
         }
-        if (promotion.getValidFrom() != null && promotion.getValidFrom().isAfter(LocalDateTime.now())) {
+        if(promotion.getValidFrom()!=null && promotion.getValidFrom().isAfter(LocalDateTime.now())){
             throw new AppException("Mã khuyến mãi này chưa đến ngày bắt đầu sử dụng.");
         }
-        if (promotion.getExpiryDate() != null && promotion.getExpiryDate().isBefore(LocalDateTime.now())) {
+        if(promotion.getExpiryDate()!=null && promotion.getExpiryDate().isBefore(LocalDateTime.now())){
             throw new AppException(("Mã khuyến mãi này đã hết hạn sử dụng."));
         }
 
@@ -407,7 +422,7 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.save(booking);
     }
 
-    // Hàm chạy khi người dùng bấm hủy đơn (giải phóng ghế)
+    // Hàm chạy khi người dùng bấm hủy đơn (giải phóng ghế) + Gửi thông báo FE-10.1
     @Override
     @Transactional
     public void cancelBooking(Long bookingId) {
@@ -418,6 +433,9 @@ public class BookingServiceImpl implements BookingService {
             throw new AppException("Chỉ có thể hủy đơn hàng đang chờ thanh toán.");
         }
 
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+
         if (booking.getTickets() != null && !booking.getTickets().isEmpty()) {
             ticketRepository.deleteAll(booking.getTickets());
         }
@@ -426,6 +444,9 @@ public class BookingServiceImpl implements BookingService {
         if (fnbList != null && !fnbList.isEmpty()) {
             bookingFnbRepository.deleteAll(fnbList);
         }
+
+        // FE-10.1: Gửi thông báo hủy đơn đặt vé
+        notificationService.sendBookingCancelledAlert(booking);
 
         paymentRepository.findByBooking_BookingId(bookingId).ifPresent(paymentRepository::delete);
         bookingRepository.delete(booking);
@@ -595,8 +616,16 @@ public class BookingServiceImpl implements BookingService {
                         });
             }
         }
+        Booking saved = bookingRepository.save(booking);
 
-        bookingRepository.save(booking);
+        // FE-10.1: Gửi thông báo cập nhật trạng thái đơn hàng
+        if (newStatus == BookingStatus.CANCELLED) {
+            notificationService.sendBookingCancelledAlert(saved);
+        } else if (newStatus == BookingStatus.CONFIRMED) {
+            notificationService.sendBookingConfirmedAlert(saved);
+        } else {
+            notificationService.sendBookingStatusUpdatedAlert(saved);
+        }
     }
 
     // Lấy lịch sử mua vé của người dùng
@@ -607,6 +636,7 @@ public class BookingServiceImpl implements BookingService {
         Account currentUser = accountRepository.findByUsername(auth.getName()).orElseThrow(AccountNotFoundException::new);
 
         List<Booking> bookings = bookingRepository.findByAccount_AccountIdOrderByCreatedAtDesc(currentUser.getAccountId());
+
         List<BookingHistoryResponse> responses = new ArrayList<>();
 
         for(Booking b : bookings){

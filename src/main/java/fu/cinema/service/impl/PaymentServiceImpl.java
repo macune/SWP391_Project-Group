@@ -11,6 +11,7 @@ import fu.cinema.exception.AppException;
 import fu.cinema.repository.BookingRepository;
 import fu.cinema.repository.BranchStockRepository;
 import fu.cinema.repository.PaymentTransactionRepository;
+import fu.cinema.service.NotificationService;
 import fu.cinema.service.PaymentService;
 import fu.cinema.service.TicketService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final TicketService ticketService;
     private final BranchStockRepository branchStockRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final NotificationService notificationService;
 
     @Override
     public PaymentUrlResponse createVNPayUrl(PaymentCreateRequest request) {
@@ -104,6 +106,7 @@ public class PaymentServiceImpl implements PaymentService {
         String transactionNo = params.get("vnp_TransactionNo");
 
         if (!signValue.equals(vnp_SecureHash)) {
+            notificationService.sendPaymentFailedAlert(bookingId, "Lỗi xác thực chữ ký VNPay (Dữ liệu bị can thiệp).");
             return PaymentCallbackResponse.builder()
                     .success(false)
                     .bookingId(bookingId)
@@ -119,6 +122,9 @@ public class PaymentServiceImpl implements PaymentService {
                     .message("Thanh toán thành công.")
                     .build();
         } else {
+            // FE-10.2: Gửi thông báo thanh toán thất bại/bị hủy
+            notificationService.sendPaymentFailedAlert(bookingId,
+                    "Giao dịch thanh toán VNPay bị hủy hoặc thất bại (Mã phản hồi: " + params.get("vnp_ResponseCode") + ").");
             return PaymentCallbackResponse.builder()
                     .success(false)
                     .bookingId(bookingId)
@@ -136,13 +142,16 @@ public class PaymentServiceImpl implements PaymentService {
         if (booking.getStatus() == BookingStatus.CONFIRMED) {
             return;
         }
-        //1. Lưu Transaction
+
+        String finalTxNo = transactionNo != null ? transactionNo : "CASH-" + System.currentTimeMillis();
+
+        // 1. Lưu Transaction
         if (!paymentTransactionRepository.existsByBooking_BookingId(bookingId)) {
             PaymentTransaction transaction = PaymentTransaction.builder()
                     .booking(booking)
                     .amount(booking.getTotalAmount())
                     .paymentMethod(method)
-                    .transactionNo(transactionNo != null ? transactionNo : "CASH-" + System.currentTimeMillis())
+                    .transactionNo(finalTxNo)
                     .paymentTime(LocalDateTime.now())
                     .build();
             paymentTransactionRepository.save(transaction);
@@ -178,5 +187,9 @@ public class PaymentServiceImpl implements PaymentService {
                 }
             }
         }
+
+        // FE-10.2 & FE-10.1: Gửi thông báo Thanh toán thành công và Xác nhận đặt vé kèm thông tin E-Ticket
+        notificationService.sendPaymentSuccessAlert(booking, method, finalTxNo);
+        notificationService.sendBookingConfirmedAlert(booking);
     }
 }

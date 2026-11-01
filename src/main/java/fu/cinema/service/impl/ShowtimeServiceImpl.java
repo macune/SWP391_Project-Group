@@ -1,17 +1,14 @@
 package fu.cinema.service.impl;
 
 import fu.cinema.dto.request.ShowtimeRequest;
-import fu.cinema.entity.Hall;
-import fu.cinema.entity.Movie;
-import fu.cinema.entity.Showtime;
-import fu.cinema.entity.Branch;
-import fu.cinema.enums.HallStatus;
-import fu.cinema.enums.MovieStatus;
-import fu.cinema.enums.ShowtimeStatus;
+import fu.cinema.entity.*;
+import fu.cinema.enums.*;
 import fu.cinema.exception.ShowtimeConflictException;
+import fu.cinema.repository.BookingRepository;
 import fu.cinema.repository.HallRepository;
 import fu.cinema.repository.MovieRepository;
 import fu.cinema.repository.ShowtimeRepository;
+import fu.cinema.service.NotificationService;
 import fu.cinema.service.ShowtimeService;
 
 import lombok.RequiredArgsConstructor;
@@ -22,10 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +28,8 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     private final ShowtimeRepository showtimeRepository;
     private final MovieRepository movieRepository;
     private final HallRepository hallRepository;
+    private final BookingRepository bookingRepository;
+    private final NotificationService notificationService;
     private static final long MIN_GAP_MINUTES = 10;
 
     @Override
@@ -116,13 +112,26 @@ public class ShowtimeServiceImpl implements ShowtimeService {
             throw new IllegalArgumentException("Chỉ có thể hủy các suất chiếu đã được lên lịch.");
         }
 
-        // 2. CHẶN HỦY NẾU ĐÃ CÓ NGƯỜI MUA VÉ
-        if (!showtime.getTickets().isEmpty()) {
-            throw new IllegalArgumentException("Không thể hủy! Suất chiếu này đã có khách hàng đặt vé.");
+        // Thu thập danh sách các đơn đặt vé bị ảnh hưởng để hủy và gửi thông báo FE-10.3
+        Set<Booking> affectedBookings = new LinkedHashSet<>();
+        if (showtime.getTickets() != null && !showtime.getTickets().isEmpty()) {
+            for (Ticket ticket : showtime.getTickets()) {
+                ticket.setStatus(TicketStatus.CANCELLED);
+                if (ticket.getBooking() != null && ticket.getBooking().getStatus() != BookingStatus.CANCELLED) {
+                    ticket.getBooking().setStatus(BookingStatus.CANCELLED);
+                    bookingRepository.save(ticket.getBooking());
+                    affectedBookings.add(ticket.getBooking());
+                }
+            }
         }
 
         showtime.setStatus(ShowtimeStatus.CANCELLED);
         showtimeRepository.save(showtime);
+
+        // FE-10.3: Gửi thông báo hủy suất chiếu tới toàn bộ khách hàng bị ảnh hưởng
+        if (!affectedBookings.isEmpty()) {
+            notificationService.sendShowtimeCancelledAlert(showtime, new ArrayList<>(affectedBookings));
+        }
     }
 
     @Override
@@ -139,9 +148,17 @@ public class ShowtimeServiceImpl implements ShowtimeService {
             throw new IllegalArgumentException("Chỉ có thể sửa suất chiếu đang ở trạng thái đã lên lịch.");
         }
 
-        // 3. CHẶN SỬA NẾU ĐÃ CÓ NGƯỜI MUA VÉ
-        if (!showtime.getTickets().isEmpty()) {
-            throw new IllegalArgumentException("Không thể sửa! Suất chiếu này đã có khách hàng đặt vé.");
+        // Lưu thông tin lịch chiếu cũ trước khi cập nhật để thông báo cho khách hàng (FE-10.3)
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy");
+        String oldScheduleInfo = showtime.getStartTime().format(fmt) + " (" + showtime.getHall().getHallName() + ")";
+
+        Set<Booking> affectedBookings = new LinkedHashSet<>();
+        if (showtime.getTickets() != null) {
+            for (Ticket t : showtime.getTickets()) {
+                if (t.getBooking() != null && t.getBooking().getStatus() == BookingStatus.CONFIRMED) {
+                    affectedBookings.add(t.getBooking());
+                }
+            }
         }
 
         Movie movie = movieRepository.findById(request.getMovieId())
@@ -191,7 +208,12 @@ public class ShowtimeServiceImpl implements ShowtimeService {
         showtime.setEndTime(endDateTime);
         showtime.setBasePrice(request.getBasePrice());
 
-        showtimeRepository.save(showtime);
+        Showtime updatedShowtime = showtimeRepository.save(showtime);
+
+        // FE-10.3: Gửi thông báo thay đổi lịch chiếu tới các khách hàng đã đặt vé
+        if (!affectedBookings.isEmpty()) {
+            notificationService.sendShowtimeChangedAlert(updatedShowtime, oldScheduleInfo, new ArrayList<>(affectedBookings));
+        }
     }
 
     private boolean violatesMinimumGap(LocalDateTime start1, LocalDateTime end1, LocalDateTime start2, LocalDateTime end2) {
@@ -224,7 +246,6 @@ public class ShowtimeServiceImpl implements ShowtimeService {
         LocalTime closing = branch.getClosingTime();
 
         LocalDateTime openingDateTime = start.toLocalDate().atTime(opening);
-
         LocalDateTime closingDateTime = start.toLocalDate().atTime(closing);
 
        if (closing.isBefore(opening)) {

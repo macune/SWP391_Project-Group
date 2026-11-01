@@ -72,7 +72,7 @@ public class StaffServiceImpl implements StaffService {
         normalizeRequest(request);
         isInfoExists(request.getUsername(), request.getEmail(), request.getPhone());
         if (request.getPassword() == null || request.getPassword().isBlank()) throw new AppException("Mật khẩu không được để trống khi tạo mới!");
-        if (request.getPassword().length() < 6) throw new AppException("Mật khẩu phải từ 6 đến 32 ký tự!");
+        if (request.getPassword().length() < 6 || request.getPassword().length() > 32) throw new AppException("Mật khẩu phải từ 6 đến 32 ký tự!");
         if (!request.getPassword().equals(request.getConfirmPassword())) throw new PasswordNotMatchException();
 
         Branch branch = branchRepository.findById(request.getBranchId()).orElseThrow(BranchNotFoundException::new);
@@ -96,7 +96,7 @@ public class StaffServiceImpl implements StaffService {
         normalizeRequest(request);
         isInfoExists(request.getUsername(), request.getEmail(), request.getPhone());
         if (request.getPassword() == null || request.getPassword().isBlank()) throw new AppException("Mật khẩu không được để trống khi tạo mới!");
-        if (request.getPassword().length() < 6) throw new AppException("Mật khẩu phải từ 6 đến 32 ký tự!");
+        if (request.getPassword().length() < 6 || request.getPassword().length() > 32) throw new AppException("Mật khẩu phải từ 6 đến 32 ký tự!");
         if (!request.getPassword().equals(request.getConfirmPassword())) throw new PasswordNotMatchException();
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

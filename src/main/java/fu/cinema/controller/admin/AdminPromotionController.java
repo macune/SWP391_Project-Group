@@ -4,6 +4,7 @@ import fu.cinema.dto.request.PromotionRequest;
 import fu.cinema.entity.Promotion;
 import fu.cinema.enums.PromotionStatus;
 import fu.cinema.repository.PromotionRepository;
+import fu.cinema.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -16,10 +17,11 @@ import java.util.List;
 @Controller
 @RequestMapping("/admin/promotions")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')") // Chỉ Admin mới được truy cập module này
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminPromotionController {
 
     private final PromotionRepository promotionRepository;
+    private final NotificationService notificationService;
 
     // 1. HIỂN THỊ DANH SÁCH & FORM TẠO MỚI RỖNG
     @GetMapping
@@ -64,8 +66,8 @@ public class AdminPromotionController {
             request.setExpiryDate(promotion.getExpiryDate());
             request.setIsActive(promotion.getStatus() == PromotionStatus.ACTIVE);
 
-            model.addAttribute("coupons", promotionRepository.findAll()); // Giữ bảng dữ liệu bên phải
-            model.addAttribute("coupon", request); // Đẩy dữ liệu cũ ra form
+            model.addAttribute("coupons", promotionRepository.findAll());
+            model.addAttribute("coupon", request);
 
             return "admin/promotion-management";
         } catch (Exception e) {
@@ -78,10 +80,10 @@ public class AdminPromotionController {
     @PostMapping("/save")
     public String savePromotion(@ModelAttribute("coupon") PromotionRequest request, RedirectAttributes redirectAttributes) {
         try {
+            boolean isNewPromotion = (request.getId() == null || request.getId() <= 0);
             Promotion promotion;
 
-            // Kiểm tra ID: Có ID là Sửa, không có ID là Thêm mới
-            if (request.getId() != null && request.getId() > 0) {
+            if (!isNewPromotion) {
                 promotion = promotionRepository.findById(request.getId())
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy mã khuyến mãi để cập nhật!"));
             } else {
@@ -97,8 +99,20 @@ public class AdminPromotionController {
             promotion.setExpiryDate(request.getExpiryDate());
             promotion.setStatus((request.getIsActive() != null && request.getIsActive()) ? PromotionStatus.ACTIVE : PromotionStatus.DISABLED);
 
-            promotionRepository.save(promotion); // Lưu xuống Database
-            redirectAttributes.addFlashAttribute("successMessage", "Đã lưu mã giảm giá thành công!");
+            promotion.setStatus((request.getIsActive() != null && request.getIsActive())
+                    ? PromotionStatus.ACTIVE
+                    : PromotionStatus.DISABLED);
+
+            Promotion savedPromotion = promotionRepository.save(promotion);
+
+            // FE-10.4: Nếu là tạo mã mới và đang ACTIVE -> Tự động gửi thông báo hoặc hẹn giờ JOB-04
+            if (isNewPromotion && savedPromotion.getStatus() == PromotionStatus.ACTIVE) {
+                notificationService.handleNewPromotionNotification(savedPromotion);
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Đã lưu mã giảm giá và kích hoạt thông báo khuyến mãi tới khách hàng!");
+            } else {
+                redirectAttributes.addFlashAttribute("successMessage", "Đã lưu mã giảm giá thành công!");
+            }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi lưu mã: " + e.getMessage());
         }
