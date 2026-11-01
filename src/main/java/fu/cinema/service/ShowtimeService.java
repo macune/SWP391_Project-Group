@@ -11,4 +11,6 @@ public interface ShowtimeService {
             ShowtimeRequest request,
             Long branchId
     );
+    void updateShowtimeStatuses();
+
 }

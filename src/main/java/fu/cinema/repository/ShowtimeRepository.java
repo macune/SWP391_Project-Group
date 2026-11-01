@@ -3,6 +3,7 @@ package fu.cinema.repository;
 import fu.cinema.entity.Showtime;
 import fu.cinema.enums.ShowtimeStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -54,5 +55,32 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
             LocalDateTime start,
             LocalDateTime end,
             ShowtimeStatus status
+    );
+    @Modifying
+    @Query("""
+    UPDATE Showtime s
+    SET s.status = :completed
+    WHERE s.status IN (:scheduled, :showing)
+    AND s.endTime <= :now
+""")
+    int updateCompletedShowtimes(
+            @Param("now") LocalDateTime now,
+            @Param("scheduled") ShowtimeStatus scheduled,
+            @Param("showing") ShowtimeStatus showing,
+            @Param("completed") ShowtimeStatus completed
+    );
+
+    @Modifying
+    @Query("""
+    UPDATE Showtime s
+    SET s.status = :showing
+    WHERE s.status = :scheduled
+    AND s.startTime <= :now
+    AND s.endTime > :now
+""")
+    int updateShowingShowtimes(
+            @Param("now") LocalDateTime now,
+            @Param("scheduled") ShowtimeStatus scheduled,
+            @Param("showing") ShowtimeStatus showing
     );
 }
