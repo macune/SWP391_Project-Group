@@ -97,7 +97,6 @@ public class AdminPromotionController {
             promotion.setMaxDiscountAmount(request.getMaxDiscountAmount());
             promotion.setValidFrom(request.getValidFrom());
             promotion.setExpiryDate(request.getExpiryDate());
-            promotion.setStatus((request.getIsActive() != null && request.getIsActive()) ? PromotionStatus.ACTIVE : PromotionStatus.DISABLED);
 
             promotion.setStatus((request.getIsActive() != null && request.getIsActive())
                     ? PromotionStatus.ACTIVE

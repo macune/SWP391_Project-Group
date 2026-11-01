@@ -618,14 +618,7 @@ public class BookingServiceImpl implements BookingService {
         }
         Booking saved = bookingRepository.save(booking);
 
-        // FE-10.1: Gửi thông báo cập nhật trạng thái đơn hàng
-        if (newStatus == BookingStatus.CANCELLED) {
-            notificationService.sendBookingCancelledAlert(saved);
-        } else if (newStatus == BookingStatus.CONFIRMED) {
-            notificationService.sendBookingConfirmedAlert(saved);
-        } else {
-            notificationService.sendBookingStatusUpdatedAlert(saved);
-        }
+        notificationService.sendBookingCancelledAlert(saved);
     }
 
     // Lấy lịch sử mua vé của người dùng

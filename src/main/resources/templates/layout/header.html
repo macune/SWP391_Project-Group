@@ -55,7 +55,19 @@
 
                 <!-- Đã đăng nhập: Ẩn Đăng nhập & Đăng ký, hiển thị thông tin tài khoản và nút Đăng xuất -->
                 <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-3">
-                    <a th:href="@{/customer/notifications}" class="btn btn-outline-cine btn-sm position-relative px-2" title="Thông báo của tôi">
+
+                    <!-- Chuông thông báo cho CUSTOMER -->
+                    <a sec:authorize="hasRole('CUSTOMER')" th:href="@{/customer/notifications}" class="btn btn-outline-cine btn-sm position-relative px-2" title="Thông báo của tôi">
+                        <i class="fa-solid fa-bell"></i>
+                        <span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              th:text="${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}">
+                            0
+                        </span>
+                    </a>
+
+                    <!-- Chuông thông báo cho ADMIN (Link về trang quản trị thông báo) -->
+                    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/notifications}" class="btn btn-outline-cine btn-sm position-relative px-2" title="Quản trị thông báo">
                         <i class="fa-solid fa-bell"></i>
                         <span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
                               class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
