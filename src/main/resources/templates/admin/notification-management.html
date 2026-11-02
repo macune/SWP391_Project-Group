@@ -21,14 +21,14 @@
             <h4 class="fw-bold mb-1 text-cine-primary">
                 <i class="fa-solid fa-envelope-open-text me-2"></i>Quản trị Thông báo & Cấu hình Email Hệ thống
             </h4>
-            <p class="text-muted small mb-0">Quản lý lịch sử thông báo (FE-10.1 → FE-10.4), mẫu Template Email và cấu hình Gmail SMTP (FE-10.5)</p>
+            <p class="text-muted small mb-0">Quản lý lịch sử thông báo, mẫu Template Email và cấu hình Gmail SMTP </p>
         </div>
 
         <div class="d-flex flex-wrap gap-2">
             <!-- Nút kích hoạt chạy ngay JOB-03 & JOB-04 để demo -->
             <form th:action="@{/admin/notifications/run-jobs}" method="post" class="d-inline">
-                <button type="submit" class="btn btn-outline-cine btn-sm px-3" title="Quét nhắc lịch chiếu 2h (JOB-03) và thông báo hẹn giờ (JOB-04)">
-                    <i class="fa-solid fa-bolt me-1"></i>Chạy quét JOB-03 & JOB-04 ngay
+                <button type="submit" class="btn btn-outline-cine btn-sm px-3" title="Quét nhắc lịch chiếu 2h và thông báo hẹn giờ ">
+                    <i class="fa-solid fa-bolt me-1"></i>Chạy quét   ngay
                 </button>
             </form>
 
@@ -69,7 +69,7 @@
             <div class="card border-cine shadow-sm p-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <div class="text-muted small">Đang hẹn giờ chờ gửi (SCHEDULED - JOB-04)</div>
+                        <div class="text-muted small">Đang hẹn giờ chờ gửi </div>
                         <h4 class="fw-bold text-warning mb-0" th:text="${totalScheduled}">0</h4>
                     </div>
                     <i class="fa-solid fa-clock fs-2 text-warning opacity-75"></i>
@@ -453,7 +453,7 @@
 
                         <div class="row g-3 align-items-center">
                             <div class="col-md-6">
-                                <label class="form-label fw-medium">Hẹn giờ gửi (Tùy chọn - Phục vụ JOB-04):</label>
+                                <label class="form-label fw-medium">Hẹn giờ gửi:</label>
                                 <input type="datetime-local" name="scheduledAt" class="form-control border-cine">
                             </div>
                             <div class="col-md-6 pt-4">

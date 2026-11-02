@@ -3,6 +3,7 @@ package fu.cinema.repository;
 import fu.cinema.entity.Booking;
 import fu.cinema.enums.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -51,4 +52,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("status") BookingStatus status,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
+
+    @Modifying
+    @Query("UPDATE Booking b SET b.status = 'CONFIRMED' WHERE b.bookingId = :bookingId AND b.status = 'PENDING'")
+    int confirmBookingIfPending(@Param("bookingId") Long bookingId);
 }

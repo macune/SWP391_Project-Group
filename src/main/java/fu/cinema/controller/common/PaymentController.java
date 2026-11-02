@@ -40,32 +40,42 @@ public class PaymentController {
 
     @PostMapping("/vnpay/create")
     public String createVNPayPayment(@RequestParam("bookingId") Long bookingId, HttpServletRequest request) {
+        // Tạo một DTO Request chứa mã đơn hàng và IP của người dùng (VNPay yêu cầu phải có IP)
         PaymentCreateRequest createRequest = PaymentCreateRequest.builder()
                 .bookingId(bookingId)
-                .ipAddress(VNPayConfig.getIpAddress(request)) // Tách IP tại Controller
+                .ipAddress(VNPayConfig.getIpAddress(request))
                 .build();
 
+        // Gọi Service để tính toán chữ ký bảo mật và tạo ra đường dẫn (URL) trỏ sang VNPay
         PaymentUrlResponse response = paymentService.createVNPayUrl(createRequest);
+
+        // Dùng lệnh "redirect:" để ép trình duyệt của người dùng tự động nhảy sang trang của ngân hàng
         return "redirect:" + response.getPaymentUrl();
     }
 
     @GetMapping("/vnpay-return")
     public String vnpayReturn(@RequestParam Map<String, String> allParams, Authentication auth, RedirectAttributes redirectAttributes) {
-        // Validation được che giấu toàn bộ dưới Service thông qua DTO
+        // allParams chứa TẤT CẢ các thông số mà VNPay gửi về trên thanh URL.
+        // Chuyển toàn bộ mảng này xuống Service để kiểm tra chữ ký bảo mật (Chống fake kết quả)
         PaymentCallbackResponse validationResponse = paymentService.validateVNPayCallback(allParams);
 
         Long bookingId = validationResponse.getBookingId();
+
+        // Chuẩn bị sẵn 2 đường dẫn: 1 cho Staff, 1 cho Khách hàng
         boolean isStaff = auth != null && auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_STAFF"));
         String successRedirect = isStaff ? "redirect:/staff/bookings/" + bookingId : "redirect:/customer/bookings/" + bookingId + "/tickets";
         String failRedirect = "redirect:/payment/method?bookingId=" + bookingId;
 
+        // Nếu Service xác nhận chữ ký đúng VÀ mã phản hồi là "00" (Thành công)
         if (validationResponse.isSuccess()) {
+            // Gọi hàm chốt đơn (Xuất vé, trừ kho, lưu lịch sử)
             paymentService.processSuccessfulPayment(bookingId, PaymentMethod.VNPAY, validationResponse.getTransactionNo());
             redirectAttributes.addFlashAttribute("successMessage", "Thanh toán VNPay thành công! Vé điện tử đã sẵn sàng.");
-            return successRedirect;
+            return successRedirect; // Điều hướng tới trang Xem Vé/Hóa Đơn
         } else {
+            // Nếu giao dịch bị hủy hoặc lỗi chữ ký
             redirectAttributes.addFlashAttribute("errorMessage", validationResponse.getMessage());
-            return failRedirect;
+            return failRedirect; // Đẩy về lại trang Chọn phương thức thanh toán
         }
     }
 
