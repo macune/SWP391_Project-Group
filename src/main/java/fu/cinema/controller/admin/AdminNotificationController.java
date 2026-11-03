@@ -117,7 +117,7 @@ public class AdminNotificationController {
         return "redirect:/admin/notifications?tab=history";
     }
 
-    // Nút kích hoạt chạy ngay JOB-03 & JOB-04
+    // Nút kích hoạt chạy ngay
     @PostMapping("/admin/notifications/run-jobs")
     @PreAuthorize("hasRole('ADMIN')")
     public String triggerBackgroundJobsNow(RedirectAttributes redirectAttributes) {
@@ -125,7 +125,7 @@ public class AdminNotificationController {
             int reminders = notificationService.processShowtimeRemindersJob();
             int scheduled = notificationService.processScheduledNotificationsJob();
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Đã chạy quét ngầm thành công! [JOB-03 Nhắc lịch chiếu: " + reminders + " thông báo] - [JOB-04 Phát hành hẹn giờ: " + scheduled + " thông báo].");
+                    "Đã chạy quét ngầm thành công! [Nhắc lịch chiếu: " + reminders + " thông báo] - [Phát hành hẹn giờ: " + scheduled + " thông báo].");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi chạy Background Jobs: " + e.getMessage());
         }
