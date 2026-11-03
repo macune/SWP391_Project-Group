@@ -25,10 +25,10 @@
         </div>
 
         <div class="d-flex flex-wrap gap-2">
-            <!-- Nút kích hoạt chạy ngay JOB-03 & JOB-04 để demo -->
+            <!-- Nút kích hoạt chạy ngay để demo -->
             <form th:action="@{/admin/notifications/run-jobs}" method="post" class="d-inline">
                 <button type="submit" class="btn btn-outline-cine btn-sm px-3" title="Quét nhắc lịch chiếu 2h và thông báo hẹn giờ ">
-                    <i class="fa-solid fa-bolt me-1"></i>Chạy quét   ngay
+                    <i class="fa-solid fa-bolt me-1"></i>Chạy quét ngay
                 </button>
             </form>
 
@@ -215,7 +215,7 @@
     </div>
 
     <!-- =========================================================================
-         TAB 2: QUẢN LÝ TEMPLATE EMAIL & THÔNG BÁO (FE-10.5)
+         TAB 2: QUẢN LÝ TEMPLATE EMAIL & THÔNG BÁO
          ========================================================================= -->
     <div th:if="${activeTab == 'templates'}">
         <div class="alert bg-cine-soft border-cine mb-3 small">
@@ -280,7 +280,7 @@
     </div>
 
     <!-- =========================================================================
-         TAB 3: CẤU HÌNH HỆ THỐNG MAIL (GMAIL SMTP - FE-10.5)
+         TAB 3: CẤU HÌNH HỆ THỐNG MAIL
          ========================================================================= -->
     <div th:if="${activeTab == 'config'}">
         <div class="row g-4">
@@ -368,7 +368,7 @@
     </div>
 
     <!-- =========================================================================
-         MODAL 1: PHÁT THÔNG BÁO MÃ KHUYẾN MÃI HÀNG LOẠT (FE-10.4)
+         MODAL 1: PHÁT THÔNG BÁO MÃ KHUYẾN MÃI HÀNG LOẠT
          ========================================================================= -->
     <div class="modal fade" id="broadcastPromoModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -394,7 +394,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-medium">Thời điểm phát hành (Để trống nếu muốn gửi ngay):</label>
                             <input type="datetime-local" name="scheduledAt" class="form-control border-cine">
-                            <small class="text-muted">Nếu chọn thời gian trong tương lai, thông báo sẽ ở trạng thái <strong>SCHEDULED</strong> và được <strong>JOB-04</strong> tự động gửi khi đến giờ.</small>
+                            <small class="text-muted">Nếu chọn thời gian trong tương lai, thông báo sẽ ở trạng thái <strong>SCHEDULED</strong> và được tự động gửi khi đến giờ.</small>
                         </div>
                     </div>
                     <div class="modal-footer">

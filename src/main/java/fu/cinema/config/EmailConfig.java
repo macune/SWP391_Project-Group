@@ -89,7 +89,7 @@ public class EmailConfig {
     public void initDefaultTemplates() {
         if (!templates.isEmpty()) return;
 
-        addTemplate(1L, "BOOKING_CONFIRMED", "Xác nhận đặt vé thành công (FE-10.1)", NotificationType.BOOKING,
+        addTemplate(1L, "BOOKING_CONFIRMED", "Xác nhận đặt vé thành công", NotificationType.BOOKING,
                 "[CineFlow] Xác nhận đặt vé thành công - Đơn #{{bookingId}}",
                 "Đơn đặt vé #{{bookingId}} cho phim {{movieTitle}} ({{showtime}}) tại {{branchName}} - Ghế: {{seats}} đã được xác nhận thành công.",
                 "<div style='font-family:Arial,sans-serif;padding:20px;border:1px solid #eee;border-radius:8px;'>"
@@ -107,7 +107,7 @@ public class EmailConfig {
                         + "<p>Vui lòng xuất trình mã QR vé điện tử tại quầy soát vé trước giờ chiếu 15 phút.</p>"
                         + "</div>");
 
-        addTemplate(2L, "BOOKING_CANCELLED", "Thông báo hủy đơn đặt vé (FE-10.1)", NotificationType.BOOKING,
+        addTemplate(2L, "BOOKING_CANCELLED", "Thông báo hủy đơn đặt vé", NotificationType.BOOKING,
                 "[CineFlow] Thông báo hủy đơn đặt vé #{{bookingId}}",
                 "Đơn đặt vé #{{bookingId}} (Phim: {{movieTitle}}) của bạn đã được hủy. Ghế {{seats}} đã được giải phóng.",
                 "<div style='font-family:Arial,sans-serif;padding:20px;border:1px solid #eee;border-radius:8px;'>"
@@ -117,7 +117,7 @@ public class EmailConfig {
                         + "<p>Nếu bạn đã thanh toán trực tuyến, vui lòng liên hệ quầy vé tại chi nhánh {{branchName}} để được hỗ trợ hoàn tiền theo quy định.</p>"
                         + "</div>");
 
-        addTemplate(3L, "BOOKING_STATUS_UPDATED", "Cập nhật trạng thái đơn đặt vé (FE-10.1)", NotificationType.BOOKING,
+        addTemplate(3L, "BOOKING_STATUS_UPDATED", "Cập nhật trạng thái đơn đặt vé", NotificationType.BOOKING,
                 "[CineFlow] Cập nhật trạng thái đơn đặt vé #{{bookingId}}",
                 "Đơn đặt vé #{{bookingId}} (Phim: {{movieTitle}}) vừa được cập nhật trạng thái thành: {{status}}.",
                 "<div style='font-family:Arial,sans-serif;padding:20px;border:1px solid #eee;border-radius:8px;'>"
@@ -126,7 +126,7 @@ public class EmailConfig {
                         + "<p>Trạng thái đơn đặt vé <strong>#{{bookingId}}</strong> (Phim: <strong>{{movieTitle}}</strong>) của bạn đã được cập nhật thành: <strong>{{status}}</strong>.</p>"
                         + "</div>");
 
-        addTemplate(4L, "PAYMENT_SUCCESS", "Thông báo thanh toán thành công (FE-10.2)", NotificationType.PAYMENT,
+        addTemplate(4L, "PAYMENT_SUCCESS", "Thông báo thanh toán thành công", NotificationType.PAYMENT,
                 "[CineFlow] Biên lai thanh toán thành công - Đơn #{{bookingId}}",
                 "Thanh toán thành công {{totalAmount}} cho đơn #{{bookingId}} qua {{paymentMethod}} (Mã GD: {{transactionNo}}).",
                 "<div style='font-family:Arial,sans-serif;padding:20px;border:1px solid #eee;border-radius:8px;'>"
@@ -140,7 +140,7 @@ public class EmailConfig {
                         + "</ul>"
                         + "</div>");
 
-        addTemplate(5L, "PAYMENT_FAILED", "Thông báo thanh toán thất bại (FE-10.2)", NotificationType.PAYMENT,
+        addTemplate(5L, "PAYMENT_FAILED", "Thông báo thanh toán thất bại", NotificationType.PAYMENT,
                 "[CineFlow] Giao dịch thanh toán không thành công - Đơn #{{bookingId}}",
                 "Giao dịch thanh toán cho đơn #{{bookingId}} không thành công. Lý do: {{reason}}. Vui lòng thử lại trước khi hết thời gian giữ ghế.",
                 "<div style='font-family:Arial,sans-serif;padding:20px;border:1px solid #eee;border-radius:8px;'>"
@@ -151,7 +151,7 @@ public class EmailConfig {
                         + "<p>Vui lòng thực hiện thanh toán lại trong thời gian giữ ghế hoặc đặt lại ghế mới.</p>"
                         + "</div>");
 
-        addTemplate(6L, "SHOWTIME_REMINDER", "Nhắc nhở giờ chiếu trước 2 tiếng (FE-10.3 - JOB-03)", NotificationType.SHOWTIME,
+        addTemplate(6L, "SHOWTIME_REMINDER", "Nhắc nhở giờ chiếu trước 2 tiếng", NotificationType.SHOWTIME,
                 "[CineFlow] Nhắc lịch chiếu: Phim {{movieTitle}} sắp bắt đầu!",
                 "Nhắc hẹn: Suất chiếu phim {{movieTitle}} của bạn tại {{branchName}} ({{hallName}}) sẽ bắt đầu lúc {{showtime}}. Ghế: {{seats}}.",
                 "<div style='font-family:Arial,sans-serif;padding:20px;border:1px solid #eee;border-radius:8px;'>"
@@ -166,7 +166,7 @@ public class EmailConfig {
                         + "<p>Chúc bạn có những giây phút thưởng thức điện ảnh tuyệt vời tại CineFlow!</p>"
                         + "</div>");
 
-        addTemplate(7L, "SHOWTIME_CHANGED", "Thông báo thay đổi lịch chiếu (FE-10.3)", NotificationType.SHOWTIME,
+        addTemplate(7L, "SHOWTIME_CHANGED", "Thông báo thay đổi lịch chiếu", NotificationType.SHOWTIME,
                 "[CineFlow] Thông báo thay đổi lịch chiếu phim {{movieTitle}}",
                 "Lịch chiếu phim {{movieTitle}} (Đơn #{{bookingId}}) đã thay đổi từ [{{oldSchedule}}] sang [{{showtime}} - {{hallName}}] tại {{branchName}}.",
                 "<div style='font-family:Arial,sans-serif;padding:20px;border:1px solid #eee;border-radius:8px;'>"
@@ -180,7 +180,7 @@ public class EmailConfig {
                         + "<p>Rất mong quý khách thông cảm vì sự bất tiện này.</p>"
                         + "</div>");
 
-        addTemplate(8L, "SHOWTIME_CANCELLED", "Thông báo hủy suất chiếu (FE-10.3)", NotificationType.SHOWTIME,
+        addTemplate(8L, "SHOWTIME_CANCELLED", "Thông báo hủy suất chiếu", NotificationType.SHOWTIME,
                 "[CineFlow] Thông báo hủy suất chiếu phim {{movieTitle}}",
                 "Suất chiếu phim {{movieTitle}} lúc {{showtime}} tại {{branchName}} ({{hallName}}) đã bị hủy vì lý do vận hành. Đơn #{{bookingId}} sẽ được hoàn tiền 100%.",
                 "<div style='font-family:Arial,sans-serif;padding:20px;border:1px solid #eee;border-radius:8px;'>"
@@ -190,7 +190,7 @@ public class EmailConfig {
                         + "<p>Đơn đặt vé <strong>#{{bookingId}}</strong> của quý khách đã được chuyển sang trạng thái Hủy và được hỗ trợ hoàn tiền 100% tại quầy dịch vụ.</p>"
                         + "</div>");
 
-        addTemplate(9L, "PROMOTION_ALERT", "Thông báo Khuyến mãi & Mã giảm giá mới (FE-10.4)", NotificationType.PROMOTION,
+        addTemplate(9L, "PROMOTION_ALERT", "Thông báo Khuyến mãi & Mã giảm giá mới", NotificationType.PROMOTION,
                 "[CineFlow] 🎁 Ưu đãi mới: Nhập mã {{promoCode}} giảm ngay {{discountInfo}}!",
                 "Ưu đãi hot từ CineFlow: Sử dụng mã giảm giá [{{promoCode}}] để được giảm {{discountInfo}} (Áp dụng từ {{validFrom}} đến {{expiryDate}}).",
                 "<div style='font-family:Arial,sans-serif;padding:20px;border:1px solid #eee;border-radius:8px;'>"
