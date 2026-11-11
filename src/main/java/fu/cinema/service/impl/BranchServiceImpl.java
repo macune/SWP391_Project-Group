@@ -127,33 +127,21 @@ public class BranchServiceImpl implements BranchService {
     public void deleteBranch(Long branchId) {
         Branch existing = branchRepository.findById(branchId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh để xóa!"));
-
-        // 1. Kiểm tra đã có vé thuộc chi nhánh chưa (qua Showtime/Hall)
         if (ticketRepository.existsByShowtime_Hall_Branch_BranchId(branchId)) {
             throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đã có vé phát sinh thuộc chi nhánh này!");
         }
-
-        // 2. Kiểm tra đã có lịch chiếu (Showtime) thuộc chi nhánh chưa
         if (showtimeRepository.existsByHall_Branch_BranchId(branchId)) {
             throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đã có lịch chiếu (Showtime) thuộc chi nhánh này!");
         }
-
-        // 3. Kiểm tra đã có phòng chiếu (Hall) thuộc chi nhánh chưa
         if (hallRepository.existsByBranchBranchId(branchId)) {
             throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đã có phòng chiếu (Hall) thuộc chi nhánh này!");
         }
-
-        // 4. Kiểm tra đã có tồn kho F&B (BranchStock) chưa
         if (branchStockRepository.existsByBranch_BranchId(branchId)) {
             throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đã có tồn kho F&B (BranchStock) thuộc chi nhánh này!");
         }
-
-        // 5. Kiểm tra đang có nhân sự (Staff / Manager) gắn với chi nhánh không
         if (staffRepository.existsByBranchBranchId(branchId)) {
             throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đang có nhân sự (Staff / Manager) gắn với chi nhánh này!");
         }
-
-        // Xóa cứng trong database khi thỏa mãn tất cả điều kiện
         branchRepository.delete(existing);
     }
 
