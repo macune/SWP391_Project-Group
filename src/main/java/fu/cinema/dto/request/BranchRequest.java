@@ -24,8 +24,8 @@ public class BranchRequest {
     @NotBlank(message = "Địa chỉ chi nhánh không được để trống")
     private String address;
 
-    @NotBlank(message = "Hotline không được để trống")
-    @Pattern(regexp = "^(0|\\+84)[0-9]{8,10}$", message = "Số hotline không hợp lệ (VD: 0901234567)")
+    @NotBlank(message = "Số điện thoại (Hotline) không được để trống")
+    @Pattern(regexp = "^0[0-9]{9}$", message = "Số điện thoại phải gồm đúng 10 chữ số (VD: 0901234567)")
     private String hotline;
 
     @NotNull(message = "Giờ mở cửa không được để trống")

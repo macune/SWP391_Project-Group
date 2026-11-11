@@ -13,4 +13,6 @@ public interface BranchStockRepository extends JpaRepository<BranchStock, Long> 
     List<BranchStock> findByBranch_BranchId(Long branchId);
 
     Optional<BranchStock> findByBranch_BranchIdAndItem_ItemId(Long branchId, Long itemId);
+
+    boolean existsByBranch_BranchId(Long branchId);
 }

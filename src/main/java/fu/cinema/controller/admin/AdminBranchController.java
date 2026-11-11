@@ -34,15 +34,20 @@ public class AdminBranchController {
                             BindingResult bindingResult,
                             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage",
+            redirectAttributes.addFlashAttribute("addBranchError",
                     bindingResult.getAllErrors().getFirst().getDefaultMessage());
+            redirectAttributes.addFlashAttribute("newBranch", request);
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.newBranch", bindingResult);
+            redirectAttributes.addFlashAttribute("openAddModal", true);
             return "redirect:/admin/branches";
         }
         try {
             branchService.createBranch(request);
             redirectAttributes.addFlashAttribute("successMessage", "Thêm chi nhánh mới thành công!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("addBranchError", e.getMessage());
+            redirectAttributes.addFlashAttribute("newBranch", request);
+            redirectAttributes.addFlashAttribute("openAddModal", true);
         }
         return "redirect:/admin/branches";
     }
