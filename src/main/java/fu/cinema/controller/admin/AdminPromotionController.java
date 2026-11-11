@@ -83,15 +83,29 @@ public class AdminPromotionController {
             boolean isNewPromotion = (request.getId() == null || request.getId() <= 0);
             Promotion promotion;
 
-            if (!isNewPromotion) {
+            // 1. DỌN SẠCH KHOẢNG TRẮNG TRƯỚC KHI XỬ LÝ ĐỂ CHỐNG LÁCH LUẬT
+            String cleanCode = request.getCode().trim();
+
+            if (isNewPromotion) {
+                // KIỂM TRA TRÙNG LẶP KHI TẠO MỚI
+                if (promotionRepository.existsByCodeIgnoreCase(cleanCode)) {
+                    throw new RuntimeException("Mã khuyến mãi '" + cleanCode + "' đã tồn tại! Vui lòng nhập mã khác.");
+                }
+                promotion = new Promotion();
+            } else {
+                // TÌM BẢN GHI CŨ KHI CẬP NHẬT
                 promotion = promotionRepository.findById(request.getId())
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy mã khuyến mãi để cập nhật!"));
-            } else {
-                promotion = new Promotion();
+
+                // KIỂM TRA TRÙNG LẶP KHI CẬP NHẬT
+                if (!promotion.getCode().equalsIgnoreCase(cleanCode)
+                        && promotionRepository.existsByCodeIgnoreCase(cleanCode)) {
+                    throw new RuntimeException("Mã khuyến mãi '" + cleanCode + "' đã tồn tại! Vui lòng nhập mã khác.");
+                }
             }
 
-            // Gắn dữ liệu từ form vào Entity
-            promotion.setCode(request.getCode());
+            // 2. GẮN DỮ LIỆU VÀO ENTITY (Sử dụng cleanCode đã làm sạch)
+            promotion.setCode(cleanCode);
             promotion.setDiscountPercentage(request.getDiscountPercentage());
             promotion.setDiscountType(request.getDiscountType() != null ? request.getDiscountType() : "PERCENTAGE");
             promotion.setMaxDiscountAmount(request.getMaxDiscountAmount());
@@ -104,7 +118,6 @@ public class AdminPromotionController {
 
             Promotion savedPromotion = promotionRepository.save(promotion);
 
-            // FE-10.4: Nếu là tạo mã mới và đang ACTIVE -> Tự động gửi thông báo hoặc hẹn giờ JOB-04
             if (isNewPromotion && savedPromotion.getStatus() == PromotionStatus.ACTIVE) {
                 notificationService.handleNewPromotionNotification(savedPromotion);
                 redirectAttributes.addFlashAttribute("successMessage",
@@ -113,7 +126,7 @@ public class AdminPromotionController {
                 redirectAttributes.addFlashAttribute("successMessage", "Đã lưu mã giảm giá thành công!");
             }
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi lưu mã: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/admin/promotions";
     }

@@ -15,6 +15,7 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> { //
     List<Promotion> findByCodeContainingIgnoreCase(String code);
 
     Optional<Promotion> findByCode(String code);
+    boolean existsByCodeIgnoreCase(String code);
 
     List<Promotion> findByStatusAndExpiryDateAfter(PromotionStatus promotionStatus, LocalDateTime now);
 }
