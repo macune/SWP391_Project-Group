@@ -28,7 +28,7 @@ public class AdminPromotionController {
     public String viewPromotions(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
         List<Promotion> promotions;
 
-        // Lọc theo từ khóa (nếu có)
+        // Lọc theo từ khóa
         if (keyword != null && !keyword.trim().isEmpty()) {
             promotions = promotionRepository.findByCodeContainingIgnoreCase(keyword.trim());
             model.addAttribute("keyword", keyword);
@@ -83,7 +83,6 @@ public class AdminPromotionController {
             boolean isNewPromotion = (request.getId() == null || request.getId() <= 0);
             Promotion promotion;
 
-            // 1. DỌN SẠCH KHOẢNG TRẮNG TRƯỚC KHI XỬ LÝ ĐỂ CHỐNG LÁCH LUẬT
             String cleanCode = request.getCode().trim();
 
             if (isNewPromotion) {
@@ -104,7 +103,7 @@ public class AdminPromotionController {
                 }
             }
 
-            // 2. GẮN DỮ LIỆU VÀO ENTITY (Sử dụng cleanCode đã làm sạch)
+            // 2. GẮN DỮ LIỆU VÀO ENTITY
             promotion.setCode(cleanCode);
             promotion.setDiscountPercentage(request.getDiscountPercentage());
             promotion.setDiscountType(request.getDiscountType() != null ? request.getDiscountType() : "PERCENTAGE");
