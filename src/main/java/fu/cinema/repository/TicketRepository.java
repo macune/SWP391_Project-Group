@@ -77,4 +77,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     );
 
     Page<Ticket> findByBooking_Account_UsernameAndStatusNotOrderByBooking_BookingTimeDesc(String username, TicketStatus excludedStatus, Pageable pageable);
+
+    boolean existsByShowtime_Hall_Branch_BranchId(Long branchId);
 }

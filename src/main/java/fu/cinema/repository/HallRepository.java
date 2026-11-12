@@ -10,4 +10,5 @@ import java.util.List;
 public interface HallRepository extends JpaRepository<Hall, Long> {
     List<Hall> findByBranchBranchId(Long branchId);
     boolean existsByBranchBranchIdAndHallName(Long branchId, String hallName);
+    boolean existsByBranchBranchId(Long branchId);
 }

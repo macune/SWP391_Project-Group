@@ -13,7 +13,7 @@
 </head>
 <body>
 
-<div id="page-content" class="container-fluid">
+<div id="page-content" class="container-fluid" th:attr="data-open-add-modal=${openAddModal}">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="fw-bold mb-0 text-cine-primary">🏢 Danh sách Chi nhánh hệ thống</h4>
@@ -32,10 +32,10 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <!-- Thanh Tìm kiếm theo tên & Bộ lọc vị trí -->
+    <!-- Thanh Tìm kiếm theo tên, Bộ lọc vị trí & Bộ lọc trạng thái -->
     <div class="card border-cine p-3 mb-3 bg-white shadow-sm">
         <div class="row g-2 align-items-center">
-            <div class="col-md-5">
+            <div class="col-md-4">
                 <input type="text" id="searchNameInput" class="form-control border-cine"
                        placeholder="🔍 Tìm kiếm theo tên hoặc địa chỉ chi nhánh..." onkeyup="filterTable()">
             </div>
@@ -44,9 +44,15 @@
                     <option value="">-- Tất cả Tỉnh/Thành phố --</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <select id="filterWardSelect" class="form-select border-cine" onchange="filterTable()">
                     <option value="">-- Tất cả Quận/Huyện --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="filterStatusSelect" class="form-select border-cine" onchange="filterTable()">
+                    <option value="">-- Tất cả Trạng thái --</option>
+                    <option th:each="st : ${statuses}" th:value="${st.name()}" th:text="${st}"></option>
                 </select>
             </div>
             <div class="col-md-1">
@@ -77,14 +83,14 @@
                 <tr th:if="${#lists.isEmpty(branches)}">
                     <td colspan="8" class="text-center py-4 text-cine-pastel">Chưa có chi nhánh nào được tạo.</td>
                 </tr>
-                <tr th:each="b, iterStat : ${branches}">
+                <tr th:each="b, iterStat : ${branches}" th:data-status="${b.status.name()}">
                     <td class="ps-3 fw-bold" th:text="${iterStat.count}">1</td>
                     <td class="fw-semibold text-cine-primary branch-name" th:text="${b.branchName}">CineFlow Hà Nội</td>
                     <td class="branch-address" th:text="${b.address}">Số 144 Xuân Thủy, Cầu Giấy, Hà Nội</td>
                     <td th:text="${b.hotline}">0123456789</td>
                     <td th:text="${#temporals.format(b.openingTime, 'HH:mm') + ' - ' + #temporals.format(b.closingTime, 'HH:mm')}">08:00 - 23:30</td>
                     <td>
-                        <span class="badge"
+                        <span class="badge branch-status"
                               th:classappend="${b.status.name() == 'ACTIVE' ? 'bg-cine-primary' : (b.status.name() == 'MAINTENANCE' ? 'bg-warning text-dark' : 'bg-cine-hot')}"
                               th:text="${b.status}">ACTIVE</span>
                     </td>
@@ -124,7 +130,7 @@
                             <i class="fa-solid fa-pen-to-square"></i> Sửa
                         </button>
                         <form th:action="@{/admin/branches/delete/{id}(id=${b.branchId})}" method="post" class="d-inline"
-                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa chi nhánh này?');">
+                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa vĩnh viễn chi nhánh này khỏi hệ thống?');">
                             <button type="submit" class="btn btn-sm btn-cine">
                                 <i class="fa-solid fa-trash"></i> Xóa
                             </button>
@@ -146,6 +152,12 @@
                 </div>
                 <form th:action="@{/admin/branches/add}" th:object="${newBranch}" method="post" onsubmit="updateAddress()">
                     <div class="modal-body">
+                        <!-- Thông báo lỗi ngay trên trang/modal Add Branch -->
+                        <div th:if="${addBranchError}" class="alert bg-cine-hot text-white alert-dismissible fade show mb-3" role="alert">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i><span th:text="${addBranchError}"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label fw-medium">Tên chi nhánh <span class="text-cine-primary">*</span></label>
                             <input type="text" th:field="*{branchName}" class="form-control border-cine" placeholder="Ví dụ: CineFlow Cầu Giấy" required>
@@ -166,7 +178,7 @@
                             </div>
                         </div>
 
-                        <!-- Ô NHẬP ĐỊA CHỈ CHI TIẾT MỚI BỔ SUNG -->
+                        <!-- Ô NHẬP ĐỊA CHỈ CHI TIẾT -->
                         <div class="mb-3">
                             <label class="form-label fw-medium">Địa chỉ chi tiết (Số nhà, Tên đường, Tòa nhà...) <span class="text-cine-primary">*</span></label>
                             <input type="text" id="detailAddressInput" class="form-control border-cine"
@@ -178,8 +190,10 @@
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-medium">Hotline <span class="text-cine-primary">*</span></label>
-                                <input type="text" th:field="*{hotline}" class="form-control border-cine" placeholder="0901234567" required>
+                                <label class="form-label fw-medium">Hotline (10 chữ số) <span class="text-cine-primary">*</span></label>
+                                <input type="text" th:field="*{hotline}" class="form-control border-cine"
+                                       placeholder="0901234567" maxlength="10" pattern="[0-9]{10}"
+                                       title="Số điện thoại phải gồm đúng 10 chữ số" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium">Trạng thái ban đầu</label>
@@ -252,8 +266,10 @@
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-medium">Hotline <span class="text-cine-primary">*</span></label>
-                                <input type="text" id="editHotline" name="hotline" class="form-control border-cine" required>
+                                <label class="form-label fw-medium">Hotline (10 chữ số) <span class="text-cine-primary">*</span></label>
+                                <input type="text" id="editHotline" name="hotline" class="form-control border-cine"
+                                       maxlength="10" pattern="[0-9]{10}"
+                                       title="Số điện thoại phải gồm đúng 10 chữ số" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium">Trạng thái <span class="text-cine-primary">*</span></label>
@@ -361,8 +377,52 @@
                 editCitySelect.appendChild(new Option(city.name, index));
                 filterCitySelect.appendChild(new Option(city.name, index));
             });
+
+            // Khôi phục lại địa chỉ cũ trên form Thêm mới nếu có lỗi trả về
+            const savedAddAddress = document.getElementById('finalAddress').value;
+            if (savedAddAddress) {
+                restoreAddAddress(savedAddAddress);
+            }
         })
         .catch(err => console.error("Không thể tải file locations.json:", err));
+
+    // Tự động mở lại Modal Thêm Chi Nhánh nếu dữ liệu thêm mới không hợp lệ
+    document.addEventListener("DOMContentLoaded", function () {
+        const pageContent = document.getElementById('page-content');
+        if (pageContent && pageContent.getAttribute('data-open-add-modal') === 'true') {
+            const addModalEl = document.getElementById('addBranchModal');
+            if (addModalEl) {
+                const addModal = new bootstrap.Modal(addModalEl);
+                addModal.show();
+            }
+        }
+    });
+
+    function restoreAddAddress(address) {
+        const citySelect = document.getElementById('citySelect');
+        const wardSelect = document.getElementById('wardSelect');
+        const detailInput = document.getElementById('detailAddressInput');
+
+        detailInput.value = address;
+        if (address.includes(',')) {
+            const parts = address.split(',').map(s => s.trim());
+            if (parts.length >= 2) {
+                const city = parts[parts.length - 1];
+                const ward = parts[parts.length - 2];
+                const detailPart = parts.slice(0, parts.length - 2).join(', ');
+
+                const cityIndex = locationData.findIndex(item => item.name.toLowerCase() === city.toLowerCase());
+                if (cityIndex !== -1) {
+                    citySelect.value = cityIndex;
+                    loadWards();
+                    wardSelect.value = ward;
+                    detailInput.value = detailPart;
+                }
+            }
+        }
+        document.getElementById('finalAddress').value = address;
+        document.getElementById('previewAddAddress').innerText = address || "Chưa nhập";
+    }
 
     function loadWards() {
         const cityIndex = document.getElementById('citySelect').value;
@@ -444,7 +504,6 @@
         editWardSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
         editDetailInput.value = address;
 
-        // Tách ngược chuỗi "Số nhà/Đường, Quận/Huyện, Tỉnh/Thành phố" từ phải qua trái
         if (address.includes(',')) {
             const parts = address.split(',').map(s => s.trim());
             if (parts.length >= 2) {
@@ -486,6 +545,7 @@
         document.getElementById("searchNameInput").value = "";
         document.getElementById("filterCitySelect").value = "";
         document.getElementById("filterWardSelect").innerHTML = '<option value="">-- Tất cả Quận/Huyện --</option>';
+        document.getElementById("filterStatusSelect").value = "";
         filterTable();
     }
 
@@ -494,6 +554,7 @@
         const citySelect = document.getElementById("filterCitySelect");
         const selectedCity = citySelect.value !== "" ? citySelect.options[citySelect.selectedIndex].text.toLowerCase().trim() : "";
         const selectedWard = document.getElementById("filterWardSelect").value.toLowerCase().trim();
+        const selectedStatus = document.getElementById("filterStatusSelect").value.trim();
 
         const rows = document.querySelectorAll("#branchTable tbody tr");
 
@@ -503,12 +564,14 @@
             if (nameCol && addressCol) {
                 const name = nameCol.innerText.toLowerCase();
                 const address = addressCol.innerText.toLowerCase();
+                const rowStatus = row.getAttribute("data-status") || "";
 
                 const keywordMatch = !keyword || name.includes(keyword) || address.includes(keyword);
                 const cityMatch = !selectedCity || address.includes(selectedCity);
                 const wardMatch = !selectedWard || address.includes(selectedWard);
+                const statusMatch = !selectedStatus || rowStatus === selectedStatus;
 
-                row.style.display = (keywordMatch && cityMatch && wardMatch) ? "" : "none";
+                row.style.display = (keywordMatch && cityMatch && wardMatch && statusMatch) ? "" : "none";
             }
         });
     }

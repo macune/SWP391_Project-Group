@@ -8,14 +8,14 @@ import fu.cinema.entity.Staff;
 import fu.cinema.enums.AccountStatus;
 import fu.cinema.enums.BranchStatus;
 import fu.cinema.enums.Role;
-import fu.cinema.repository.AccountRepository;
-import fu.cinema.repository.BranchRepository;
-import fu.cinema.repository.StaffRepository;
+import fu.cinema.enums.ShowtimeStatus;
+import fu.cinema.repository.*;
 import fu.cinema.service.BranchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -26,6 +26,10 @@ public class BranchServiceImpl implements BranchService {
     private final BranchRepository branchRepository;
     private final AccountRepository accountRepository;
     private final StaffRepository staffRepository;
+    private final HallRepository hallRepository;
+    private final ShowtimeRepository showtimeRepository;
+    private final TicketRepository ticketRepository;
+    private final BranchStockRepository branchStockRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -41,15 +45,27 @@ public class BranchServiceImpl implements BranchService {
 
     @Override
     public BranchResponse createBranch(BranchRequest request) {
-        String cleanName = request.getBranchName().trim();
-        if (branchRepository.existsByBranchName(cleanName)) {
+        String cleanName = request.getBranchName() != null ? request.getBranchName().trim() : "";
+        String cleanHotline = request.getHotline() != null ? request.getHotline().trim() : "";
+        String cleanAddress = request.getAddress() != null ? request.getAddress().trim() : "";
+
+        if (cleanName.isEmpty()) {
+            throw new IllegalArgumentException("Tên chi nhánh không được để trống!");
+        }
+        if (branchRepository.existsByBranchNameIgnoreCase(cleanName)) {
             throw new IllegalArgumentException("Tên chi nhánh '" + cleanName + "' đã tồn tại!");
+        }
+        if (!cleanHotline.matches("^[0-9]{10}$")) {
+            throw new IllegalArgumentException("Số điện thoại (Hotline) phải gồm đúng 10 chữ số!");
+        }
+        if (branchRepository.existsByHotline(cleanHotline)) {
+            throw new IllegalArgumentException("Số điện thoại '" + cleanHotline + "' đã được sử dụng cho chi nhánh khác!");
         }
 
         Branch branch = Branch.builder()
                 .branchName(cleanName)
-                .address(request.getAddress().trim())
-                .hotline(request.getHotline().trim())
+                .address(cleanAddress)
+                .hotline(cleanHotline)
                 .openingTime(request.getOpeningTime())
                 .closingTime(request.getClosingTime())
                 .status(request.getStatus() != null ? request.getStatus() : BranchStatus.ACTIVE)
@@ -63,17 +79,46 @@ public class BranchServiceImpl implements BranchService {
         Branch existing = branchRepository.findById(request.getBranchId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh!"));
 
-        String cleanName = request.getBranchName().trim();
-        if (!existing.getBranchName().equalsIgnoreCase(cleanName) && branchRepository.existsByBranchName(cleanName)) {
+        String cleanName = request.getBranchName() != null ? request.getBranchName().trim() : "";
+        String cleanHotline = request.getHotline() != null ? request.getHotline().trim() : "";
+        String cleanAddress = request.getAddress() != null ? request.getAddress().trim() : "";
+
+        if (branchRepository.existsByBranchNameIgnoreCaseAndBranchIdNot(cleanName, existing.getBranchId())) {
             throw new IllegalArgumentException("Tên chi nhánh '" + cleanName + "' đã tồn tại!");
+        }
+        if (!cleanHotline.matches("^[0-9]{10}$")) {
+            throw new IllegalArgumentException("Số điện thoại (Hotline) phải gồm đúng 10 chữ số!");
+        }
+        if (branchRepository.existsByHotlineAndBranchIdNot(cleanHotline, existing.getBranchId())) {
+            throw new IllegalArgumentException("Số điện thoại '" + cleanHotline + "' đã được sử dụng cho chi nhánh khác!");
+        }
+
+        if (request.getStatus() == BranchStatus.CLOSED && existing.getStatus() != BranchStatus.CLOSED) {
+            LocalDateTime now = LocalDateTime.now();
+            showtimeRepository.updateCompletedShowtimes(
+                    now,
+                    ShowtimeStatus.SCHEDULED,
+                    ShowtimeStatus.SHOWING,
+                    ShowtimeStatus.COMPLETED
+            );
+
+            boolean hasUnshownShowtimes = showtimeRepository.existsByHall_Branch_BranchIdAndStatusIn(
+                    existing.getBranchId(),
+                    List.of(ShowtimeStatus.SCHEDULED, ShowtimeStatus.SHOWING)
+            );
+            if (hasUnshownShowtimes) {
+                throw new IllegalArgumentException("Không thể chuyển trạng thái sang CLOSED vì chi nhánh đang có suất chiếu chưa chiếu!");
+            }
         }
 
         existing.setBranchName(cleanName);
-        existing.setAddress(request.getAddress().trim());
-        existing.setHotline(request.getHotline().trim());
+        existing.setAddress(cleanAddress);
+        existing.setHotline(cleanHotline);
         existing.setOpeningTime(request.getOpeningTime());
         existing.setClosingTime(request.getClosingTime());
-        if (request.getStatus() != null) existing.setStatus(request.getStatus());
+        if (request.getStatus() != null) {
+            existing.setStatus(request.getStatus());
+        }
 
         return toResponse(branchRepository.save(existing));
     }
@@ -82,16 +127,22 @@ public class BranchServiceImpl implements BranchService {
     public void deleteBranch(Long branchId) {
         Branch existing = branchRepository.findById(branchId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh để xóa!"));
-
-        existing.setStatus(BranchStatus.CLOSED);
-
-        List<Staff> staffInBranch = staffRepository.findByBranchBranchId(branchId);
-        for (Staff s : staffInBranch) {
-            s.setBranch(null);
-            staffRepository.save(s);
+        if (ticketRepository.existsByShowtime_Hall_Branch_BranchId(branchId)) {
+            throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đã có vé phát sinh thuộc chi nhánh này!");
         }
-        staffRepository.flush();
-        branchRepository.save(existing);
+        if (showtimeRepository.existsByHall_Branch_BranchId(branchId)) {
+            throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đã có lịch chiếu (Showtime) thuộc chi nhánh này!");
+        }
+        if (hallRepository.existsByBranchBranchId(branchId)) {
+            throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đã có phòng chiếu (Hall) thuộc chi nhánh này!");
+        }
+        if (branchStockRepository.existsByBranch_BranchId(branchId)) {
+            throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đã có tồn kho F&B (BranchStock) thuộc chi nhánh này!");
+        }
+        if (staffRepository.existsByBranchBranchId(branchId)) {
+            throw new IllegalArgumentException("Không thể xóa chi nhánh '" + existing.getBranchName() + "' vì đang có nhân sự (Staff / Manager) gắn với chi nhánh này!");
+        }
+        branchRepository.delete(existing);
     }
 
     @Override

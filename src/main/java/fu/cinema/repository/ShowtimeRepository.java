@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -83,4 +84,8 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
             @Param("scheduled") ShowtimeStatus scheduled,
             @Param("showing") ShowtimeStatus showing
     );
+
+    boolean existsByHall_Branch_BranchId(Long branchId);
+
+    boolean existsByHall_Branch_BranchIdAndStatusIn(Long branchId, Collection<ShowtimeStatus> statuses);
 }
