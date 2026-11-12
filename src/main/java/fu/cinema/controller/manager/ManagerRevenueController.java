@@ -1,17 +1,18 @@
-
 package fu.cinema.controller.manager;
 
-import fu.cinema.dto.response.FnbRevenueRowResponse;
-import fu.cinema.dto.response.RevenueMovieResponse;
-import fu.cinema.dto.response.RevenueTransactionResponse;
+import fu.cinema.dto.response.*;
+import fu.cinema.entity.Branch;
 import fu.cinema.entity.Showtime;
 import fu.cinema.entity.Staff;
-import fu.cinema.enums.FnBCategory;
 import fu.cinema.enums.MovieStatus;
-import fu.cinema.repository.ShowtimeRepository;
-import fu.cinema.repository.StaffRepository;
 import fu.cinema.service.RevenueReportService;
+import fu.cinema.service.ShowtimeService;
+import fu.cinema.service.StaffService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -21,10 +22,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 
 @Controller
 @RequestMapping("/manager/revenue")
@@ -32,8 +31,9 @@ import java.util.Objects;
 public class ManagerRevenueController {
 
     private final RevenueReportService revenueReportService;
-    private final StaffRepository staffRepository;
-    private final ShowtimeRepository showtimeRepository;
+    private final StaffService staffService;
+    private final ShowtimeService showtimeService;
+
     @GetMapping("/revenue/detail")
     public String showRevenueReport(
             @RequestParam(required = false)
@@ -47,23 +47,11 @@ public class ManagerRevenueController {
             @RequestParam(defaultValue = "all")
             String revenueType,
 
+            @RequestParam(defaultValue = "0") int page,
+
             Model model
     ) {
-        String username = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
-
-        Staff staff = staffRepository.findByAccount_Username(username)
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "Không tìm thấy thông tin Manager."
-                        ));
-
-        if (staff.getBranch() == null) {
-            throw new IllegalStateException(
-                    "Manager chưa được gán chi nhánh."
-            );
-        }
+        Staff staff = getCurrentManager();
 
         if (!revenueType.equals("all")
                 && !revenueType.equals("tickets")
@@ -71,21 +59,28 @@ public class ManagerRevenueController {
             revenueType = "all";
         }
 
+        Pageable pageable = PageRequest.of(page, 10);
+        RevenueReportResponse report = revenueReportService.getReport(
+                staff.getBranch().getBranchId(),
+                startDate,
+                endDate,
+                revenueType,
+                pageable
+        );
+
+        Page<RevenueTransactionResponse> pageData = report.transactions();
+
         model.addAttribute("currentBranch", staff.getBranch());
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("revenueType", revenueType);
-        model.addAttribute(
-                "report",
-                revenueReportService.getReport(
-                        staff.getBranch().getBranchId(),
-                        startDate,
-                        endDate,
-                        revenueType
-                )
-        );
+        model.addAttribute("report", report);
 
-
+        model.addAttribute("transactions", pageData.getContent());
+        model.addAttribute("currentPage", pageData.getNumber());
+        model.addAttribute("pageSize", pageData.getSize());
+        model.addAttribute("totalRows", pageData.getTotalElements());
+        model.addAttribute("totalPages", pageData.getTotalPages());
 
         return "manager/revenue-report";
     }
@@ -115,57 +110,14 @@ public class ManagerRevenueController {
             sortDir = "asc";
         }
 
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(direction, "title"));
 
-        List<RevenueMovieResponse> movies =
-                revenueReportService.getMovieReport(
-                        branchId, startDate, endDate,
-                        movieStatus, sortBy, sortDir
-                );
+        Page<RevenueMovieResponse> pageData = revenueReportService.getMovieReport(
+                branchId, movieName, movieStatus, startDate, endDate, sortBy, sortDir, pageable);
+        MovieRevenueSummaryResponse summary = revenueReportService.getMovieRevenueSummary(
+                branchId, movieName, movieStatus, startDate, endDate);
 
-        // Lọc theo tên phim trước khi tính tổng và phân trang
-        if (movieName != null && !movieName.isBlank()) {
-            String keyword = movieName.trim().toLowerCase();
-
-            movies = movies.stream()
-                    .filter(movie -> movie.movieTitle() != null
-                            && movie.movieTitle().toLowerCase().contains(keyword))
-                    .toList();
-        }
-
-        // Tính tổng theo danh sách sau khi lọc
-        BigDecimal totalRevenue = movies.stream()
-                .map(RevenueMovieResponse::revenue)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        long totalShowtimes = movies.stream()
-                .mapToLong(RevenueMovieResponse::showtimeCount)
-                .sum();
-
-        long totalTickets = movies.stream()
-                .mapToLong(RevenueMovieResponse::ticketCount)
-                .sum();
-
-        long totalSeats = movies.stream()
-                .mapToLong(RevenueMovieResponse::totalSeats)
-                .sum();
-
-        // Phân trang: 10 phim/trang
-        int pageSize = 10;
-        int totalRows = movies.size();
-        int totalPages = Math.max(
-                1, (int) Math.ceil(totalRows / (double) pageSize)
-        );
-
-        page = Math.max(0, Math.min(page, totalPages - 1));
-
-        int from = page * pageSize;
-        int to = Math.min(from + pageSize, totalRows);
-
-        List<RevenueMovieResponse> pageItems =
-                movies.subList(from, to);
-
-        // Dữ liệu cho giao diện
         model.addAttribute("currentBranch", getCurrentManagerBranch());
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
@@ -175,21 +127,21 @@ public class ManagerRevenueController {
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("sortDir", sortDir);
 
-        model.addAttribute("movies", movies);
-        model.addAttribute("items", pageItems);
-        model.addAttribute("currentPage", page);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("totalRows", totalRows);
-        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("movies", pageData.getContent());
+        model.addAttribute("items", pageData.getContent());
+        model.addAttribute("currentPage", pageData.getNumber());
+        model.addAttribute("pageSize", pageData.getSize());
+        model.addAttribute("totalRows", pageData.getTotalElements());
+        model.addAttribute("totalPages", pageData.getTotalPages());
 
-        model.addAttribute("totalRevenue", totalRevenue);
-        model.addAttribute("totalShowtimes", totalShowtimes);
-        model.addAttribute("totalTickets", totalTickets);
-        model.addAttribute("totalSeats", totalSeats);
+        model.addAttribute("totalRevenue", summary.totalRevenue());
+        model.addAttribute("totalShowtimes", summary.totalShowtimes());
+        model.addAttribute("totalTickets", summary.totalTickets());
+        model.addAttribute("totalSeats", summary.totalSeats());
 
         return "manager/revenue-movies";
-
     }
+
     @GetMapping("/movie/{movieId}")
     public String showMovieShowtimes(
             @PathVariable Long movieId,
@@ -209,26 +161,17 @@ public class ManagerRevenueController {
     ) {
         Long branchId = getCurrentManagerBranchId();
 
-        // Chỉ cho phép hai kiểu sắp xếp hợp lệ
-        if (!"time".equalsIgnoreCase(sortBy)
-                && !"revenue".equalsIgnoreCase(sortBy)) {
+        if (!"time".equalsIgnoreCase(sortBy) && !"revenue".equalsIgnoreCase(sortBy)) {
             sortBy = "time";
         }
-        if (!List.of("time", "revenue").contains(sortBy)) {
-            sortBy = "time";
-        }
-
         if (!List.of("asc", "desc").contains(sortDir)) {
             sortDir = "desc";
         }
 
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("sortDir", sortDir);
-        boolean movieBelongsToBranch = showtimeRepository
-                .findByHall_Branch_BranchIdOrderByStartTimeAsc(branchId)
-                .stream()
-                .anyMatch(s -> s.getMovie().getMovieId().equals(movieId));
 
+        boolean movieBelongsToBranch = showtimeService.isMovieInBranch(branchId, movieId);
         if (!movieBelongsToBranch) {
             return "redirect:/manager/revenue";
         }
@@ -237,38 +180,23 @@ public class ManagerRevenueController {
         model.addAttribute("movieId", movieId);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
-        model.addAttribute("sortBy", sortBy);
 
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(direction, "startTime"));
 
-        List<fu.cinema.dto.response.RevenueShowtimeResponse> showtimes =
-                revenueReportService.getShowtimeReport(
-                        branchId, movieId, startDate, endDate, sortBy, sortDir
-                );
+        Page<RevenueShowtimeResponse> pageData = revenueReportService.getShowtimeReport(
+                branchId, movieId, startDate, endDate, sortBy, sortDir, pageable);
 
-// Phân trang 10 suất chiếu/trang
-        int pageSize = 10;
-        int totalRows = showtimes.size();
-        int totalPages = Math.max(
-                1, (int) Math.ceil(totalRows / (double) pageSize)
-        );
-
-        page = Math.max(0, Math.min(page, totalPages - 1));
-
-        int from = page * pageSize;
-        int to = Math.min(from + pageSize, totalRows);
-
-        List<fu.cinema.dto.response.RevenueShowtimeResponse> pageItems =
-                showtimes.subList(from, to);
-
-        model.addAttribute("showtimes", pageItems);
-        model.addAttribute("currentPage", page);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("totalRows", totalRows);
-        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("showtimes", pageData.getContent());
+        model.addAttribute("items", pageData.getContent());
+        model.addAttribute("currentPage", pageData.getNumber());
+        model.addAttribute("pageSize", pageData.getSize());
+        model.addAttribute("totalRows", pageData.getTotalElements());
+        model.addAttribute("totalPages", pageData.getTotalPages());
 
         return "manager/revenue-showtimes";
-
     }
+
     @GetMapping("/showtime/{showtimeId}")
     public String showShowtimeDetail(
             @PathVariable Long showtimeId,
@@ -279,46 +207,42 @@ public class ManagerRevenueController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate,
             @RequestParam(defaultValue = "all") String paymentMethod,
+            @RequestParam(defaultValue = "0") int page,
             Model model
     ) {
         Long branchId = getCurrentManagerBranchId();
 
-        Showtime showtime = showtimeRepository.findById(showtimeId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Không tìm thấy suất chiếu."));
+        Showtime showtime = showtimeService.getShowtimeForBranch(showtimeId, branchId);
 
-        if (showtime.getHall().getBranch() == null
-                || !showtime.getHall().getBranch().getBranchId()
-                .equals(branchId)) {
-            throw new IllegalArgumentException(
-                    "Bạn không có quyền xem báo cáo của suất chiếu này."
-            );
-        }
+        Pageable pageable = PageRequest.of(page, 10);
+        var report = revenueReportService.getShowtimeDetail(
+                branchId,
+                showtimeId,
+                startDate,
+                endDate,
+                paymentMethod,
+                pageable
+        );
+
+        Page<RevenueTransactionResponse> pageData = report.transactions();
 
         model.addAttribute("currentBranch", getCurrentManagerBranch());
         model.addAttribute("showtime", showtime);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("paymentMethod", paymentMethod);
-        var report = revenueReportService.getShowtimeDetail(
-                branchId,
-                showtimeId,
-                startDate,
-                endDate,
-                paymentMethod
-        );
-
         model.addAttribute("report", report);
+        model.addAttribute("totalTicketCount", report.transactionCount());
 
-        long totalTicketCount = report.transactions()
-                .stream()
-                .mapToLong(RevenueTransactionResponse::ticketCount)
-                .sum();
-
-        model.addAttribute("totalTicketCount", totalTicketCount);
+        model.addAttribute("transactions", pageData.getContent());
+        model.addAttribute("currentPage", pageData.getNumber());
+        model.addAttribute("pageSize", pageData.getSize());
+        model.addAttribute("totalRows", pageData.getTotalElements());
+        model.addAttribute("totalPages", pageData.getTotalPages());
 
         return "manager/revenue-report";
     }
+
     @GetMapping("/fnb")
     public String showFnbRevenue(
             @RequestParam(required = false)
@@ -339,11 +263,9 @@ public class ManagerRevenueController {
         if (!List.of("ALL", "FOOD", "DRINK", "COMBO").contains(category)) {
             category = "ALL";
         }
-
         if (!List.of("name", "sold", "revenue").contains(sortBy)) {
             sortBy = "name";
         }
-
         if (!List.of("asc", "desc").contains(sortDir)) {
             sortDir = "asc";
         }
@@ -381,19 +303,11 @@ public class ManagerRevenueController {
     ) {
         Long branchId = getCurrentManagerBranchId();
 
-        List<FnbRevenueRowResponse> transactions =
-                revenueReportService.getFnbItemTransactions(
-                        branchId, itemId, startDate, endDate,
-                        paymentMethod, sortDir);
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(direction, "booking.payment.transactionTime"));
 
-        int pageSize = 10;
-        int totalPages = Math.max(
-                1, (int) Math.ceil(transactions.size() / (double) pageSize));
-
-        page = Math.max(0, Math.min(page, totalPages - 1));
-
-        int from = page * pageSize;
-        int to = Math.min(from + pageSize, transactions.size());
+        Page<FnbRevenueRowResponse> pageData = revenueReportService.getFnbItemTransactions(
+                branchId, itemId, startDate, endDate, paymentMethod, sortDir, pageable);
 
         model.addAttribute("currentBranch", getCurrentManagerBranch());
         model.addAttribute("startDate", startDate);
@@ -401,39 +315,25 @@ public class ManagerRevenueController {
         model.addAttribute("paymentMethod", paymentMethod);
         model.addAttribute("sortDir", sortDir);
         model.addAttribute("itemId", itemId);
-        model.addAttribute("rows", transactions.subList(from, to));
-        model.addAttribute("totalRows", transactions.size());
-        model.addAttribute("currentPage", page);
-        model.addAttribute("totalPages", totalPages);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("paymentMethod", paymentMethod);
-        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("rows", pageData.getContent());
+        model.addAttribute("totalRows", pageData.getTotalElements());
+        model.addAttribute("currentPage", pageData.getNumber());
+        model.addAttribute("totalPages", pageData.getTotalPages());
+        model.addAttribute("pageSize", pageData.getSize());
         return "manager/revenue-fnb-detail";
     }
+
     private Staff getCurrentManager() {
         String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-
-        Staff staff = staffRepository.findByAccount_Username(username)
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "Không tìm thấy thông tin Manager."
-                        ));
-
-        if (staff.getBranch() == null) {
-            throw new IllegalStateException(
-                    "Manager chưa được gán chi nhánh."
-            );
-        }
-
-        return staff;
+        return staffService.getManagerByUsername(username);
     }
 
     private Long getCurrentManagerBranchId() {
         return getCurrentManager().getBranch().getBranchId();
     }
 
-    private fu.cinema.entity.Branch getCurrentManagerBranch() {
+    private Branch getCurrentManagerBranch() {
         return getCurrentManager().getBranch();
     }
 }

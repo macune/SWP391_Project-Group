@@ -13,7 +13,7 @@
 
     <th:block th:fragment="actorCss">
         <link rel="stylesheet" th:href="@{/css/manager.css}">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+        <link rel="stylesheet" th:href="@{/vendor/flatpickr/flatpickr.min.css}">
     </th:block>
 </head>
 <body>
@@ -117,8 +117,8 @@
 
         <th:block th:fragment="actorJs">
             <script th:src="@{/js/manager.js}"></script>
-            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-            <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
+            <script th:src="@{/vendor/flatpickr/flatpickr.min.js}"></script>
+            <script th:src="@{/vendor/flatpickr/vn.js}"></script>
 
             <script>
                 (function () {

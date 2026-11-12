@@ -345,11 +345,7 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-3"
                  th:if="${totalPages > 0}">
 
-    <span class="text-secondary small">
-        Trang <strong th:text="${currentPage}"></strong>
-        / <strong th:text="${totalPages}"></strong>
-        — Tổng <strong th:text="${totalElements}"></strong> suất chiếu
-    </span>
+    <span class="text-secondary small">Tổng <strong th:text="${totalElements}"></strong> suất chiếu</span>
 
                 <nav aria-label="Showtime pagination">
                     <ul class="pagination pagination-sm mb-0">
@@ -366,25 +362,14 @@
                        sortDir=${sortDir},
                        page=${currentPage - 1}
                    )}">
-                                &laquo;
+                                Trước
                             </a>
                         </li>
 
-                        <li class="page-item"
-                            th:each="p : ${#numbers.sequence(1, totalPages)}"
-                            th:classappend="${p == currentPage ? ' active' : ''}">
-                            <a class="page-link"
-                               th:text="${p}"
-                               th:href="@{/manager/showtime-analytics(
-                       startDate=${startDate},
-                       endDate=${endDate},
-                       movieId=${selectedMovieId},
-                       status=${selectedStatus},
-                       sortBy=${sortBy},
-                       sortDir=${sortDir},
-                       page=${p}
-                   )}">
-                            </a>
+                        <li class="page-item disabled">
+                            <span class="page-link border-0 bg-transparent text-dark fw-semibold px-2"
+                                  th:text="|Trang ${currentPage} / ${totalPages > 0 ? totalPages : 1}|">
+                            </span>
                         </li>
 
                         <li class="page-item"
@@ -399,7 +384,7 @@
                        sortDir=${sortDir},
                        page=${currentPage + 1}
                    )}">
-                                &raquo;
+                                Sau
                             </a>
                         </li>
 

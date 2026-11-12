@@ -216,4 +216,15 @@ public class StaffServiceImpl implements StaffService {
         account.setStatus(AccountStatus.DELETED);
         accountRepository.save(account);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Staff getManagerByUsername(String username) {
+        Staff manager = staffRepository.findByAccount_Username(username)
+                .orElseThrow(() -> new IllegalStateException("Không tìm thấy thông tin Manager."));
+        if (manager.getBranch() == null) {
+            throw new IllegalStateException("Manager chưa được gán chi nhánh.");
+        }
+        return manager;
+    }
 }

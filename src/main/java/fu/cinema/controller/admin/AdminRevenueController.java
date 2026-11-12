@@ -1,13 +1,16 @@
 package fu.cinema.controller.admin;
 
 import fu.cinema.dto.response.*;
-import fu.cinema.entity.Branch;
 import fu.cinema.entity.Showtime;
 import fu.cinema.enums.MovieStatus;
-import fu.cinema.repository.ShowtimeRepository;
 import fu.cinema.service.BranchService;
 import fu.cinema.service.RevenueReportService;
+import fu.cinema.service.ShowtimeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -17,11 +20,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Controller
 @RequestMapping("/admin/revenue")
@@ -31,7 +31,7 @@ public class AdminRevenueController {
 
     private final RevenueReportService revenueReportService;
     private final BranchService branchService;
-    private final ShowtimeRepository showtimeRepository;
+    private final ShowtimeService showtimeService;
 
     @GetMapping
     public String showMovieRevenue(
@@ -45,38 +45,26 @@ public class AdminRevenueController {
             @RequestParam(defaultValue = "0") int page,
             Model model) {
 
-        validateBranchId(branchId);
+        BranchResponse currentBranch = branchService.getBranchById(branchId);
         sortBy = List.of("title", "revenue", "showtimes").contains(sortBy) ? sortBy : "title";
         sortDir = List.of("asc", "desc").contains(sortDir) ? sortDir : "asc";
 
-        List<RevenueMovieResponse> movies = getMovieRows(branchId, startDate, endDate, movieStatus, sortBy, sortDir);
-        if (movieName != null && !movieName.isBlank()) {
-            String keyword = movieName.trim().toLowerCase(Locale.ROOT);
-            movies = movies.stream().filter(m -> m.movieTitle() != null
-                    && m.movieTitle().toLowerCase(Locale.ROOT).contains(keyword)).toList();
-        }
-        int pageSize = 10;
-        int totalRows = movies.size();
-        int totalPages = Math.max(
-                1, (int) Math.ceil(totalRows / (double) pageSize)
-        );
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(direction, "title"));
 
-        page = Math.max(0, Math.min(page, totalPages - 1));
+        Page<RevenueMovieResponse> pageData = revenueReportService.getMovieReportForAdmin(
+                branchId, movieName, movieStatus, startDate, endDate, sortBy, sortDir, pageable);
+        MovieRevenueSummaryResponse summary = revenueReportService.getMovieRevenueSummaryForAdmin(
+                branchId, movieName, movieStatus, startDate, endDate);
 
-        int from = page * pageSize;
-        int to = Math.min(from + pageSize, totalRows);
-
-        List<RevenueMovieResponse> pageItems =
-                movies.subList(from, to);
-
-        model.addAttribute("items", pageItems);
-        model.addAttribute("currentPage", page);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("totalRows", totalRows);
-        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("items", pageData.getContent());
+        model.addAttribute("currentPage", pageData.getNumber());
+        model.addAttribute("pageSize", pageData.getSize());
+        model.addAttribute("totalRows", pageData.getTotalElements());
+        model.addAttribute("totalPages", pageData.getTotalPages());
         model.addAttribute("branches", branchService.getAllBranches());
         model.addAttribute("selectedBranchId", branchId);
-        model.addAttribute("currentBranch", findBranch(branchId));
+        model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("movieName", movieName);
@@ -84,12 +72,10 @@ public class AdminRevenueController {
         model.addAttribute("movieStatuses", MovieStatus.values());
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("sortDir", sortDir);
-        model.addAttribute("movies", movies);
-        model.addAttribute("totalRevenue", movies.stream().map(RevenueMovieResponse::revenue)
-                .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add));
-        model.addAttribute("totalShowtimes", movies.stream().mapToLong(RevenueMovieResponse::showtimeCount).sum());
-        model.addAttribute("totalTickets", movies.stream().mapToLong(RevenueMovieResponse::ticketCount).sum());
-        model.addAttribute("totalSeats", movies.stream().mapToLong(RevenueMovieResponse::totalSeats).sum());
+        model.addAttribute("totalRevenue", summary.totalRevenue());
+        model.addAttribute("totalShowtimes", summary.totalShowtimes());
+        model.addAttribute("totalTickets", summary.totalTickets());
+        model.addAttribute("totalSeats", summary.totalSeats());
         return "admin/revenue-movies";
     }
 
@@ -104,56 +90,32 @@ public class AdminRevenueController {
             @RequestParam(defaultValue = "0") int page,
             Model model) {
 
-        validateBranchId(branchId);
+        BranchResponse currentBranch = branchService.getBranchById(branchId);
         sortBy = List.of("time", "revenue").contains(sortBy) ? sortBy : "time";
         sortDir = List.of("asc", "desc").contains(sortDir) ? sortDir : "desc";
-        List<RevenueShowtimeResponse> showtimes = new ArrayList<>();
-        Map<Long, String> showtimeBranchNames = new HashMap<>();
-        for (BranchResponse branch : branchesFor(branchId)) {
-            List<RevenueShowtimeResponse> branchShowtimes = revenueReportService.getShowtimeReport(
-                    branch.getBranchId(), movieId, startDate, endDate, sortBy, sortDir);
-            showtimes.addAll(branchShowtimes);
-            for (RevenueShowtimeResponse row : branchShowtimes) {
-                showtimeBranchNames.put(row.showtimeId(), branch.getBranchName());
-            }
-        }
-        if ("revenue".equals(sortBy)) {
-            showtimes.sort(Comparator.comparing(RevenueShowtimeResponse::revenue,
-                    Comparator.nullsLast(Comparator.naturalOrder())));
-        } else {
-            showtimes.sort(Comparator.comparing(RevenueShowtimeResponse::startTime,
-                    Comparator.nullsLast(Comparator.naturalOrder())));
-        }
-        if ("desc".equals(sortDir)) Collections.reverse(showtimes);
-        int pageSize = 10;
-        int totalRows = showtimes.size();
-        int totalPages = Math.max(
-                1, (int) Math.ceil(totalRows / (double) pageSize)
-        );
 
-        page = Math.max(0, Math.min(page, totalPages - 1));
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(direction, "startTime"));
 
-        int from = page * pageSize;
-        int to = Math.min(from + pageSize, totalRows);
+        AdminShowtimeRevenueResponse data = revenueReportService.getShowtimeReportForAdmin(
+                branchId, movieId, startDate, endDate, sortBy, sortDir, pageable);
+        Page<RevenueShowtimeResponse> pageData = data.showtimes();
 
-        List<RevenueShowtimeResponse> pageItems =
-                showtimes.subList(from, to);
-
-        model.addAttribute("items", pageItems);
-        model.addAttribute("currentPage", page);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("totalRows", totalRows);
-        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("items", pageData.getContent());
+        model.addAttribute("currentPage", pageData.getNumber());
+        model.addAttribute("pageSize", pageData.getSize());
+        model.addAttribute("totalRows", pageData.getTotalElements());
+        model.addAttribute("totalPages", pageData.getTotalPages());
         model.addAttribute("branches", branchService.getAllBranches());
         model.addAttribute("selectedBranchId", branchId);
-        model.addAttribute("currentBranch", findBranch(branchId));
+        model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("movieId", movieId);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("sortDir", sortDir);
-        model.addAttribute("showtimes", showtimes);
-        model.addAttribute("showtimeBranchNames", showtimeBranchNames);
+        model.addAttribute("showtimes", pageData.getContent());
+        model.addAttribute("showtimeBranchNames", data.showtimeBranchNames());
         return "admin/revenue-showtimes";
     }
 
@@ -164,31 +126,35 @@ public class AdminRevenueController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(defaultValue = "all") String paymentMethod,
+            @RequestParam(defaultValue = "0") int page,
             Model model) {
 
-        validateBranchId(branchId);
-        Showtime showtime = showtimeRepository.findById(showtimeId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
-        if (showtime.getHall() == null || showtime.getHall().getBranch() == null) {
-            throw new IllegalArgumentException("Suất chiếu chưa được gán chi nhánh.");
-        }
+        branchService.getBranchById(branchId);
+        Showtime showtime = showtimeService.getShowtimeForBranch(showtimeId, branchId);
         Long actualBranchId = showtime.getHall().getBranch().getBranchId();
-        if (branchId != null && !branchId.equals(actualBranchId)) {
-            throw new IllegalArgumentException("Suất chiếu không thuộc chi nhánh đã chọn.");
-        }
 
+        Pageable pageable = PageRequest.of(page, 10);
         RevenueReportResponse report = revenueReportService.getShowtimeDetail(
-                actualBranchId, showtimeId, startDate, endDate, paymentMethod);
+                actualBranchId, showtimeId, startDate, endDate, paymentMethod, pageable);
+
+        Page<RevenueTransactionResponse> pageData = report.transactions();
+
         model.addAttribute("branches", branchService.getAllBranches());
         model.addAttribute("selectedBranchId", branchId);
-        model.addAttribute("currentBranch", findBranch(actualBranchId));
+        model.addAttribute("currentBranch", branchService.getBranchById(actualBranchId));
         model.addAttribute("showtime", showtime);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("paymentMethod", paymentMethod);
         model.addAttribute("report", report);
-        model.addAttribute("totalTicketCount", report.transactions().stream()
-                .mapToLong(RevenueTransactionResponse::ticketCount).sum());
+        model.addAttribute("totalTicketCount", report.transactionCount());
+
+        model.addAttribute("transactions", pageData.getContent());
+        model.addAttribute("currentPage", pageData.getNumber());
+        model.addAttribute("pageSize", pageData.getSize());
+        model.addAttribute("totalRows", pageData.getTotalElements());
+        model.addAttribute("totalPages", pageData.getTotalPages());
+
         return "admin/revenue-report";
     }
 
@@ -203,38 +169,20 @@ public class AdminRevenueController {
             @RequestParam(defaultValue = "0") int page,
             Model model) {
 
-        validateBranchId(branchId);
+        BranchResponse currentBranch = branchService.getBranchById(branchId);
         category = List.of("ALL", "FOOD", "DRINK", "COMBO").contains(category) ? category : "ALL";
         sortBy = List.of("name", "sold", "revenue").contains(sortBy) ? sortBy : "name";
         sortDir = List.of("asc", "desc").contains(sortDir) ? sortDir : "asc";
 
-        Map<Long, FnbProductRevenueResponse> grouped = new LinkedHashMap<>();
-        for (BranchResponse branch : branchesFor(branchId)) {
-            for (FnbProductRevenueResponse item : revenueReportService.getFnbProductRevenue(
-                    branch.getBranchId(), startDate, endDate, category, sortBy, sortDir)) {
-                FnbProductRevenueResponse old = grouped.get(item.itemId());
-                if (old == null) grouped.put(item.itemId(), item);
-                else grouped.put(item.itemId(), new FnbProductRevenueResponse(item.itemId(), item.itemName(),
-                        item.category(), old.soldQuantity() + item.soldQuantity(),
-                        old.revenue().add(item.revenue())));
-            }
-        }
-        List<FnbProductRevenueResponse> items = new ArrayList<>(grouped.values());
-        Comparator<FnbProductRevenueResponse> comparator = switch (sortBy) {
-            case "sold" -> Comparator.comparingLong(FnbProductRevenueResponse::soldQuantity);
-            case "revenue" -> Comparator.comparing(FnbProductRevenueResponse::revenue);
-            default -> Comparator.comparing(FnbProductRevenueResponse::itemName, String.CASE_INSENSITIVE_ORDER);
-        };
-        items.sort(comparator);
-        if ("desc".equals(sortDir)) Collections.reverse(items);
+        List<FnbProductRevenueResponse> items = revenueReportService.getFnbProductRevenueForAdmin(
+                branchId, startDate, endDate, category, sortBy, sortDir);
 
         model.addAttribute("branches", branchService.getAllBranches());
         model.addAttribute("selectedBranchId", branchId);
-        model.addAttribute("currentBranch", findBranch(branchId));
+        model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("category", category);
-
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("sortDir", sortDir);
         model.addAttribute("items", items);
@@ -253,116 +201,30 @@ public class AdminRevenueController {
             @RequestParam(defaultValue = "0") int page,
             Model model) {
 
-        validateBranchId(branchId);
-        List<FnbRevenueRowResponse> transactions = new ArrayList<>();
-        Map<Long, String> transactionBranchNames = new HashMap<>();
+        BranchResponse currentBranch = branchService.getBranchById(branchId);
 
-        for (BranchResponse branch : branchesFor(branchId)) {
-            try {
-                List<FnbRevenueRowResponse> branchRows =
-                        revenueReportService.getFnbItemTransactions(
-                                branch.getBranchId(),
-                                itemId,
-                                startDate,
-                                endDate,
-                                paymentMethod,
-                                sortDir
-                        );
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(direction, "booking.payment.transactionTime"));
 
-                transactions.addAll(branchRows);
+        AdminFnbItemTransactionsResponse data = revenueReportService.getFnbItemTransactionsForAdmin(
+                branchId, itemId, startDate, endDate, paymentMethod, sortDir, pageable);
 
-                for (FnbRevenueRowResponse row : branchRows) {
-                    transactionBranchNames.put(
-                            row.paymentId(),
-                            branch.getBranchName()
-                    );
-                }
+        Page<FnbRevenueRowResponse> pageData = data.rows();
 
-            } catch (IllegalArgumentException ignored) {
-                // Item không có trong kho chi nhánh này.
-            }
-        }
-        transactions.sort(Comparator.comparing(FnbRevenueRowResponse::transactionTime,
-                Comparator.nullsLast(Comparator.naturalOrder())));
-        if (!"asc".equalsIgnoreCase(sortDir)) Collections.reverse(transactions);
-
-        int pageSize = 10;
-        int totalPages = Math.max(1, (int) Math.ceil(transactions.size() / (double) pageSize));
-        page = Math.max(0, Math.min(page, totalPages - 1));
-        int from = page * pageSize;
-        int to = Math.min(from + pageSize, transactions.size());
-        model.addAttribute("transactionBranchNames", transactionBranchNames);
+        model.addAttribute("transactionBranchNames", data.transactionBranchNames());
         model.addAttribute("branches", branchService.getAllBranches());
         model.addAttribute("selectedBranchId", branchId);
-        model.addAttribute("currentBranch", findBranch(branchId));
+        model.addAttribute("currentBranch", currentBranch);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("paymentMethod", paymentMethod);
         model.addAttribute("sortDir", sortDir);
         model.addAttribute("itemId", itemId);
-        model.addAttribute("rows", transactions.subList(from, to));
-        model.addAttribute("totalRows", transactions.size());
-        model.addAttribute("currentPage", page);
-        model.addAttribute("totalPages", totalPages);
-        model.addAttribute("pageSize", pageSize);
+        model.addAttribute("rows", pageData.getContent());
+        model.addAttribute("totalRows", pageData.getTotalElements());
+        model.addAttribute("currentPage", pageData.getNumber());
+        model.addAttribute("totalPages", pageData.getTotalPages());
+        model.addAttribute("pageSize", pageData.getSize());
         return "admin/revenue-fnb-detail";
-    }
-
-    private List<RevenueMovieResponse> getMovieRows(Long branchId, LocalDate startDate, LocalDate endDate,
-                                                    MovieStatus status, String sortBy, String sortDir) {
-        if (branchId != null) {
-            return revenueReportService.getMovieReport(branchId, startDate, endDate, status, sortBy, sortDir);
-        }
-        Map<Long, RevenueMovieResponse> grouped = new LinkedHashMap<>();
-        for (BranchResponse branch : branchService.getAllBranches()) {
-            for (RevenueMovieResponse movie : revenueReportService.getMovieReport(branch.getBranchId(),
-                    startDate, endDate, status, sortBy, sortDir)) {
-                RevenueMovieResponse old = grouped.get(movie.movieId());
-                if (old == null) grouped.put(movie.movieId(), movie);
-                else grouped.put(movie.movieId(), new RevenueMovieResponse(movie.movieId(), movie.movieTitle(),
-                        movie.posterUrl(), movie.status(), old.showtimeCount() + movie.showtimeCount(),
-                        old.ticketCount() + movie.ticketCount(), old.totalSeats() + movie.totalSeats(),
-                        old.revenue().add(movie.revenue())));
-            }
-        }
-        Comparator<RevenueMovieResponse> comparator = switch (sortBy) {
-            case "revenue" -> Comparator.comparing(RevenueMovieResponse::revenue);
-            case "showtimes" -> Comparator.comparingLong(RevenueMovieResponse::showtimeCount);
-            default -> Comparator.comparing(RevenueMovieResponse::movieTitle, String.CASE_INSENSITIVE_ORDER);
-        };
-        List<RevenueMovieResponse> result = new ArrayList<>(grouped.values());
-        result.sort(comparator);
-        if ("desc".equals(sortDir)) Collections.reverse(result);
-        return result;
-    }
-
-    private List<BranchResponse> branchesFor(Long branchId) {
-        if (branchId == null) {
-            return branchService.getAllBranches();
-        }
-
-        return List.of(
-                branchService.getAllBranches().stream()
-                        .filter(branch -> branch.getBranchId().equals(branchId))
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException("Chi nhánh không tồn tại."))
-        );
-    }
-
-    private BranchResponse findBranch(Long branchId) {
-        if (branchId == null) {
-            return null;
-        }
-
-        return branchService.getAllBranches().stream()
-                .filter(branch -> branch.getBranchId().equals(branchId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Chi nhánh không tồn tại."));
-    }
-
-    private void validateBranchId(Long branchId) {
-        if (branchId != null) {
-            findBranch(branchId);
-        }
     }
 }

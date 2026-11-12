@@ -2,6 +2,8 @@ package fu.cinema.repository;
 
 import fu.cinema.entity.Showtime;
 import fu.cinema.enums.ShowtimeStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +16,61 @@ import java.util.List;
 
 @Repository
 public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
+
+    @Query(value = """
+        SELECT s FROM Showtime s
+        WHERE s.movie.movieId = :movieId
+          AND (:branchId IS NULL OR s.hall.branch.branchId = :branchId)
+          AND (:startTime IS NULL OR s.startTime >= :startTime)
+          AND (:endTime IS NULL OR s.startTime < :endTime)
+        """, countQuery = """
+        SELECT COUNT(s) FROM Showtime s
+        WHERE s.movie.movieId = :movieId
+          AND (:branchId IS NULL OR s.hall.branch.branchId = :branchId)
+          AND (:startTime IS NULL OR s.startTime >= :startTime)
+          AND (:endTime IS NULL OR s.startTime < :endTime)
+        """)
+    Page<Showtime> findShowtimesForRevenueReport(
+            @Param("movieId") Long movieId,
+            @Param("branchId") Long branchId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            Pageable pageable
+    );
+
+    @Query(value = """
+        SELECT s FROM Showtime s
+        JOIN FETCH s.hall h
+        JOIN FETCH s.movie m
+        WHERE h.branch.branchId = :branchId
+          AND (:hallId IS NULL OR h.hallId = :hallId)
+          AND (:status IS NULL OR s.status = :status)
+          AND (:startDate IS NULL OR s.startTime >= :startDate)
+          AND (:endDate IS NULL OR s.startTime < :endDate)
+          AND (:month IS NULL OR MONTH(s.startTime) = :month)
+          AND (:year IS NULL OR YEAR(s.startTime) = :year)
+        ORDER BY s.startTime DESC
+        """, countQuery = """
+        SELECT COUNT(s) FROM Showtime s
+        JOIN s.hall h
+        WHERE h.branch.branchId = :branchId
+          AND (:hallId IS NULL OR h.hallId = :hallId)
+          AND (:status IS NULL OR s.status = :status)
+          AND (:startDate IS NULL OR s.startTime >= :startDate)
+          AND (:endDate IS NULL OR s.startTime < :endDate)
+          AND (:month IS NULL OR MONTH(s.startTime) = :month)
+          AND (:year IS NULL OR YEAR(s.startTime) = :year)
+        """)
+    Page<Showtime> findShowtimesForManagerSchedule(
+            @Param("branchId") Long branchId,
+            @Param("hallId") Long hallId,
+            @Param("status") ShowtimeStatus status,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("month") Integer month,
+            @Param("year") Integer year,
+            Pageable pageable
+    );
 
     List<Showtime> findByHall_HallIdAndStartTimeLessThanAndEndTimeGreaterThanAndStatusNot(
             Long hallId,

@@ -118,8 +118,8 @@
                     </thead>
 
                     <tbody>
-                    <tr th:each="transaction, stat : ${report.transactions}">
-                        <td th:text="${stat.count}"></td>
+                    <tr th:each="transaction, stat : ${transactions}">
+                        <td th:text="${currentPage * pageSize + stat.count}"></td>
 
                         <td th:text="${#temporals.format(
         transaction.transactionTime, 'dd/MM/yyyy HH:mm')}"></td>
@@ -155,7 +155,7 @@
                         </td>
                     </tr>
 
-                    <tr th:if="${#lists.isEmpty(report.transactions)}">
+                    <tr th:if="${#lists.isEmpty(transactions)}">
                         <td colspan="7" class="text-center text-secondary py-5">
                             Không có giao dịch phù hợp với bộ lọc.
                         </td>
@@ -163,21 +163,39 @@
                     </tbody>
                 </table>
             </div>
-            <div id="transactionPagination"
+
+            <!-- Phân trang Server-side thuần HTML (0% JS) -->
+            <div th:if="${totalPages > 1}"
                  class="d-flex justify-content-between align-items-center mt-3">
-                <span id="paginationInfo" class="text-secondary small"></span>
+                <span class="text-secondary small"
+                      th:text="|Hiển thị ${totalRows == 0 ? 0 : currentPage * pageSize + 1}–${currentPage * pageSize + transactions.size()} / ${totalRows} giao dịch|"></span>
 
                 <nav aria-label="Phân trang giao dịch">
                     <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item" id="prevPageItem">
-                            <button type="button" class="page-link" id="prevPage">
-                                Trước
-                            </button>
+                        <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/manager/revenue/showtime/{id}(
+                                   id=${showtime.showtimeId},
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   paymentMethod=${paymentMethod},
+                                   page=${currentPage - 1}
+                               )}">Trước</a>
                         </li>
-                        <li class="page-item" id="nextPageItem">
-                            <button type="button" class="page-link" id="nextPage">
-                                Sau
-                            </button>
+                        <li class="page-item disabled">
+                            <span class="page-link border-0 bg-transparent text-dark fw-semibold px-2"
+                                  th:text="|Trang ${currentPage + 1} / ${totalPages > 0 ? totalPages : 1}|">
+                            </span>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage >= totalPages - 1 ? 'disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/manager/revenue/showtime/{id}(
+                                   id=${showtime.showtimeId},
+                                   startDate=${startDate},
+                                   endDate=${endDate},
+                                   paymentMethod=${paymentMethod},
+                                   page=${currentPage + 1}
+                               )}">Sau</a>
                         </li>
                     </ul>
                 </nav>
@@ -187,68 +205,6 @@
 
 </div>
 
-<th:block id="actorJs">
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const table = document.getElementById('transactionTable');
-            const pagination = document.getElementById('transactionPagination');
-
-            if (!table || !pagination) return;
-
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr'))
-                .filter(row => row.querySelectorAll('td').length > 1);
-
-            const pageSize = 10;
-            let currentPage = 1;
-
-            const totalPages = Math.ceil(rows.length / pageSize);
-
-            const info = document.getElementById('paginationInfo');
-            const prevButton = document.getElementById('prevPage');
-            const nextButton = document.getElementById('nextPage');
-            const prevItem = document.getElementById('prevPageItem');
-            const nextItem = document.getElementById('nextPageItem');
-
-            function renderPage() {
-                rows.forEach((row, index) => {
-                    const rowPage = Math.floor(index / pageSize) + 1;
-                    row.style.display = rowPage === currentPage ? '' : 'none';
-
-                    // Đánh số thứ tự liên tục giữa các trang
-                    row.cells[0].textContent = index + 1;
-                });
-
-                info.textContent = rows.length === 0
-                    ? 'Không có giao dịch'
-                    : `Hiển thị ${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, rows.length)} / ${rows.length} giao dịch`;
-
-                prevItem.classList.toggle('disabled', currentPage <= 1);
-                nextItem.classList.toggle('disabled', currentPage >= totalPages);
-
-                prevButton.disabled = currentPage <= 1;
-                nextButton.disabled = currentPage >= totalPages;
-
-                pagination.style.display = totalPages > 1 ? 'flex' : 'none';
-            }
-
-            prevButton.addEventListener('click', function () {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderPage();
-                }
-            });
-
-            nextButton.addEventListener('click', function () {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderPage();
-                }
-            });
-
-            renderPage();
-        });
-    </script>
-</th:block>
+<th:block id="actorJs"></th:block>
 </body>
 </html>
