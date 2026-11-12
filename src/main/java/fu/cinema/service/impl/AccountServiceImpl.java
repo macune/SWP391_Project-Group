@@ -26,6 +26,12 @@ public class AccountServiceImpl implements AccountService {
     AccountMapper accountMapper;
 
     @Override
+    public Account getAccountByUsername(String username) {
+        return accountRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản!"));
+    }
+
+    @Override
     public List<AccountResponse> getAllAccounts() {
         List<Account> list = accountRepository.findByStatusIn(
                 List.of(AccountStatus.ACTIVE, AccountStatus.LOCKED, AccountStatus.DELETED)

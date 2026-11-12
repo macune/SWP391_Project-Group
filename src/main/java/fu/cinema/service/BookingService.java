@@ -47,5 +47,6 @@ public interface BookingService {
     void confirmBooking(Long bookingId);
 
     List<String> getFnbDetailsByBookingId(Long bookingId);
+    Booking getBookingById(Long id);
 }
 

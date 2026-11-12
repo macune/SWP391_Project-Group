@@ -38,6 +38,12 @@ public class BookingServiceImpl implements BookingService {
     BranchStockRepository branchStockRepository;
     NotificationService notificationService;
 
+    @Override
+    public Booking getBookingById(Long id) {
+        return bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng!"));
+    }
+
     private BigDecimal calculateSeatPrice(SeatType seatType, BigDecimal basePrice){
         if(seatType == SeatType.VIP){
             return basePrice.add(BigDecimal.valueOf(10000));
