@@ -15,7 +15,7 @@
             <div class="col" th:each="tm : ${topMovies}">
                 <div class="card h-100 border-cine shadow-sm">
                     <a th:href="@{/customer/movie-detail/{id}(id=${tm.movieId})}" class="text-decoration-none position-relative">
-                        <img th:src="${tm.posterUrl != null and !tm.posterUrl.isEmpty() ? tm.posterUrl : '/images/posters/default-poster.jpg'}" class="card-img-top" style="height: 250px; object-fit: cover;">
+                        <img th:src="${tm.posterUrl != null and !tm.posterUrl.isEmpty() ? tm.posterUrl : '/images/posters/default-poster.jpg'}" class="card-img-top" style="height: 350px; object-fit: cover;">
                         <span class="position-absolute top-0 start-0 badge bg-cine-hot m-2" style="font-size: 1rem;"><i class="fa-solid fa-fire"></i></span>
                     </a>
                 </div>
