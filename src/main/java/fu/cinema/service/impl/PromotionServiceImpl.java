@@ -1,5 +1,7 @@
 package fu.cinema.service.impl;
 
+import fu.cinema.dto.request.PromotionRequest;
+import fu.cinema.dto.response.PromotionResponse;
 import fu.cinema.entity.Account;
 import fu.cinema.entity.Promotion;
 import fu.cinema.enums.BookingStatus;
@@ -18,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,92 +30,97 @@ public class PromotionServiceImpl implements PromotionService {
     private final BookingRepository bookingRepository;
     private final AccountRepository accountRepository;
 
+    //Chuyển đổi Entity sang DTO Response
+    private PromotionResponse toResponse(Promotion promotion) {
+        return PromotionResponse.builder()
+                .id(promotion.getId())
+                .code(promotion.getCode())
+                .discountPercentage(promotion.getDiscountPercentage())
+                .discountType(promotion.getDiscountType())
+                .maxDiscountAmount(promotion.getMaxDiscountAmount())
+                .validFrom(promotion.getValidFrom())
+                .expiryDate(promotion.getExpiryDate())
+                .status(promotion.getStatus())
+                .build();
+    }
+
+    // Lấy danh sách mã khuyến mãi còn hạn và đang mở
     @Override
-    public List<Promotion> getActivePromotions() {
+    public List<PromotionResponse> getActivePromotions() {
         return promotionRepository.findByStatusAndExpiryDateAfter(
                 PromotionStatus.ACTIVE,
                 LocalDateTime.now()
-        );
+        ).stream().map(this::toResponse).collect(Collectors.toList());
     }
 
+    // Lấy toàn bộ mã khuyến mãi
     @Override
-    public Object validatePromotion(String code) {
-        Map<String, Object> response = new HashMap<>();
+    public List<PromotionResponse> getAllPromotions() {
+        return promotionRepository.findAll().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
 
-        Optional<Promotion> opt = promotionRepository.findByCode(code);
+    // Tìm kiếm mã khuyến mãi
+    @Override
+    public List<PromotionResponse> searchPromotions(String keyword) {
+        return promotionRepository.findByCodeContainingIgnoreCase(keyword.trim()).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
 
-        if (opt.isEmpty()) {
-            response.put("valid", false);
-            response.put("message", "Mã giảm giá không tồn tại!");
-            return response;
-        }
+    // Lấy thông tin chi tiết 1 mã khuyến mãi
+    @Override
+    public PromotionResponse getPromotionById(Long id) {
+        Promotion promotion = promotionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mã khuyến mãi!"));
+        return toResponse(promotion);
+    }
 
-        Promotion promo = opt.get();
+    // Lưu mã khuyến mãi: 2 trường hợp Thêm mới và Cập nhật
+    @Override
+    public PromotionResponse savePromotion(PromotionRequest request) {
+        boolean isNewPromotion = (request.getId() == null || request.getId() <= 0);
+        Promotion promotion;
+        String cleanCode = request.getCode().trim();
 
-        if (promo.getStatus() != PromotionStatus.ACTIVE) {
-            response.put("valid", false);
-            response.put("message", "Mã giảm giá này đã bị khóa hoặc không khả dụng!");
-            return response;
-        }
-
-        if (promo.getExpiryDate().isBefore(LocalDateTime.now())) {
-            response.put("valid", false);
-            response.put("message", "Mã giảm giá đã hết hạn!");
-            return response;
-        }
-
-        if (promo.getValidFrom() != null && promo.getValidFrom().isAfter(LocalDateTime.now())) {
-            response.put("valid", false);
-            response.put("message", "Mã giảm giá này chưa đến ngày sử dụng!");
-            return response;
-        }
-
-        // =================================================================
-        // CHỐT CHẶN: KIỂM TRA MỖI TÀI KHOẢN CHỈ ĐƯỢC DÙNG 1 LẦN
-        // =================================================================
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
-            Optional<Account> currentUserOpt = accountRepository.findByUsername(auth.getName());
-
-            if (currentUserOpt.isPresent()) {
-                Account currentUser = currentUserOpt.get();
-
-                // Kiểm tra Role
-                boolean isStaffOrManager = auth.getAuthorities().stream()
-                        .anyMatch(a -> a.getAuthority().equals("ROLE_STAFF") || a.getAuthority().equals("ROLE_MANAGER"));
-
-                // Chỉ chặn nếu là Khách hàng (Customer)
-                if (!isStaffOrManager) {
-                    // Đã sửa: Gọi hàm 3 tham số để không bị báo lỗi thiếu bookingId
-                    boolean alreadyUsed = bookingRepository.existsByAccount_AccountIdAndPromotion_IdAndStatusNot(
-                            currentUser.getAccountId(),
-                            promo.getId(),
-                            BookingStatus.CANCELLED
-                    );
-
-                    if (alreadyUsed) {
-                        response.put("valid", false);
-                        response.put("message", "Tài khoản của bạn đã sử dụng mã giảm giá này rồi!");
-                        return response;
-                    }
-                }
+        if (isNewPromotion) {
+            // KIỂM TRA TRÙNG LẶP KHI TẠO MỚI
+            if (promotionRepository.existsByCodeIgnoreCase(cleanCode)) {
+                throw new RuntimeException("Mã khuyến mãi '" + cleanCode + "' đã tồn tại! Vui lòng nhập mã khác.");
             }
+            promotion = new Promotion();
         } else {
-            response.put("valid", false);
-            response.put("message", "Vui lòng đăng nhập để sử dụng mã khuyến mãi này!");
-            return response;
+            // TÌM BẢN GHI CŨ KHI CẬP NHẬT
+            promotion = promotionRepository.findById(request.getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy mã khuyến mãi để cập nhật!"));
+
+            // KIỂM TRA TRÙNG LẶP KHI CẬP NHẬT
+            if (!promotion.getCode().equalsIgnoreCase(cleanCode)
+                    && promotionRepository.existsByCodeIgnoreCase(cleanCode)) {
+                throw new RuntimeException("Mã khuyến mãi '" + cleanCode + "' đã tồn tại! Vui lòng nhập mã khác.");
+            }
         }
-        // =================================================================
 
-        response.put("valid", true);
-        response.put("message", "Áp dụng mã thành công!");
-        response.put("discountPercentage", promo.getDiscountPercentage());
-        response.put("maxDiscountAmount", promo.getMaxDiscountAmount());
+        // GẮN DỮ LIỆU TỪ FORM VÀO ENTITY
+        promotion.setCode(cleanCode);
+        promotion.setDiscountPercentage(request.getDiscountPercentage());
+        promotion.setDiscountType(request.getDiscountType() != null ? request.getDiscountType() : "PERCENTAGE");
+        promotion.setMaxDiscountAmount(request.getMaxDiscountAmount());
+        promotion.setValidFrom(request.getValidFrom());
+        promotion.setExpiryDate(request.getExpiryDate());
 
-        // FIX BUG: Trả về loại khuyến mãi để frontend biết mà tính toán không bị âm tiền
-        response.put("discountType", promo.getDiscountType());
+        promotion.setStatus((request.getIsActive() != null && request.getIsActive())
+                ? PromotionStatus.ACTIVE
+                : PromotionStatus.DISABLED);
 
-        return response;
+        Promotion savedPromotion = promotionRepository.save(promotion);
+        return toResponse(savedPromotion);
+    }
+
+    // Xóa mã khuyến mãi khỏi DB
+    @Override
+    public void deletePromotion(Long id) {
+        promotionRepository.deleteById(id);
     }
 }

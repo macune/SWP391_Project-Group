@@ -35,10 +35,6 @@ public class StaffBookingController {
         return accountRepository.findByUsername(auth.getName()).orElseThrow();
     }
 
-    // ==========================================
-    // PHẦN 1: QUẢN LÝ BÁN BẮP NƯỚC (POS)
-    // ==========================================
-
     // 1. HIỂN THỊ MÀN HÌNH CHỌN MÓN TẠI QUẦY (POS)
     @GetMapping("/booking/{bookingId}/fnb")
     public String showPosFnBPage(@PathVariable Long bookingId, Model model, Authentication auth) {

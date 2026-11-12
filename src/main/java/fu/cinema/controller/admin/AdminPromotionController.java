@@ -1,10 +1,11 @@
 package fu.cinema.controller.admin;
 
 import fu.cinema.dto.request.PromotionRequest;
+import fu.cinema.dto.response.PromotionResponse;
 import fu.cinema.entity.Promotion;
 import fu.cinema.enums.PromotionStatus;
-import fu.cinema.repository.PromotionRepository;
 import fu.cinema.service.NotificationService;
+import fu.cinema.service.PromotionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -20,25 +21,24 @@ import java.util.List;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminPromotionController {
 
-    private final PromotionRepository promotionRepository;
+
+    private final PromotionService promotionService;
     private final NotificationService notificationService;
 
     // 1. HIỂN THỊ DANH SÁCH & FORM TẠO MỚI RỖNG
     @GetMapping
     public String viewPromotions(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
-        List<Promotion> promotions;
+        List<PromotionResponse> promotions;
 
-        // Lọc theo từ khóa
         if (keyword != null && !keyword.trim().isEmpty()) {
-            promotions = promotionRepository.findByCodeContainingIgnoreCase(keyword.trim());
+            promotions = promotionService.searchPromotions(keyword);
             model.addAttribute("keyword", keyword);
         } else {
-            promotions = promotionRepository.findAll();
+            promotions = promotionService.getAllPromotions();
         }
 
-        model.addAttribute("coupons", promotions); // Đẩy danh sách ra bảng
+        model.addAttribute("coupons", promotions);
 
-        // Chuẩn bị form tạo mới rỗng (Mặc định: Đang mở)
         if (!model.containsAttribute("coupon")) {
             PromotionRequest newCouponRequest = new PromotionRequest();
             newCouponRequest.setIsActive(true);
@@ -51,11 +51,8 @@ public class AdminPromotionController {
     @GetMapping("/edit/{id}")
     public String editPromotion(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
-            // Lấy mã cũ từ DB
-            Promotion promotion = promotionRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy mã khuyến mãi!"));
+            PromotionResponse promotion = promotionService.getPromotionById(id);
 
-            // Đổ dữ liệu từ Entity sang form DTO
             PromotionRequest request = new PromotionRequest();
             request.setId(promotion.getId());
             request.setCode(promotion.getCode());
@@ -66,7 +63,7 @@ public class AdminPromotionController {
             request.setExpiryDate(promotion.getExpiryDate());
             request.setIsActive(promotion.getStatus() == PromotionStatus.ACTIVE);
 
-            model.addAttribute("coupons", promotionRepository.findAll());
+            model.addAttribute("coupons", promotionService.getAllPromotions());
             model.addAttribute("coupon", request);
 
             return "admin/promotion-management";
@@ -76,46 +73,14 @@ public class AdminPromotionController {
         }
     }
 
-    // 3. LƯU DỮ LIỆU TỪ FORM (XỬ LÝ CẢ THÊM MỚI VÀ CẬP NHẬT)
+    // 3. LƯU DỮ LIỆU TỪ FORM
     @PostMapping("/save")
     public String savePromotion(@ModelAttribute("coupon") PromotionRequest request, RedirectAttributes redirectAttributes) {
         try {
             boolean isNewPromotion = (request.getId() == null || request.getId() <= 0);
-            Promotion promotion;
 
-            String cleanCode = request.getCode().trim();
+            PromotionResponse savedPromotion = promotionService.savePromotion(request);
 
-            if (isNewPromotion) {
-                // KIỂM TRA TRÙNG LẶP KHI TẠO MỚI
-                if (promotionRepository.existsByCodeIgnoreCase(cleanCode)) {
-                    throw new RuntimeException("Mã khuyến mãi '" + cleanCode + "' đã tồn tại! Vui lòng nhập mã khác.");
-                }
-                promotion = new Promotion();
-            } else {
-                // TÌM BẢN GHI CŨ KHI CẬP NHẬT
-                promotion = promotionRepository.findById(request.getId())
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy mã khuyến mãi để cập nhật!"));
-
-                // KIỂM TRA TRÙNG LẶP KHI CẬP NHẬT
-                if (!promotion.getCode().equalsIgnoreCase(cleanCode)
-                        && promotionRepository.existsByCodeIgnoreCase(cleanCode)) {
-                    throw new RuntimeException("Mã khuyến mãi '" + cleanCode + "' đã tồn tại! Vui lòng nhập mã khác.");
-                }
-            }
-
-            // 2. GẮN DỮ LIỆU VÀO ENTITY
-            promotion.setCode(cleanCode);
-            promotion.setDiscountPercentage(request.getDiscountPercentage());
-            promotion.setDiscountType(request.getDiscountType() != null ? request.getDiscountType() : "PERCENTAGE");
-            promotion.setMaxDiscountAmount(request.getMaxDiscountAmount());
-            promotion.setValidFrom(request.getValidFrom());
-            promotion.setExpiryDate(request.getExpiryDate());
-
-            promotion.setStatus((request.getIsActive() != null && request.getIsActive())
-                    ? PromotionStatus.ACTIVE
-                    : PromotionStatus.DISABLED);
-
-            Promotion savedPromotion = promotionRepository.save(promotion);
 
             if (isNewPromotion && savedPromotion.getStatus() == PromotionStatus.ACTIVE) {
                 notificationService.handleNewPromotionNotification(savedPromotion);
@@ -134,10 +99,9 @@ public class AdminPromotionController {
     @PostMapping("/delete/{id}")
     public String deletePromotion(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            promotionRepository.deleteById(id);
+            promotionService.deletePromotion(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa mã khuyến mãi!");
         } catch (Exception e) {
-            // Chặn lỗi khóa ngoại nếu mã giảm giá đã từng được áp dụng cho đơn đặt vé
             redirectAttributes.addFlashAttribute("errorMessage", "Không thể xóa mã khuyến mãi này vì nó đã được sử dụng!");
         }
         return "redirect:/admin/promotions";

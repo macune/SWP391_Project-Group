@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/admin/movies")
-@PreAuthorize("hasRole('ADMIN')") // Phân quyền: Chỉ Admin mới được quản lý phim
+@PreAuthorize("hasRole('ADMIN')")
 public class MovieController {
 
     @Autowired
@@ -39,7 +39,7 @@ public class MovieController {
     public String processAddMovie(@ModelAttribute("movieRequest") MovieRequest request,
                                   @RequestParam(required = false, name = "confirmDuplicate") Boolean confirmDuplicate,
                                   Model model) {
-        // Chặn lại và hiện cảnh báo nếu tên phim đã tồn tại mà Admin chưa bấm nút xác nhận trùng
+
         if (!Boolean.TRUE.equals(confirmDuplicate) && movieService.checkDuplicateTitle(request.getTitle())) {
             model.addAttribute("duplicateWarning", "Phim '" + request.getTitle() + "' đã tồn tại trong hệ thống! Bạn có chắc chắn muốn thêm một bản ghi mới với tên trùng lặp không?");
             model.addAttribute("movieRequest", request);
@@ -49,13 +49,13 @@ public class MovieController {
         return "redirect:/admin/movies?success=true";
     }
 
-    // 4. LOAD DỮ LIỆU BẢN GHI CŨ ĐỂ CHUẨN BỊ SỬA
+    // 4. LOAD DỮ LIỆU BẢN GHI CŨ
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable("id") Long id, Model model) {
         if (!model.containsAttribute("movieRequest")) {
             MovieResponse movie = movieService.getMovieById(id);
 
-            // Map dữ liệu từ Response sang Request (DTO) để đổ lên form HTML
+            // Map dữ liệu từ Response sang Request để đổ lên form HTML
             MovieRequest request = MovieRequest.builder()
                     .title(movie.getTitle())
                     .description(movie.getDescription())

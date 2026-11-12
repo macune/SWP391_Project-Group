@@ -31,7 +31,7 @@ public class CustomerBookingController {
     @GetMapping("/{bookingId}/fnb")
     public String showFnBSelectionPage(@PathVariable Long bookingId, Model model, RedirectAttributes redirectAttributes) {
         try {
-            // Đã bọc try-catch: Nếu không tìm thấy đơn, sẽ không bị nổ lỗi thô ra màn hình
+
             Booking booking = bookingRepository.findById(bookingId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng để thêm bắp nước!"));
 
@@ -64,7 +64,7 @@ public class CustomerBookingController {
 
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/"; // Hoặc redirect về trang chủ/trang chọn phim
+            return "redirect:/";
         }
     }
 

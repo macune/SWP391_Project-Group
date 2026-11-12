@@ -1,6 +1,7 @@
 package fu.cinema.service.impl;
 
 import fu.cinema.config.EmailConfig;
+import fu.cinema.dto.response.PromotionResponse;
 import fu.cinema.entity.*;
 import fu.cinema.enums.*;
 import fu.cinema.repository.*;
@@ -179,7 +180,7 @@ public class NotificationServiceImpl implements NotificationService {
     // =========================================================================
     @Override
     @Transactional
-    public void handleNewPromotionNotification(Promotion promotion) {
+    public void handleNewPromotionNotification(PromotionResponse promotion) {
         if (promotion == null || promotion.getStatus() != PromotionStatus.ACTIVE) return;
         LocalDateTime scheduledTime = (promotion.getValidFrom() != null && promotion.getValidFrom().isAfter(LocalDateTime.now()))
                 ? promotion.getValidFrom()

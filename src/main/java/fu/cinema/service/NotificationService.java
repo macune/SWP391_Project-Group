@@ -1,6 +1,7 @@
 package fu.cinema.service;
 
 import fu.cinema.config.EmailConfig;
+import fu.cinema.dto.response.PromotionResponse;
 import fu.cinema.entity.Booking;
 import fu.cinema.entity.Notification;
 import fu.cinema.entity.Promotion;
@@ -29,7 +30,7 @@ public interface NotificationService {
     int processShowtimeRemindersJob(); // JOB-03
 
     // FE-10.4: Promotion Notifications & Scheduled Job
-    void handleNewPromotionNotification(Promotion promotion);
+    void handleNewPromotionNotification(PromotionResponse promotion);
     int broadcastPromotionAlert(Long promotionId, LocalDateTime scheduledAt);
     int createCustomNotification(String recipientUsername, NotificationType type, String title, String message,
                                  boolean sendEmail, LocalDateTime scheduledAt);

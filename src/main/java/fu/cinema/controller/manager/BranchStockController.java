@@ -28,7 +28,7 @@ public class BranchStockController {
     private final AccountRepository accountRepository;
     private final StaffRepository staffRepository;
 
-    // Lấy chính xác ID chi nhánh của Quản lý đang đăng nhập từ Security Context
+    // Lấy ID chi nhánh của Quản lý đang đăng nhập từ Security Context
     private Long getCurrentManagerBranchId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -53,13 +53,11 @@ public class BranchStockController {
         Long managerBranchId = getCurrentManagerBranchId();
         model.addAttribute("stocks", branchStockService.getStockByBranch(managerBranchId));
 
-        // Chỉ load lên form nhập các món bắp nước đang được Admin cho phép bán
         List<FnBItem> fnbItems = fnbItemRepository.findAll().stream()
                 .filter(FnBItem::getIsAvailable)
                 .toList();
         model.addAttribute("fnbItems", fnbItems);
 
-        // Chuẩn bị form nhập kho rỗng, ghim sẵn ID chi nhánh để chống nhập nhầm rạp
         if (!model.containsAttribute("stockRequest")) {
             BranchStockRequest request = new BranchStockRequest();
             request.setBranchId(managerBranchId);
@@ -84,7 +82,7 @@ public class BranchStockController {
         return "redirect:/manager/inventory";
     }
 
-    // 3. Cập nhật/Kiểm kê lại số lượng hàng (Ghi đè số lượng mới)
+    // 3. Cập nhật/Kiểm kê lại số lượng hàng
     @PostMapping("/update/{id}")
     public String updateStock(@PathVariable Long id, @RequestParam Integer quantity, RedirectAttributes redirectAttributes) {
         try {
