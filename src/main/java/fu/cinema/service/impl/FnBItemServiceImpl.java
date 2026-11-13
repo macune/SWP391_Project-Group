@@ -4,6 +4,7 @@ import fu.cinema.dto.request.FnBItemRequest;
 import fu.cinema.dto.response.FnBItemResponse;
 import fu.cinema.entity.FnBItem;
 import fu.cinema.enums.FnBCategory;
+import fu.cinema.exception.AppException;
 import fu.cinema.exception.DuplicateFnBItemException;
 import fu.cinema.exception.FnBItemNotFoundException;
 import fu.cinema.mapper.FnBItemMapper;
@@ -42,18 +43,16 @@ public class FnBItemServiceImpl implements FnBItemService {
     }
 
     @Override
-    public FnBItemResponse createItem(FnBItemRequest fnBItemRequest) {
-        if(fnBItemRepository.existsByNameIgnoreCase(
-                fnBItemRequest.getName())){
+    public void createItem(FnBItemRequest fnBItemRequest) {
+        if(fnBItemRepository.existsByNameIgnoreCase(fnBItemRequest.getName().trim())){
             throw new DuplicateFnBItemException(fnBItemRequest.getName());
         };
         FnBItem fnBItem = fnBItemMapper.toEntity(fnBItemRequest);
-        FnBItem fnBItemSaved = fnBItemRepository.save(fnBItem);
-        return fnBItemMapper.toResponse(fnBItemSaved);
+        fnBItemRepository.save(fnBItem);
     }
 
     @Override
-    public FnBItemResponse updateItem(Long id, FnBItemRequest fnBItemRequest) {
+    public void updateItem(Long id, FnBItemRequest fnBItemRequest) {
         FnBItem fnBItem = fnBItemRepository.findById(id)
                 .orElseThrow(
                         ()-> new FnBItemNotFoundException(id)
@@ -64,9 +63,7 @@ public class FnBItemServiceImpl implements FnBItemService {
                 throw new DuplicateFnBItemException(fnBItemRequest.getName());
         }
         fnBItemMapper .update(fnBItem, fnBItemRequest);
-        FnBItem updateItem = fnBItemRepository.save(fnBItem);
-
-        return fnBItemMapper.toResponse(updateItem);
+        fnBItemRepository.save(fnBItem);
     }
 
     @Override
@@ -79,20 +76,10 @@ public class FnBItemServiceImpl implements FnBItemService {
             fnBItemRepository.delete(fnBItem);
             fnBItemRepository.flush();
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            throw new RuntimeException("Không thể xóa sản phẩm này vì đang tồn tại trong kho của chi nhánh hoặc đã có khách đặt mua! Thay vào đó, hãy bấm Edit và đổi trạng thái thành 'Unavailable' (Ngừng bán).");
+            throw new AppException("Không thể xóa sản phẩm này vì đang tồn tại trong kho của chi nhánh hoặc đã có khách đặt mua! Thay vào đó, hãy bấm Edit và đổi trạng thái thành 'Unavailable' (Ngừng bán).");
         }
     }
 
-    @Override
-    public FnBItemResponse changeAvailability(Long id, Boolean availability) {
-        FnBItem fnBItem = fnBItemRepository.findById(id)
-                .orElseThrow(
-                        ()-> new FnBItemNotFoundException(id)
-                );
-        fnBItem.setIsAvailable(availability);
-        FnBItem updateItem = fnBItemRepository.save(fnBItem);
-        return fnBItemMapper.toResponse(updateItem);
-    }
     @Override
     public List<FnBItemResponse> searchItems(String name, FnBCategory category) {
 

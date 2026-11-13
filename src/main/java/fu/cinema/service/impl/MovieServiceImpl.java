@@ -22,6 +22,7 @@ public class MovieServiceImpl implements MovieService {
     private final MovieRepository movieRepository;
 
     private void validateMovieData(MovieRequest request, boolean isCreate) {
+        // Kiểm tra thời lượng phim
         if (request.getDuration() == null || request.getDuration() <= 0) {
             throw new InvalidMovieDataException("Lỗi: Thời lượng phim phải lớn hơn 0 phút.");
         }
@@ -33,6 +34,7 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     public void addMovie(MovieRequest request) {
+
         validateMovieData(request, true);
 
         Movie movie = Movie.builder()
@@ -47,6 +49,7 @@ public class MovieServiceImpl implements MovieService {
                 .trailerUrl(request.getTrailerUrl())
                 .status(request.getStatus() != null ? request.getStatus() : MovieStatus.COMING_SOON)
                 .build();
+
 
         movieRepository.save(movie);
     }
@@ -70,8 +73,10 @@ public class MovieServiceImpl implements MovieService {
     @Override
     @Transactional(readOnly = true)
     public MovieResponse getMovieById(Long id) {
+
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phim với ID: " + id));
+
         return toResponse(movie);
     }
 
@@ -84,8 +89,7 @@ public class MovieServiceImpl implements MovieService {
 
         movie.setTitle(request.getTitle().trim());
         movie.setDescription(request.getDescription());
-        movie.setDuration(request.getDuration())
-        ;
+        movie.setDuration(request.getDuration());
         movie.setReleaseDate(request.getReleaseDate());
         movie.setLanguage(request.getLanguage());
         movie.setGenre(request.getGenre());
@@ -104,17 +108,21 @@ public class MovieServiceImpl implements MovieService {
     public void deleteMovie(Long id) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phim với ID: " + id));
+
         if (!movie.getShowtimes().isEmpty()) {
             throw new IllegalArgumentException("Không thể xóa phim này vì đã có lịch chiếu! Vui lòng đổi trạng thái thành NGỪNG CHIẾU (ENDED).");
         }
+
         movieRepository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean checkDuplicateTitle(String title) {
+
         return movieRepository.existsByTitleIgnoreCase(title != null ? title.trim() : "");
     }
+
 
     private MovieResponse toResponse(Movie movie) {
         return MovieResponse.builder()
