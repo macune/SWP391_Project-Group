@@ -57,9 +57,8 @@ public class FnBItemServiceImpl implements FnBItemService {
                 .orElseThrow(
                         ()-> new FnBItemNotFoundException(id)
                 );
-        if(!fnBItem.getName().equalsIgnoreCase(fnBItemRequest.getName())
-        && fnBItemRepository.existsByNameIgnoreCase(
-                fnBItemRequest.getName())){
+        if(!fnBItem.getName().equalsIgnoreCase(fnBItemRequest.getName().trim())
+        && fnBItemRepository.existsByNameIgnoreCase(fnBItemRequest.getName())){
                 throw new DuplicateFnBItemException(fnBItemRequest.getName());
         }
         fnBItemMapper .update(fnBItem, fnBItemRequest);
@@ -76,7 +75,7 @@ public class FnBItemServiceImpl implements FnBItemService {
             fnBItemRepository.delete(fnBItem);
             fnBItemRepository.flush();
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            throw new AppException("Không thể xóa sản phẩm này vì đang tồn tại trong kho của chi nhánh hoặc đã có khách đặt mua! Thay vào đó, hãy bấm Edit và đổi trạng thái thành 'Unavailable' (Ngừng bán).");
+            throw new IllegalStateException("Không thể xóa sản phẩm này vì đang tồn tại trong kho của chi nhánh hoặc đã có khách đặt mua! Thay vào đó, hãy bấm Edit và đổi trạng thái thành 'Unavailable' (Ngừng bán).");
         }
     }
 
