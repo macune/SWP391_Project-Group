@@ -32,4 +32,5 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     @EntityGraph(attributePaths = {"customer", "staff"})
     List<Account> findByUsernameContainingIgnoreCaseAndStatusIn(String username, Collection<AccountStatus> statuses);
+
 }
