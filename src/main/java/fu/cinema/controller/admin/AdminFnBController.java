@@ -25,9 +25,9 @@ public class AdminFnBController {
         model.addAttribute("items", fnbItemService.searchItems(name, category));
 
         if (!model.containsAttribute("item")) {
-            FnBItemResponse emptyItem = new FnBItemResponse();
-            emptyItem.setIsAvailable(true);
-            model.addAttribute("item", emptyItem);
+            FnBItemRequest emptyRequest = new FnBItemRequest();
+            emptyRequest.setIsAvailable(true); // Vẫn đánh dấu Còn hàng sẵn
+            model.addAttribute("item", emptyRequest);
         }
         return "admin/fnb-items"; // TRỎ TỚI ADMIN HTML
     }
@@ -36,9 +36,19 @@ public class AdminFnBController {
     @GetMapping("/edit/{id}")
     public String editFnbItem(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
-            FnBItemResponse item = fnbItemService.GetItemById(id);
+            FnBItemResponse response = fnbItemService.GetItemById(id);
+
+            FnBItemRequest requestForm = FnBItemRequest.builder()
+                    .id(id)
+                    .name(response.getName())
+                    .category(response.getCategory())
+                    .price(response.getPrice())
+                    .isAvailable(response.getIsAvailable())
+                    .imageUrl(response.getImageUrl())
+                    .build();
+
             model.addAttribute("items", fnbItemService.GetAllItems());
-            model.addAttribute("item", item); // Đổ dữ liệu cũ lên form
+            model.addAttribute("item", requestForm); // Đẩy Request lên
             return "admin/fnb-items";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
