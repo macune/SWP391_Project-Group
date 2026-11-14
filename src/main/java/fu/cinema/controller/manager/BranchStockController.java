@@ -76,16 +76,4 @@ public class BranchStockController {
         }
         return "redirect:/manager/inventory";
     }
-
-    //Xóa bản ghi mặt hàng khỏi kho của rạp
-    @PostMapping("/delete/{id}")
-    public String deleteStock(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        try {
-            branchStockService.deleteStock(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa bản ghi tồn kho khỏi chi nhánh!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa: " + e.getMessage());
-        }
-        return "redirect:/manager/inventory";
-    }
 }

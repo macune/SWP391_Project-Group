@@ -115,10 +115,4 @@ public class BranchStockServiceImpl implements BranchStockService {
                 .toList();
     }
 
-    // Xóa hoàn toàn một bản ghi tồn kho khỏi chi nhánh
-    @Override
-    @Transactional
-    public void deleteStock(Long id) {
-        branchStockRepository.deleteById(id);
-    }
 }

@@ -12,7 +12,6 @@ public interface BranchStockService {
 
 
     void updateStock(Long id, Integer newQuantity);
-    void deleteStock(Long id);
     Long getCurrentManagerBranchId(String username);
     List<FnBItem> getAvailableFnBItems();
 }
