@@ -5,6 +5,7 @@ import fu.cinema.entity.*;
 import fu.cinema.enums.*;
 import fu.cinema.exception.ShowtimeConflictException;
 import fu.cinema.repository.BookingRepository;
+import fu.cinema.repository.BranchStockRepository;
 import fu.cinema.repository.HallRepository;
 import fu.cinema.repository.MovieRepository;
 import fu.cinema.repository.ShowtimeRepository;
@@ -31,6 +32,7 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     private final MovieRepository movieRepository;
     private final HallRepository hallRepository;
     private final BookingRepository bookingRepository;
+    private final BranchStockRepository branchStockRepository;
     private final NotificationService notificationService;
     private static final long MIN_GAP_MINUTES = 10;
 
@@ -123,6 +125,19 @@ public class ShowtimeServiceImpl implements ShowtimeService {
                     ticket.getBooking().setStatus(BookingStatus.CANCELLED);
                     bookingRepository.save(ticket.getBooking());
                     affectedBookings.add(ticket.getBooking());
+                }
+            }
+        }
+
+        // Hoàn bắp nước lại kho cho tất cả các đơn hàng bị ảnh hưởng
+        for (Booking booking : affectedBookings) {
+            if (booking.getBookingFnbs() != null && !booking.getBookingFnbs().isEmpty()) {
+                for (BookingFnB fnb : booking.getBookingFnbs()) {
+                    branchStockRepository.findByBranch_BranchIdAndItem_ItemId(branchId, fnb.getFnbItem().getItemId())
+                            .ifPresent(stock -> {
+                                stock.setQuantity(stock.getQuantity() + fnb.getQuantity());
+                                branchStockRepository.save(stock);
+                            });
                 }
             }
         }

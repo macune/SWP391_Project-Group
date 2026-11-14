@@ -2,25 +2,20 @@ package fu.cinema.controller.customer;
 
 import fu.cinema.dto.request.ChangePasswordRequest;
 import fu.cinema.dto.request.CustomerRequest;
+import fu.cinema.dto.response.DashboardResponse;
 import fu.cinema.dto.response.MovieResponse;
-import fu.cinema.entity.Ticket;
-import fu.cinema.enums.BookingStatus;
-import fu.cinema.enums.MovieStatus;
-import fu.cinema.enums.TicketStatus;
-import fu.cinema.repository.BookingRepository;
-import fu.cinema.repository.TicketRepository;
 import fu.cinema.dto.response.TicketResponse;
+import fu.cinema.entity.Ticket;
+import fu.cinema.enums.TicketStatus;
 import fu.cinema.exception.AppException;
 import fu.cinema.service.BookingService;
 import fu.cinema.service.CustomerService;
+import fu.cinema.service.DashboardService;
 import fu.cinema.service.PromotionService;
 import fu.cinema.service.PublicMovieService;
 import fu.cinema.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -30,8 +25,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,8 +37,7 @@ public class CustomerController {
 
     private final PromotionService promotionService;
     private final PublicMovieService movieService;
-    private final BookingRepository bookingRepository;
-    private final TicketRepository ticketRepository;
+    private final DashboardService dashboardService;
     private final BookingService bookingService;
     private final TicketService ticketService;
     private final CustomerService customerService;
@@ -187,10 +181,10 @@ public class CustomerController {
     @GetMapping("/dashboard")
     public String customerDashboard(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate showDate,
+            @RequestParam(required = false) String showDate,
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate bookingDate,
+            @RequestParam(required = false) String bookingDate,
             @RequestParam(required = false) Integer bookingMonth,
             @RequestParam(required = false) Integer bookingYear,
             Model model
@@ -198,72 +192,39 @@ public class CustomerController {
         model.addAttribute("sectionTitle", "Tổng quan");
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        long upcomingTicketCount = ticketRepository.countByBooking_Account_UsernameAndBooking_StatusAndStatusInAndShowtime_StartTimeAfter(
-                username, BookingStatus.CONFIRMED, List.of(TicketStatus.BOOKED, TicketStatus.CHECKED_IN), LocalDateTime.now());
+        LocalDate parsedShowDate = parseDateFlexible(showDate);
+        LocalDate parsedBookingDate = parseDateFlexible(bookingDate);
 
-        long completedBookingCount = bookingRepository.countByAccount_UsernameAndStatus(username, BookingStatus.CONFIRMED);
-
-        model.addAttribute("upcomingTicketCount", upcomingTicketCount);
-        model.addAttribute("completedBookingCount", completedBookingCount);
-
-        LocalDateTime showFrom = null;
-        LocalDateTime showTo = null;
-
-        if (month != null && month >= 1 && month <= 12) {
-            LocalDateTime monthFrom = LocalDate.of(year != null ? year : LocalDate.now().getYear(), month, 1).atStartOfDay();
-            LocalDateTime monthTo = monthFrom.toLocalDate().plusMonths(1).atStartOfDay();
-            showFrom = showFrom == null || monthFrom.isAfter(showFrom) ? monthFrom : showFrom;
-            showTo = showTo == null || monthTo.isBefore(showTo) ? monthTo : showTo;
-        }
-
-        if (year != null && year >= 1900 && year <= 9998) {
-            LocalDateTime yearFrom = LocalDate.of(year, 1, 1).atStartOfDay();
-            LocalDateTime yearTo = LocalDate.of(year + 1, 1, 1).atStartOfDay();
-            showFrom = showFrom == null || yearFrom.isAfter(showFrom) ? yearFrom : showFrom;
-            showTo = showTo == null || yearTo.isBefore(showTo) ? yearTo : showTo;
-        }
-
-        LocalDateTime bookingFrom = null;
-        LocalDateTime bookingTo = null;
-
-        if (bookingMonth != null && bookingMonth >= 1 && bookingMonth <= 12) {
-            int selectedYear = bookingYear != null ? bookingYear : LocalDate.now().getYear();
-            YearMonth selectedMonth = YearMonth.of(selectedYear, bookingMonth);
-            LocalDateTime monthFrom = selectedMonth.atDay(1).atStartOfDay();
-            LocalDateTime monthTo = selectedMonth.plusMonths(1).atDay(1).atStartOfDay();
-            bookingFrom = bookingFrom == null || monthFrom.isAfter(bookingFrom) ? monthFrom : bookingFrom;
-            bookingTo = bookingTo == null || monthTo.isBefore(bookingTo) ? monthTo : bookingTo;
-        }
-
-        if (bookingYear != null && bookingYear >= 1900 && bookingYear <= 9998) {
-            LocalDateTime yearFrom = LocalDate.of(bookingYear, 1, 1).atStartOfDay();
-            LocalDateTime yearTo = LocalDate.of(bookingYear + 1, 1, 1).atStartOfDay();
-            bookingFrom = bookingFrom == null || yearFrom.isAfter(bookingFrom) ? yearFrom : bookingFrom;
-            bookingTo = bookingTo == null || yearTo.isBefore(bookingTo) ? yearTo : bookingTo;
-        }
-
-        Page<Ticket> ticketPage = ticketRepository.searchCustomerTickets(
-                username, TicketStatus.LOCKED, showFrom, showTo, bookingFrom, bookingTo, PageRequest.of(Math.max(page, 0), 9)
+        DashboardResponse.Customer data = dashboardService.getCustomerDashboardData(
+                username, page, 9, parsedShowDate, month, year, parsedBookingDate, bookingMonth, bookingYear
         );
 
-        model.addAttribute("ticketPage", ticketPage);
-        model.addAttribute("month", month);
-        model.addAttribute("year", year);
-        model.addAttribute("bookingMonth", bookingMonth);
-        model.addAttribute("bookingYear", bookingYear);
-
-        List<Object[]> topRows = ticketRepository.findTopMoviesByBookingCount(
-                BookingStatus.CONFIRMED, List.of(TicketStatus.BOOKED, TicketStatus.CHECKED_IN), MovieStatus.NOW_SHOWING, PageRequest.of(0, 4)
-        );
-
-        List<TopMovie> topMovies = topRows.stream()
-                .map(row -> new TopMovie(movieService.getMovieDetail((Long) row[0]), ((Number) row[1]).longValue()))
-                .toList();
-
-        model.addAttribute("topMovies", topMovies);
+        model.addAttribute("upcomingTicketCount", data.upcomingTicketCount());
+        model.addAttribute("completedBookingCount", data.completedBookingCount());
+        model.addAttribute("ticketPage", data.ticketPage());
+        model.addAttribute("topMovies", data.topMovies());
+        model.addAttribute("showDate", data.showDate());
+        model.addAttribute("month", data.month());
+        model.addAttribute("year", data.year());
+        model.addAttribute("bookingDate", data.bookingDate());
+        model.addAttribute("bookingMonth", data.bookingMonth());
+        model.addAttribute("bookingYear", data.bookingYear());
 
         return "customer/dashboard";
     }
 
-    public record TopMovie(MovieResponse movie, long ticketCount) {}
+    private LocalDate parseDateFlexible(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(dateStr.trim());
+        } catch (DateTimeParseException ignored) {
+            try {
+                return LocalDate.parse(dateStr.trim(), DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            } catch (DateTimeParseException ignored2) {
+                return null;
+            }
+        }
+    }
 }

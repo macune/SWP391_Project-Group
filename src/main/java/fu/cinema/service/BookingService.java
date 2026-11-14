@@ -47,5 +47,7 @@ public interface BookingService {
     void confirmBooking(Long bookingId);
 
     List<String> getFnbDetailsByBookingId(Long bookingId);
+
+    Long getOrCreatePendingRetailBooking(String staffUsername);
 }
 

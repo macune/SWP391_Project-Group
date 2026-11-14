@@ -24,30 +24,64 @@ public interface BookingFnBRepository extends JpaRepository<BookingFnB, Long> {
         JOIN b.payment p
         WHERE bf.fnbItem.itemId = :itemId
           AND p.status = :status
-          AND (:branchId IS NULL OR EXISTS (
-                SELECT 1 FROM Ticket tk
-                JOIN tk.showtime s
-                JOIN s.hall h
-                WHERE tk.booking = b AND h.branch.branchId = :branchId
-          ))
+          AND (
+              :branchId IS NULL
+              OR EXISTS (
+                  SELECT 1 FROM Ticket tk
+                  JOIN tk.showtime s
+                  JOIN s.hall h
+                  WHERE tk.booking = b AND h.branch.branchId = :branchId
+              )
+              OR (b.account.staff.branch.branchId = :branchId)
+          )
           AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod)
-          AND (:startTime IS NULL OR p.transactionTime >= :startTime)
-          AND (:endTime IS NULL OR p.transactionTime < :endTime)
+          AND (
+              (:startTime IS NULL AND :endTime IS NULL)
+              OR EXISTS (
+                  SELECT 1 FROM Ticket tk
+                  JOIN tk.showtime st
+                  WHERE tk.booking = b
+                    AND (:startTime IS NULL OR st.startTime >= :startTime)
+                    AND (:endTime IS NULL OR st.startTime < :endTime)
+              )
+              OR (
+                  NOT EXISTS (SELECT 1 FROM Ticket tk2 WHERE tk2.booking = b)
+                  AND (:startTime IS NULL OR p.transactionTime >= :startTime)
+                  AND (:endTime IS NULL OR p.transactionTime < :endTime)
+              )
+          )
         """, countQuery = """
         SELECT COUNT(bf) FROM BookingFnB bf
         JOIN bf.booking b
         JOIN b.payment p
         WHERE bf.fnbItem.itemId = :itemId
           AND p.status = :status
-          AND (:branchId IS NULL OR EXISTS (
-                SELECT 1 FROM Ticket tk
-                JOIN tk.showtime s
-                JOIN s.hall h
-                WHERE tk.booking = b AND h.branch.branchId = :branchId
-          ))
+          AND (
+              :branchId IS NULL
+              OR EXISTS (
+                  SELECT 1 FROM Ticket tk
+                  JOIN tk.showtime s
+                  JOIN s.hall h
+                  WHERE tk.booking = b AND h.branch.branchId = :branchId
+              )
+              OR (b.account.staff.branch.branchId = :branchId)
+          )
           AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod)
-          AND (:startTime IS NULL OR p.transactionTime >= :startTime)
-          AND (:endTime IS NULL OR p.transactionTime < :endTime)
+          AND (
+              (:startTime IS NULL AND :endTime IS NULL)
+              OR EXISTS (
+                  SELECT 1 FROM Ticket tk
+                  JOIN tk.showtime st
+                  WHERE tk.booking = b
+                    AND (:startTime IS NULL OR st.startTime >= :startTime)
+                    AND (:endTime IS NULL OR st.startTime < :endTime)
+              )
+              OR (
+                  NOT EXISTS (SELECT 1 FROM Ticket tk2 WHERE tk2.booking = b)
+                  AND (:startTime IS NULL OR p.transactionTime >= :startTime)
+                  AND (:endTime IS NULL OR p.transactionTime < :endTime)
+              )
+          )
         """)
     Page<BookingFnB> findFnbTransactions(
             @Param("itemId") Long itemId,

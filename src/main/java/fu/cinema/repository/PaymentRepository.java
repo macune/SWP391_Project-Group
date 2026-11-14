@@ -79,13 +79,21 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
         SELECT DISTINCT p
         FROM Payment p
         JOIN p.booking b
-        JOIN b.tickets t
-        JOIN t.showtime s
-        JOIN s.hall h
+        LEFT JOIN b.tickets t
+        LEFT JOIN t.showtime s
+        LEFT JOIN s.hall h
+        LEFT JOIN b.account a
+        LEFT JOIN a.staff st
         WHERE p.status = :status
-          AND h.branch.branchId = :branchId
-          AND (:startTime IS NULL OR p.transactionTime >= :startTime)
-          AND (:endTime IS NULL OR p.transactionTime < :endTime)
+          AND (
+              h.branch.branchId = :branchId
+              OR (t IS NULL AND st.branch.branchId = :branchId)
+          )
+          AND (
+              (:startTime IS NULL AND :endTime IS NULL)
+              OR (s IS NOT NULL AND (:startTime IS NULL OR s.startTime >= :startTime) AND (:endTime IS NULL OR s.startTime < :endTime))
+              OR (t IS NULL AND (:startTime IS NULL OR p.transactionTime >= :startTime) AND (:endTime IS NULL OR p.transactionTime < :endTime))
+          )
         ORDER BY p.transactionTime DESC
         """)
     List<Payment> findSuccessfulPaymentsByBranchAndTime(
@@ -99,11 +107,17 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     SELECT DISTINCT p
     FROM Payment p
     JOIN p.booking b
-    JOIN b.tickets t
-    JOIN t.showtime s
-    JOIN s.hall h
+    LEFT JOIN b.tickets t
+    LEFT JOIN t.showtime s
+    LEFT JOIN s.hall h
+    LEFT JOIN b.account a
+    LEFT JOIN a.staff st
     WHERE p.status = :status
-      AND (:branchId IS NULL OR h.branch.branchId = :branchId)
+      AND (
+          :branchId IS NULL
+          OR h.branch.branchId = :branchId
+          OR (t IS NULL AND st.branch.branchId = :branchId)
+      )
       AND (:startTime IS NULL OR p.transactionTime >= :startTime)
       AND (:endTime IS NULL OR p.transactionTime < :endTime)
     ORDER BY p.transactionTime DESC
