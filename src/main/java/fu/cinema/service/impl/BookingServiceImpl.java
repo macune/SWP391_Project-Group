@@ -711,4 +711,31 @@ public class BookingServiceImpl implements BookingService {
         }
         return fnbDetails;
     }
+
+    @Override
+    @Transactional
+    public Long getOrCreatePendingRetailBooking(String staffUsername) {
+        Account staffAcc = accountRepository.findByUsername(staffUsername)
+                .orElseThrow(() -> new AppException("Tài khoản không tồn tại"));
+
+        List<Booking> staffBookings = bookingRepository.findByAccount_AccountIdOrderByCreatedAtDesc(staffAcc.getAccountId());
+
+        Booking retailBooking = staffBookings.stream()
+                .filter(b -> b.getStatus() == BookingStatus.PENDING && (b.getTickets() == null || b.getTickets().isEmpty()))
+                .findFirst()
+                .orElse(null);
+
+        if (retailBooking == null) {
+            retailBooking = Booking.builder()
+                    .account(staffAcc)
+                    .bookingTime(LocalDateTime.now())
+                    .createdAt(LocalDateTime.now())
+                    .totalAmount(BigDecimal.ZERO)
+                    .status(BookingStatus.PENDING)
+                    .build();
+            bookingRepository.save(retailBooking);
+        }
+
+        return retailBooking.getBookingId();
+    }
 }

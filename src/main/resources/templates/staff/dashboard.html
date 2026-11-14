@@ -81,7 +81,8 @@
                     </div>
 
                     <div class="staff-stat-note">
-                        Tổng đơn đặt vé đã xác nhận trong ngày
+                        Vé: <strong th:text="${#numbers.formatDecimal(ticketRevenue, 0, 'COMMA', 0, 'POINT') + ' ₫'}">0 ₫</strong>
+                        • Bắp nước: <strong th:text="${#numbers.formatDecimal(fnbRevenue, 0, 'COMMA', 0, 'POINT') + ' ₫'}">0 ₫</strong>
                     </div>
                 </div>
             </div>

@@ -7,9 +7,11 @@ import fu.cinema.dto.response.PaymentUrlResponse;
 import fu.cinema.entity.*;
 import fu.cinema.enums.BookingStatus;
 import fu.cinema.enums.PaymentMethod;
+import fu.cinema.enums.PaymentStatus;
 import fu.cinema.exception.AppException;
 import fu.cinema.repository.BookingRepository;
 import fu.cinema.repository.BranchStockRepository;
+import fu.cinema.repository.PaymentRepository;
 import fu.cinema.repository.PaymentTransactionRepository;
 import fu.cinema.service.NotificationService;
 import fu.cinema.service.PaymentService;
@@ -31,6 +33,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final BookingRepository bookingRepository;
     private final TicketService ticketService;
     private final BranchStockRepository branchStockRepository;
+    private final PaymentRepository paymentRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final NotificationService notificationService;
 
@@ -156,7 +159,24 @@ public class PaymentServiceImpl implements PaymentService {
 
         String finalTxNo = transactionNo != null ? transactionNo : "CASH-" + System.currentTimeMillis();
 
-        // 2. LƯU LỊCH SỬ DÒNG TIỀN
+        // 2. LƯU LỊCH SỬ DÒNG TIỀN VÀ TRẠNG THÁI THANH TOÁN
+        Payment payment = paymentRepository.findByBooking_BookingId(bookingId).orElse(null);
+        if (payment == null) {
+            payment = Payment.builder()
+                    .booking(booking)
+                    .amount(booking.getTotalAmount())
+                    .paymentMethod(method)
+                    .status(PaymentStatus.SUCCESS)
+                    .transactionTime(LocalDateTime.now())
+                    .build();
+        } else {
+            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setAmount(booking.getTotalAmount());
+            payment.setPaymentMethod(method);
+            payment.setTransactionTime(LocalDateTime.now());
+        }
+        paymentRepository.save(payment);
+
         if (!paymentTransactionRepository.existsByBooking_BookingId(bookingId)) {
             PaymentTransaction transaction = PaymentTransaction.builder()
                     .booking(booking)

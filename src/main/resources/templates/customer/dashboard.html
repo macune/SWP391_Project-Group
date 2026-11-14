@@ -79,6 +79,13 @@
 
 
                 <div class="filter-row">
+                    <div class="filter-field" style="grid-column: span 2;">
+                        <label for="showDate">Ngày chiếu cụ thể</label>
+                        <input type="date" id="showDate" name="showDate"
+                               class="form-control"
+                               th:value="${showDate}">
+                    </div>
+
                     <div class="filter-field">
                         <label for="month">Tháng chiếu</label>
                         <select id="month" name="month" class="form-select">
@@ -111,6 +118,13 @@
 
 
                 <div class="filter-row">
+                    <div class="filter-field" style="grid-column: span 2;">
+                        <label for="bookingDate">Ngày đặt vé cụ thể</label>
+                        <input type="date" id="bookingDate" name="bookingDate"
+                               class="form-control"
+                               th:value="${bookingDate}">
+                    </div>
+
                     <div class="filter-field">
                         <label for="bookingMonth">Tháng đặt vé</label>
                         <select id="bookingMonth" name="bookingMonth"
@@ -217,37 +231,49 @@
                 <p class="mb-0">Bạn chưa có giao dịch đặt vé nào.</p>
             </div>
 
-            <!-- Phân trang 9 vé/trang -->
-            <nav th:if="${ticketPage != null and ticketPage.totalPages > 1}"
-                 class="mt-3">
-                <ul class="pagination justify-content-center">
+            <!-- Phân trang 9 vé/trang (Compact style) -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-3"
+                 th:if="${ticketPage != null and ticketPage.totalElements > 0}">
+                <small class="text-muted"
+                       th:text="|Hiển thị ${ticketPage.totalElements == 0 ? 0 : ticketPage.number * ticketPage.size + 1}–${ticketPage.number * ticketPage.size + ticketPage.numberOfElements} / ${ticketPage.totalElements} vé|">
+                </small>
 
-                    <li class="page-item"
-                        th:classappend="${ticketPage.first} ? 'disabled'">
-                        <a class="page-link"
-                           th:href="@{/customer/dashboard(page=${ticketPage.number - 1})}">
-                            Trước
-                        </a>
-                    </li>
-
-                    <li class="page-item"
-                        th:each="i : ${#numbers.sequence(0, ticketPage.totalPages - 1)}"
-                        th:classappend="${i == ticketPage.number} ? 'active'">
-                        <a class="page-link"
-                           th:href="@{/customer/dashboard(page=${i})}"
-                           th:text="${i + 1}">1</a>
-                    </li>
-
-                    <li class="page-item"
-                        th:classappend="${ticketPage.last} ? 'disabled'">
-                        <a class="page-link"
-                           th:href="@{/customer/dashboard(page=${ticketPage.number + 1})}">
-                            Sau
-                        </a>
-                    </li>
-
-                </ul>
-            </nav>
+                <nav aria-label="Phân trang vé">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item"
+                            th:classappend="${ticketPage.first ? 'disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/customer/dashboard(
+                                   page=${ticketPage.number - 1},
+                                   showDate=${showDate},
+                                   month=${month},
+                                   year=${year},
+                                   bookingDate=${bookingDate},
+                                   bookingMonth=${bookingMonth},
+                                   bookingYear=${bookingYear}
+                               )}">Trước</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link border-0 bg-transparent text-dark fw-semibold px-2"
+                                  th:text="|Trang ${ticketPage.number + 1} / ${ticketPage.totalPages > 0 ? ticketPage.totalPages : 1}|">
+                            </span>
+                        </li>
+                        <li class="page-item"
+                            th:classappend="${ticketPage.last ? 'disabled' : ''}">
+                            <a class="page-link"
+                               th:href="@{/customer/dashboard(
+                                   page=${ticketPage.number + 1},
+                                   showDate=${showDate},
+                                   month=${month},
+                                   year=${year},
+                                   bookingDate=${bookingDate},
+                                   bookingMonth=${bookingMonth},
+                                   bookingYear=${bookingYear}
+                               )}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
         </div>
 
     </div>

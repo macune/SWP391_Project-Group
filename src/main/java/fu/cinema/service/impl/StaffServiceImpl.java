@@ -227,4 +227,16 @@ public class StaffServiceImpl implements StaffService {
         }
         return manager;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Branch getStaffBranch(String username) {
+        if (username == null || username.isBlank()) {
+            return null;
+        }
+        return accountRepository.findByUsername(username)
+                .map(Account::getStaff)
+                .map(Staff::getBranch)
+                .orElse(null);
+    }
 }
