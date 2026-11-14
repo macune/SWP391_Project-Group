@@ -91,6 +91,8 @@ public class AdminPromotionController {
             }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("coupon", request);
+
         }
         return "redirect:/admin/promotions";
     }

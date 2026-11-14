@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/admin/movies")
@@ -83,8 +84,24 @@ public class MovieController {
 
     // 6. XÓA PHIM
     @GetMapping("/delete/{id}")
-    public String deleteMovie(@PathVariable("id") Long id) {
-        movieService.deleteMovie(id);
-        return "redirect:/admin/movies";
+    public String deleteMovie(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
+        try {
+            // Cố gắng xóa phim
+            movieService.deleteMovie(id);
+
+            // Nếu phim CHƯA TỪNG có suất chiếu -> Xóa thành công
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa phim thành công vì phim này chưa từng có lịch chiếu.");
+            return "redirect:/admin/movies";
+
+        } catch (IllegalArgumentException e) {
+            // Nếu phim ĐÃ CÓ suất chiếu -> Service ném lỗi -> Bắt lỗi và hiện thông báo đỏ
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/admin/movies";
+
+        } catch (Exception e) {
+            // Bắt các lỗi hệ thống khác
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: Không thể xóa bộ phim này!");
+            return "redirect:/admin/movies";
+        }
     }
 }

@@ -14,4 +14,5 @@ public interface BranchService {
     void deleteBranch(Long branchId);
     void assignManager(Long branchId, Long accountId);
     void removeManager(Long branchId);
+
 }
