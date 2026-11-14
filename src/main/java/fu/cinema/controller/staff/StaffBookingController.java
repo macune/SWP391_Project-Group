@@ -92,30 +92,4 @@ public class StaffBookingController {
 
         return "redirect:/staff/booking/" + bookingId + "/fnb";
     }
-
-    // 5. Xóa cứng đơn hàng rác (chờ thanh toán) dành cho nhân viên
-    @PostMapping("/bookings/{id}/hard-delete")
-    public String deletePendingBooking(@PathVariable("id") Long bookingId, Authentication auth, RedirectAttributes redirectAttributes) {
-        try {
-            Long branchId = getCurrentStaffAccount(auth).getStaff().getBranch().getBranchId();
-            bookingService.hardDeletePendingBooking(bookingId, branchId);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa vĩnh viễn đơn hàng rác (chờ thanh toán)!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        }
-        return "redirect:/staff/bookings";
-    }
-
-    // 6. Hủy và hoàn tiền đơn hàng đã thanh toán thành công (giải phóng ghế, hoàn kho)
-    @PostMapping("/bookings/{id}/cancel-confirmed")
-    public String cancelConfirmedBooking(@PathVariable("id") Long bookingId, Authentication auth, RedirectAttributes redirectAttributes) {
-        try {
-            Long branchId = getCurrentStaffAccount(auth).getStaff().getBranch().getBranchId();
-            bookingService.cancelConfirmedBooking(bookingId, branchId);
-            redirectAttributes.addFlashAttribute("successMessage", "Hủy đơn thành công! Đã giải phóng ghế, trừ doanh thu và hoàn bắp nước vào kho.");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        }
-        return "redirect:/staff/bookings";
-    }
 }
