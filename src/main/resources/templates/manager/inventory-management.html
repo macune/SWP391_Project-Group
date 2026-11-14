@@ -70,7 +70,7 @@
                             <th>Danh Mục</th>
                             <th>Số Lượng Tồn</th>
                             <th>Cập Nhật</th>
-                            <th>Thao tác</th> <!-- CỘT THAO TÁC MỚI -->
+                            <th class="text-center">Thao tác</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -82,16 +82,11 @@
                                 <span class="badge bg-info text-dark" th:text="${s.quantity}"></span>
                             </td>
                             <td th:text="${#temporals.format(s.lastUpdated, 'dd/MM/yyyy HH:mm')}"></td>
-                            <td>
+                            <td class="text-center">
                                 <!-- Nút Sửa (Mở Modal) -->
                                 <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" th:data-bs-target="'#editModal' + ${s.id}">
                                     Sửa
                                 </button>
-
-                                <!-- Nút Xóa -->
-                                <form th:action="@{/manager/inventory/delete/{id}(id=${s.id})}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa bản ghi này? (Thường dùng khi món bị hủy bỏ hoàn toàn)');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
-                                </form>
 
                                 <!-- MODAL SỬA SỐ LƯỢNG CHO TỪNG DÒNG -->
                                 <div class="modal fade" th:id="'editModal' + ${s.id}" tabindex="-1" aria-hidden="true">

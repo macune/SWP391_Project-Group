@@ -80,6 +80,13 @@ public class PromotionServiceImpl implements PromotionService {
     // Lưu mã khuyến mãi: 2 trường hợp Thêm mới và Cập nhật
     @Override
     public PromotionResponse savePromotion(PromotionRequest request) {
+        if (request.getValidFrom() != null && request.getExpiryDate() != null) {
+            // isBefore(): chặn nếu kết thúc kết thúc sớm hơn bắt đầu
+            // isEqual(): chặn nếu chọn trùng ngày và trùng y chang từng phút
+            if (request.getExpiryDate().isBefore(request.getValidFrom()) || request.getExpiryDate().isEqual(request.getValidFrom())) {
+                throw new RuntimeException("Lỗi: Thời gian kết thúc bắt buộc phải diễn ra SAU thời gian bắt đầu!");
+            }
+        }
         boolean isNewPromotion = (request.getId() == null || request.getId() <= 0);
         Promotion promotion;
         String cleanCode = request.getCode().trim();
