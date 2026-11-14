@@ -52,15 +52,16 @@ public class AdminPromotionController {
         try {
             PromotionResponse promotion = promotionService.getPromotionById(id);
 
-            PromotionRequest request = new PromotionRequest();
-            request.setId(promotion.getId());
-            request.setCode(promotion.getCode());
-            request.setDiscountPercentage(promotion.getDiscountPercentage());
-            request.setDiscountType(promotion.getDiscountType());
-            request.setMaxDiscountAmount(promotion.getMaxDiscountAmount());
-            request.setValidFrom(promotion.getValidFrom());
-            request.setExpiryDate(promotion.getExpiryDate());
-            request.setIsActive(promotion.getStatus() == PromotionStatus.ACTIVE);
+            PromotionRequest request = PromotionRequest.builder()
+                    .id(promotion.getId())
+                    .code(promotion.getCode())
+                    .discountPercentage(promotion.getDiscountPercentage())
+                    .discountType(promotion.getDiscountType())
+                    .maxDiscountAmount(promotion.getMaxDiscountAmount())
+                    .validFrom(promotion.getValidFrom())
+                    .expiryDate(promotion.getExpiryDate())
+                    .isActive(promotion.getStatus() == PromotionStatus.ACTIVE)
+                    .build();
 
             model.addAttribute("coupons", promotionService.getAllPromotions());
             model.addAttribute("coupon", request);
