@@ -39,6 +39,17 @@ public class BranchServiceImpl implements BranchService {
 
     @Override
     @Transactional(readOnly = true)
+    public BranchResponse getBranchById(Long branchId) {
+        if (branchId == null) {
+            return null;
+        }
+        Branch branch = branchRepository.findById(branchId)
+                .orElseThrow(() -> new IllegalArgumentException("Chi nhánh không tồn tại."));
+        return toResponse(branch);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Account> getEligibleUsersForManager() {
         return accountRepository.findByRoleAndStatusNotAndStaff_BranchIsNull(Role.MANAGER, AccountStatus.DELETED);
     }

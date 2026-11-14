@@ -12,6 +12,8 @@ import fu.cinema.service.NotificationService;
 import fu.cinema.service.ShowtimeService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -288,5 +290,76 @@ public class ShowtimeServiceImpl implements ShowtimeService {
                 ShowtimeStatus.SCHEDULED,
                 ShowtimeStatus.SHOWING
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Showtime getShowtimeForBranch(Long showtimeId, Long branchId) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
+        if (showtime.getHall() == null || showtime.getHall().getBranch() == null) {
+            throw new IllegalArgumentException("Suất chiếu chưa được gán chi nhánh.");
+        }
+        Long actualBranchId = showtime.getHall().getBranch().getBranchId();
+        if (branchId != null && !branchId.equals(actualBranchId)) {
+            throw new IllegalArgumentException("Suất chiếu không thuộc chi nhánh đã chọn.");
+        }
+        return showtime;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isMovieInBranch(Long branchId, Long movieId) {
+        return showtimeRepository
+                .findByHall_Branch_BranchIdOrderByStartTimeAsc(branchId)
+                .stream()
+                .anyMatch(s -> s.getMovie() != null && s.getMovie().getMovieId().equals(movieId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Showtime> getShowtimesSchedule(
+            Long branchId,
+            Long hallId,
+            ShowtimeStatus status,
+            LocalDate showDate,
+            Integer month,
+            Integer year,
+            Pageable pageable
+    ) {
+        LocalDateTime startDate = showDate != null ? showDate.atStartOfDay() : null;
+        LocalDateTime endDate = showDate != null ? showDate.plusDays(1).atStartOfDay() : null;
+
+        return showtimeRepository.findShowtimesForManagerSchedule(
+                branchId, hallId, status, startDate, endDate, month, year, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Hall> getHallsByBranch(Long branchId) {
+        return hallRepository.findByBranchBranchId(branchId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Movie> getActiveMovies() {
+        return movieRepository.findAll().stream()
+                .filter(movie -> movie.getStatus() != MovieStatus.ENDED)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Showtime getShowtimeForEdit(Long showtimeId, Long branchId) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
+        if (showtime.getHall() == null || showtime.getHall().getBranch() == null
+                || !showtime.getHall().getBranch().getBranchId().equals(branchId)) {
+            throw new IllegalArgumentException("Bạn không có quyền sửa suất chiếu này.");
+        }
+        if (showtime.getStatus() != ShowtimeStatus.SCHEDULED) {
+            throw new IllegalArgumentException("Chỉ có thể sửa suất chiếu đã lên lịch.");
+        }
+        return showtime;
     }
 }

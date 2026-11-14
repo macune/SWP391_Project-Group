@@ -2,6 +2,7 @@ package fu.cinema.service;
 
 import fu.cinema.dto.request.ManagerRequest;
 import fu.cinema.dto.request.StaffRequest;
+import fu.cinema.entity.Staff;
 
 public interface StaffService {
     void createManager(ManagerRequest request);
@@ -10,4 +11,5 @@ public interface StaffService {
     void updateStaff(Long staffId, StaffRequest request);
     void deleteManager(Long staffId);
     void deleteStaff(Long staffId);
+    Staff getManagerByUsername(String username);
 }

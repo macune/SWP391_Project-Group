@@ -159,8 +159,8 @@
                 </small>
 
                 <nav aria-label="Phân trang suất chiếu"
-                     th:if="${totalPages > 1}">
-                    <ul class="pagination mb-0">
+                     th:if="${totalPages > 0}">
+                    <ul class="pagination pagination-sm mb-0">
 
                         <li class="page-item"
                             th:classappend="${currentPage == 0 ? ' disabled' : ''}">
@@ -177,20 +177,10 @@
                             </a>
                         </li>
 
-                        <li class="page-item"
-                            th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
-                            th:classappend="${p == currentPage ? ' active' : ''}">
-                            <a class="page-link"
-                               th:text="${p + 1}"
-                               th:href="@{/manager/revenue/movie/{id}(
-                                   id=${movieId},
-                                   startDate=${startDate},
-                                   endDate=${endDate},
-                                   sortBy=${sortBy},
-                                   sortDir=${sortDir},
-                                   page=${p}
-                               )}">
-                            </a>
+                        <li class="page-item disabled">
+                            <span class="page-link border-0 bg-transparent text-dark fw-semibold px-2"
+                                  th:text="|Trang ${currentPage + 1} / ${totalPages > 0 ? totalPages : 1}|">
+                            </span>
                         </li>
 
                         <li class="page-item"

@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface BranchService {
     List<BranchResponse> getAllBranches();
+    BranchResponse getBranchById(Long branchId);
     List<Account> getEligibleUsersForManager();
     BranchResponse createBranch(BranchRequest request);
     BranchResponse updateBranch(BranchRequest request);

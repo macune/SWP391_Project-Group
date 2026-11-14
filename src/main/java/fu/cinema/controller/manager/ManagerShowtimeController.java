@@ -1,25 +1,17 @@
 package fu.cinema.controller.manager;
 
 import fu.cinema.dto.request.ShowtimeRequest;
-import fu.cinema.entity.Hall;
-import fu.cinema.entity.Movie;
 import fu.cinema.entity.Showtime;
 import fu.cinema.entity.Staff;
-import fu.cinema.enums.MovieStatus;
 import fu.cinema.enums.ShowtimeStatus;
 import fu.cinema.exception.ShowtimeConflictException;
-import fu.cinema.repository.HallRepository;
-import fu.cinema.repository.MovieRepository;
-import fu.cinema.repository.ShowtimeRepository;
-import fu.cinema.repository.StaffRepository;
 import fu.cinema.service.ShowtimeService;
-
+import fu.cinema.service.StaffService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -30,7 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
 
 @Controller
 @RequestMapping("/manager/showtimes")
@@ -38,16 +30,12 @@ import java.util.List;
 public class ManagerShowtimeController {
 
     private final ShowtimeService showtimeService;
-    private final MovieRepository movieRepository;
-    private final HallRepository hallRepository;
-    private final StaffRepository staffRepository;
-    private final ShowtimeRepository showtimeRepository;
+    private final StaffService staffService;
 
     @GetMapping("/create")
     public String showCreateForm(Model model) {
         Long branchId = getCurrentManagerBranchId();
 
-        // Chỉ tạo mới object nếu chưa có (để giữ lại dữ liệu khi redirect vì lỗi)
         if (!model.containsAttribute("showtime")) {
             model.addAttribute("showtime", new ShowtimeRequest());
         }
@@ -64,7 +52,6 @@ public class ManagerShowtimeController {
 
         Long branchId = getCurrentManagerBranchId();
 
-        // NẾU CÓ LỖI VALIDATION -> Gửi dữ liệu qua Redirect để giữ lại trên form
         if (result.hasErrors()) {
             redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.showtime", result);
             redirectAttributes.addFlashAttribute("showtime", request);
@@ -84,121 +71,55 @@ public class ManagerShowtimeController {
             return "redirect:/manager/showtimes";
 
         } catch (ShowtimeConflictException | IllegalArgumentException ex) {
-            // BẮT LỖI XUNG ĐỘT (Exception) VÀ ĐẨY RA GIAO DIỆN
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             redirectAttributes.addFlashAttribute("showtime", request);
             return "redirect:/manager/showtimes/create";
         }
     }
 
-
     @GetMapping
     public String showSchedule(
             @RequestParam(required = false) Long hallId,
             @RequestParam(required = false) ShowtimeStatus status,
-            @RequestParam(required = false)
-            @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate showDate,
+            @RequestParam(required = false) String showDate,
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year,
             @RequestParam(defaultValue = "0") int page,
             Model model) {
 
         Long branchId = getCurrentManagerBranchId();
+        Pageable pageable = PageRequest.of(page, 10);
 
-        List<Hall> halls = hallRepository.findByBranchBranchId(branchId);
-
-        List<Showtime> showtimes =
-                showtimeRepository.findByHall_Branch_BranchIdOrderByStartTimeAsc(branchId);
-
-        // 1. Lọc trạng thái
-        if (status != null) {
-            showtimes = showtimes.stream()
-                    .filter(s -> s.getStatus() == status)
-                    .toList();
+        LocalDate parsedShowDate = null;
+        if (showDate != null && !showDate.trim().isEmpty()) {
+            try {
+                parsedShowDate = LocalDate.parse(showDate.trim());
+            } catch (Exception e) {
+                try {
+                    parsedShowDate = LocalDate.parse(showDate.trim(), DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                } catch (Exception ignored) {
+                }
+            }
         }
 
-        // 2. Lọc phòng chiếu
-        if (hallId != null) {
-            showtimes = showtimes.stream()
-                    .filter(s -> s.getHall().getHallId().equals(hallId))
-                    .toList();
-        }
+        Page<Showtime> showtimePage = showtimeService.getShowtimesSchedule(
+                branchId, hallId, status, parsedShowDate, month, year, pageable);
 
-        // 3. Lọc ngày cụ thể
-        if (showDate != null) {
-            showtimes = showtimes.stream()
-                    .filter(s -> s.getStartTime().toLocalDate().equals(showDate))
-                    .toList();
-        }
-
-        // 4. Lọc tháng
-        if (month != null) {
-            showtimes = showtimes.stream()
-                    .filter(s -> s.getStartTime().getMonthValue() == month)
-                    .toList();
-        }
-
-        // 5. Lọc năm
-        if (year != null) {
-            showtimes = showtimes.stream()
-                    .filter(s -> s.getStartTime().getYear() == year)
-                    .toList();
-        }
-
-        // 6. Phân trang
-        int pageSize = 10;
-        int totalElements = showtimes.size();
-
-        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
-
-        // Tránh trường hợp người dùng truy cập trang không tồn tại
-        int currentPage = totalPages == 0
-                ? 0
-                : Math.max(0, Math.min(page, totalPages - 1));
-
-        PageRequest pageable = PageRequest.of(currentPage, pageSize);
-
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageSize, totalElements);
-
-        Page<Showtime> showtimePage = new PageImpl<>(
-                showtimes.subList(start, end),
-                pageable,
-                totalElements
-        );
-
-        // 7. Đưa dữ liệu ra View
-        model.addAttribute("halls", halls);
+        model.addAttribute("halls", showtimeService.getHallsByBranch(branchId));
         model.addAttribute("hallId", hallId);
-        model.addAttribute("showDate", showDate);
+        model.addAttribute("showDate", parsedShowDate);
         model.addAttribute("month", month);
         model.addAttribute("year", year);
         model.addAttribute("status", status);
         model.addAttribute("statuses", ShowtimeStatus.values());
 
         model.addAttribute("showtimes", showtimePage.getContent());
-        model.addAttribute("currentPage", currentPage);
-        model.addAttribute("totalPages", totalPages);
-        model.addAttribute("totalElements", totalElements);
-        model.addAttribute("pageSize", pageSize);
+        model.addAttribute("currentPage", showtimePage.getNumber());
+        model.addAttribute("totalPages", showtimePage.getTotalPages());
+        model.addAttribute("totalElements", showtimePage.getTotalElements());
+        model.addAttribute("pageSize", showtimePage.getSize());
 
         return "manager/showtime-schedule";
-    }
-
-
-    private void loadFormData(Model model, Long branchId) {
-        model.addAttribute("today", LocalDate.now().toString());
-        model.addAttribute("movies", movieRepository.findAll().stream().filter(movie -> movie.getStatus() != MovieStatus.ENDED).toList());
-        model.addAttribute("earliestDateTime", LocalDateTime.now().plusHours(24));
-        model.addAttribute("halls", hallRepository.findByBranchBranchId(branchId));
-        model.addAttribute("branchId", branchId);
-    }
-
-    private Long getCurrentManagerBranchId() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Staff staff = staffRepository.findByAccount_Username(username).orElseThrow(() -> new IllegalStateException("Không tìm thấy thông tin Manager"));
-        if (staff.getBranch() == null) throw new IllegalStateException("Manager chưa được gán chi nhánh");
-        return staff.getBranch().getBranchId();
     }
 
     @PostMapping("/{id}/cancel")
@@ -217,13 +138,7 @@ public class ManagerShowtimeController {
     public String showEditForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         Long branchId = getCurrentManagerBranchId();
         try {
-            Showtime showtime = showtimeRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy suất chiếu."));
-            if (showtime.getHall().getBranch() == null || !showtime.getHall().getBranch().getBranchId().equals(branchId)) {
-                throw new IllegalArgumentException("Bạn không có quyền sửa suất chiếu này.");
-            }
-            if (showtime.getStatus() != ShowtimeStatus.SCHEDULED) {
-                throw new IllegalArgumentException("Chỉ có thể sửa suất chiếu đã lên lịch.");
-            }
+            Showtime showtime = showtimeService.getShowtimeForEdit(id, branchId);
 
             if (!model.containsAttribute("showtime")) {
                 ShowtimeRequest request = new ShowtimeRequest();
@@ -270,5 +185,22 @@ public class ManagerShowtimeController {
             redirectAttributes.addFlashAttribute("showtime", request);
             return "redirect:/manager/showtimes/" + id + "/edit";
         }
+    }
+
+    private void loadFormData(Model model, Long branchId) {
+        model.addAttribute("today", LocalDate.now().toString());
+        model.addAttribute("movies", showtimeService.getActiveMovies());
+        model.addAttribute("earliestDateTime", LocalDateTime.now().plusHours(24));
+        model.addAttribute("halls", showtimeService.getHallsByBranch(branchId));
+        model.addAttribute("branchId", branchId);
+    }
+
+    private Long getCurrentManagerBranchId() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Staff staff = staffService.getManagerByUsername(username);
+        if (staff == null || staff.getBranch() == null) {
+            throw new IllegalStateException("Manager chưa được gán chi nhánh");
+        }
+        return staff.getBranch().getBranchId();
     }
 }
