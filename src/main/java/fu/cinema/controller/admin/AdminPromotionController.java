@@ -21,7 +21,6 @@ import java.util.List;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminPromotionController {
 
-
     private final PromotionService promotionService;
     private final NotificationService notificationService;
 

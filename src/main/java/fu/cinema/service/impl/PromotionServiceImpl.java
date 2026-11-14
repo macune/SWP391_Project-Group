@@ -50,7 +50,7 @@ public class PromotionServiceImpl implements PromotionService {
         return promotionRepository.findByStatusAndExpiryDateAfter(
                 PromotionStatus.ACTIVE,
                 LocalDateTime.now()
-        ).stream().map(this::toResponse).collect(Collectors.toList());
+        ).stream().map(this::toResponse).toList();
     }
 
     // Lấy toàn bộ mã khuyến mãi
@@ -58,7 +58,7 @@ public class PromotionServiceImpl implements PromotionService {
     public List<PromotionResponse> getAllPromotions() {
         return promotionRepository.findAll().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // Tìm kiếm mã khuyến mãi
@@ -66,7 +66,7 @@ public class PromotionServiceImpl implements PromotionService {
     public List<PromotionResponse> searchPromotions(String keyword) {
         return promotionRepository.findByCodeContainingIgnoreCase(keyword.trim()).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // Lấy thông tin chi tiết 1 mã khuyến mãi

@@ -68,9 +68,7 @@ public class FnBItemServiceImpl implements FnBItemService {
     @Override
     public void deleteItem(Long id) {
         FnBItem fnBItem = fnBItemRepository.findById(id)
-                .orElseThrow(
-                        ()-> new FnBItemNotFoundException(id)
-                );
+                .orElseThrow(()-> new FnBItemNotFoundException(id));
         try {
             fnBItemRepository.delete(fnBItem);
             fnBItemRepository.flush();
