@@ -26,7 +26,7 @@ public class AdminFnBController {
 
         if (!model.containsAttribute("item")) {
             FnBItemRequest emptyRequest = new FnBItemRequest();
-            emptyRequest.setIsAvailable(true); // Vẫn đánh dấu Còn hàng sẵn
+            emptyRequest.setIsAvailable(true);
             model.addAttribute("item", emptyRequest);
         }
         return "admin/fnb-items"; // TRỎ TỚI ADMIN HTML
@@ -60,17 +60,14 @@ public class AdminFnBController {
     @PostMapping("/save")
     public String saveFnbItem(@RequestParam(required = false) Long id, @ModelAttribute FnBItemRequest request, Model model) {
         try {
-            if (id != null) fnbItemService.updateItem(id, request); // Sửa
-            else fnbItemService.createItem(request); // Thêm mới
+            if (id != null) fnbItemService.updateItem(id, request);
+            else fnbItemService.createItem(request);
 
             return "redirect:/admin/fnb-items";
         } catch (Exception e) {
-            // Nếu có lỗi (trùng tên), giữ lại dữ liệu Admin vừa nhập trên form và báo lỗi đỏ
-            FnBItemResponse currentForm = FnBItemResponse.builder()
-                    .id(id).name(request.getName()).category(request.getCategory())
-                    .price(request.getPrice()).imageUrl(request.getImageUrl()).isAvailable(request.getIsAvailable()).build();
+
             model.addAttribute("items", fnbItemService.GetAllItems());
-            model.addAttribute("item", currentForm);
+            model.addAttribute("item", request);
             model.addAttribute("errorMessage", e.getMessage());
             return "admin/fnb-items";
         }
