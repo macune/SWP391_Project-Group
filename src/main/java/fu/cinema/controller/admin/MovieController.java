@@ -22,7 +22,7 @@ public class MovieController {
     @GetMapping
     public String listMovies(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
         model.addAttribute("movies", movieService.getAllMovies(keyword));
-        model.addAttribute("keyword", keyword); // Giữ lại từ khóa trên ô tìm kiếm
+        model.addAttribute("keyword", keyword);
         return "admin/list-movies";
     }
 
