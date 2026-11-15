@@ -1,9 +1,6 @@
 package fu.cinema.service.impl;
 
-import fu.cinema.entity.Booking;
-import fu.cinema.entity.BookingFnB;
-import fu.cinema.entity.FnBItem;
-import fu.cinema.entity.Ticket;
+import fu.cinema.entity.*;
 import fu.cinema.enums.BookingStatus;
 import fu.cinema.enums.TicketStatus;
 import fu.cinema.repository.BookingFnBRepository;
@@ -134,10 +131,10 @@ public class BookingFnBServiceImpl implements BookingFnBService {
         // 4. Tính toán lại mức giảm giá dựa trên Promotion
         BigDecimal discountAmount = BigDecimal.ZERO;
         if (booking.getPromotion() != null) {
-            fu.cinema.entity.Promotion promo = booking.getPromotion();
+            Promotion promo = booking.getPromotion();
 
-            // BỔ SUNG LỖI THIẾU LOẠI FIXED_AMOUNT
-            if ("FIXED_AMOUNT".equalsIgnoreCase(promo.getDiscountType()) || "FIXED_AMOUNT".equals(promo.getDiscountType())) {
+
+            if ("FIXED_AMOUNT".equalsIgnoreCase(promo.getDiscountType()) ) {
                 discountAmount = BigDecimal.valueOf(promo.getDiscountPercentage());
                 if (discountAmount.compareTo(subtotal) > 0) {
                     discountAmount = subtotal; // Không giảm quá tổng tiền
@@ -147,7 +144,7 @@ public class BookingFnBServiceImpl implements BookingFnBService {
             else {
                 BigDecimal percentage = BigDecimal.valueOf(promo.getDiscountPercentage());
 
-                // THÊM RoundingMode.HALF_UP ĐỂ TRÁNH LỖI CRASH KHI CHIA SỐ THẬP PHÂN VÔ HẠN
+
                 discountAmount = subtotal.multiply(percentage).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
                 BigDecimal maxDiscount = promo.getMaxDiscountAmount();
