@@ -41,7 +41,8 @@
                             <input type="text" th:field="*{branchName}" class="form-control border-cine shadow-sm" required />
                         </div>
 
-                        <div class="row g-3 mb-4">
+                        <!-- Chọn Tỉnh/Thành và Quận/Huyện -->
+                        <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-medium">Tỉnh/Thành phố <span class="text-cine-hot">*</span></label>
                                 <select id="citySelect" class="form-select border-cine shadow-sm" required onchange="loadWards()">
@@ -55,16 +56,20 @@
                                 </select>
                             </div>
                         </div>
-
-                        <input type="hidden" id="finalAddress" th:field="*{address}" required>
-                        <div class="mb-4">
-                            <label class="form-label fw-medium text-cine-muted small"><i class="fa-solid fa-location-dot me-1"></i>Địa chỉ chi tiết:</label>
-                            <input type="text" id="displayAddress" class="form-control border-cine bg-light text-muted" th:value="*{address}">
+                        <!-- Địa chỉ chi tiết (Số nhà, tên đường...) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-cine-main">Địa chỉ chi tiết (Số nhà, tên đường, tòa nhà...) <span class="text-cine-hot">*</span></label>
+                            <input type="text" id="detailAddressInput" class="form-control border-cine shadow-sm"
+                                   placeholder="Ví dụ: Số 241 Xuân Thủy hoặc Tầng 3 TTTM..."
+                                   required oninput="updateAddress()" />
+                            <small class="text-muted">Địa chỉ lưu vào hệ thống: <strong id="previewAddress" class="text-cine-primary">Chưa nhập</strong></small>
                         </div>
-
+                        <!-- Trường ẩn lưu địa chỉ hoàn chỉnh gửi lên Server -->
+                        <input type="hidden" id="finalAddress" th:field="*{address}" required>
+                        <!-- Hotline (đổi placeholder gợi ý đúng chuẩn 10 số) -->
                         <div class="mb-4">
                             <label class="form-label fw-medium text-cine-main">Đường dây nóng (Hotline) <span class="text-cine-hot">*</span></label>
-                            <input type="text" th:field="*{hotline}" class="form-control border-cine shadow-sm" placeholder="Ví dụ: 19001001" required />
+                            <input type="text" th:field="*{hotline}" class="form-control border-cine shadow-sm" placeholder="Ví dụ: 0901234567" required />
                         </div>
 
                         <div class="row g-3 mb-4 pb-4 border-bottom border-cine">
@@ -95,72 +100,85 @@
 <th:block id="actorJs">
     <script>
         let locationData = [];
-        const currentFullAddress = document.getElementById('finalAddress').value;
-
         fetch('/js/locations.json')
             .then(response => response.json())
             .then(data => {
                 locationData = data;
                 const citySelect = document.getElementById('citySelect');
-                const wardSelect = document.getElementById('wardSelect');
-
+                // Nạp danh sách Tỉnh/Thành
                 data.forEach((city, index) => {
                     let option = document.createElement('option');
                     option.value = index;
                     option.text = city.name;
                     citySelect.appendChild(option);
                 });
-
-                // Auto-fill nếu chi nhánh đã có địa chỉ chuẩn (Quận, Tỉnh)
-                if (currentFullAddress && currentFullAddress.includes(',')) {
-                    const parts = currentFullAddress.split(',').map(s => s.trim());
-                    const ward = parts[0];
-                    const city = parts[1];
-
-                    const cityIndex = locationData.findIndex(item => item.name.toLowerCase() === city.toLowerCase());
+                // Khôi phục và fill lại địa chỉ cũ của chi nhánh
+                const savedAddress = document.getElementById('finalAddress').value;
+                if (savedAddress) {
+                    restoreOldAddress(savedAddress);
+                }
+            })
+            .catch(err => console.error("Không thể tải locations.json:", err));
+        // Hàm phân tích và điền lại thông tin cũ vào đúng các ô
+        function restoreOldAddress(address) {
+            const citySelect = document.getElementById('citySelect');
+            const wardSelect = document.getElementById('wardSelect');
+            const detailInput = document.getElementById('detailAddressInput');
+            detailInput.value = address;
+            if (address.includes(',')) {
+                const parts = address.split(',').map(s => s.trim());
+                if (parts.length >= 2) {
+                    const rawCity = parts[parts.length - 1];
+                    const rawWard = parts[parts.length - 2];
+                    const detailPart = parts.slice(0, parts.length - 2).join(', ');
+                    // Làm sạch tiền tố TP., Tỉnh để so sánh chuẩn xác
+                    const cleanCity = rawCity.replace(/^(TP\.|Thành phố|Tỉnh)\s*/i, '').trim().toLowerCase();
+                    const cityIndex = locationData.findIndex(item => {
+                        const itemCity = item.name.replace(/^(TP\.|Thành phố|Tỉnh)\s*/i, '').trim().toLowerCase();
+                        return itemCity === cleanCity || item.name.toLowerCase().includes(cleanCity);
+                    });
                     if (cityIndex !== -1) {
                         citySelect.value = cityIndex;
-                        loadWards(); // Tự tải danh sách quận
-                        setTimeout(() => {
-                            wardSelect.value = ward; // Gán Quận sau khi render xong
-                        }, 50);
+                        // Nạp danh sách quận/huyện
+                        populateWards(cityIndex);
+                        wardSelect.value = rawWard;
+                        detailInput.value = detailPart || rawWard;
                     }
                 }
-            });
-
-        function loadWards() {
-            const cityIndex = document.getElementById('citySelect').value;
+            }
+            document.getElementById('finalAddress').value = address;
+            document.getElementById('previewAddress').innerText = address || "Chưa nhập";
+        }
+        // Nạp quận huyện theo tỉnh được chọn
+        function populateWards(cityIndex) {
             const wardSelect = document.getElementById('wardSelect');
             wardSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
-
-            if (cityIndex !== "") {
-                const wards = locationData[cityIndex].wards;
-                wards.forEach(ward => {
+            if (cityIndex !== "" && locationData[cityIndex]) {
+                locationData[cityIndex].wards.forEach(ward => {
                     let option = document.createElement('option');
                     option.value = ward;
                     option.text = ward;
                     wardSelect.appendChild(option);
                 });
             }
+        }
+        // Sự kiện khi người dùng đổi Tỉnh/Thành trên giao diện
+        function loadWards() {
+            const cityIndex = document.getElementById('citySelect').value;
+            populateWards(cityIndex);
             updateAddress();
         }
-
+        // Đồng bộ dữ liệu ghép thành địa chỉ hoàn chỉnh
         function updateAddress() {
             const citySelect = document.getElementById('citySelect');
             const wardSelect = document.getElementById('wardSelect');
-            const displayAddress = document.getElementById('displayAddress');
-            const finalAddress = document.getElementById('finalAddress');
-
-            if (citySelect.value !== "" && wardSelect.value !== "") {
-                const cityName = citySelect.options[citySelect.selectedIndex].text;
-                const wardName = wardSelect.value;
-                const fullStr = wardName + ", " + cityName;
-                finalAddress.value = fullStr;
-                displayAddress.value = fullStr;
-            } else {
-                finalAddress.value = "";
-                displayAddress.value = "";
-            }
+            const detail = document.getElementById('detailAddressInput').value.trim();
+            const cityName = citySelect.value !== "" ? citySelect.options[citySelect.selectedIndex].text : "";
+            const wardName = wardSelect.value;
+            const parts = [detail, wardName, cityName].filter(Boolean);
+            const fullAddr = parts.join(", ");
+            document.getElementById('finalAddress').value = fullAddr;
+            document.getElementById('previewAddress').innerText = fullAddr || "Chưa nhập";
         }
     </script>
 </th:block>

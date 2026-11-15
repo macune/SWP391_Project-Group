@@ -18,7 +18,7 @@
     <div class="card border-cine shadow-sm mb-5 bg-white rounded-3">
         <div class="row g-0 p-3">
             <div class="col-md-3">
-                <img th:src="${movie.posterUrl != null and !movie.posterUrl.isEmpty() ? movie.posterUrl : '/images/posters/default-poster.jpg'}" class="img-fluid rounded border border-cine" style="width: 100%;">
+                <img th:src="${movie.posterUrl != null and !movie.posterUrl.isEmpty() ? movie.posterUrl : '/images/posters/default-poster.jpg'}" class="img-fluid rounded border border-cine w-100" >
             </div>
             <div class="col-md-9 ps-md-4 mt-3 mt-md-0">
                 <h2 class="fw-bold text-cine-main mb-3" th:text="${movie.title}">Tên Phim</h2>

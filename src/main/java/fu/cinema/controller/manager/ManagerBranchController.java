@@ -76,7 +76,8 @@ public class ManagerBranchController {
                                Authentication authentication,
                                RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Dữ liệu nhập không hợp lệ, vui lòng kiểm tra lại.");
+            String errorMsg = bindingResult.getAllErrors().getFirst().getDefaultMessage();
+            redirectAttributes.addFlashAttribute("errorMessage", errorMsg != null ? errorMsg : "Dữ liệu nhập không hợp lệ, vui lòng kiểm tra lại.");
             return "redirect:/manager/branch-settings";
         }
 
