@@ -63,13 +63,12 @@ public class BranchStockServiceImpl implements BranchStockService {
             throw new RuntimeException("Lỗi: Món này đã bị Admin ngừng bán, không thể nhập thêm vào kho!");
         }
 
-        //Món này đã có sẵn trong rạp
         if (stock != null) {
             stock.setQuantity(stock.getQuantity() + request.getQuantityToAdd());
             stock.setLastUpdated(LocalDateTime.now());
             branchStockRepository.save(stock);
         }
-        //Món này rạp chưa từng nhập bao giờ
+
         else {
             Branch branch = branchRepository.findById(request.getBranchId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chi nhánh"));
@@ -93,7 +92,7 @@ public class BranchStockServiceImpl implements BranchStockService {
 
         stock.setQuantity(newQuantity);
         stock.setLastUpdated(LocalDateTime.now());
-        branchStockRepository.save(stock); // Lưu thẳng số mới, xóa sổ con số cũ
+        branchStockRepository.save(stock);
     }
 
     // LẤY ID RẠP TỪ QUẢN LÝ
@@ -129,7 +128,7 @@ public class BranchStockServiceImpl implements BranchStockService {
         return map;
     }
 
-    // 7. LẤY MENU POS CHO RẠP
+    // 7. LẤY MENU POS
     @Override
     public List<FnBItemResponse> getAvailableFnBItemsForBranch(Long branchId) {
         // Lấy danh sách Mã số (ID) của những món đang nằm trong kho rạp

@@ -796,7 +796,6 @@ public class BookingServiceImpl implements BookingService {
             bookingRepository.save(retailBooking);
         }
 
-        //Trả về Mã hóa đơnđể đẩy qua màn hình chọn bắp nước
         return retailBooking.getBookingId();
     }
 }
