@@ -4,10 +4,6 @@ import fu.cinema.dto.request.SeatLockRequest;
 import fu.cinema.dto.response.*;
 import fu.cinema.entity.Booking;
 import fu.cinema.enums.BookingStatus;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -30,11 +26,13 @@ public interface BookingService {
     // Sử dụng khi khách hủy đặt vé -> Giải phóng ghế + xóa booking
     void cancelBooking(Long bookingId);
 
-    // Lấy các hóa đơn (Staff)
+    // Lấy các hóa đơn (Staff) - Hỗ trợ lọc theo chi nhánh của Staff
     List<BookDetailsResponse> getAllBookings(String keyword, BookingStatus status);
+    List<BookDetailsResponse> getAllBookings(String keyword, BookingStatus status, Long staffBranchId);
 
-    // Booking details cho 1 hóa đơn
+    // Booking details cho 1 hóa đơn - Hỗ trợ kiểm tra chi nhánh của Staff
     BookDetailsResponse getBookingDetail(Long bookingId);
+    BookDetailsResponse getBookingDetail(Long bookingId, Long staffBranchId);
 
     // Staff: Đổi trạng thái đơn (Xác nhận hoặc Hủy đơn)
     void hardDeletePendingBooking(Long bookingId, Long staffBranchId);
@@ -49,4 +47,3 @@ public interface BookingService {
     List<String> getFnbDetailsByBookingId(Long bookingId);
     Booking getBookingById(Long id);
 }
-

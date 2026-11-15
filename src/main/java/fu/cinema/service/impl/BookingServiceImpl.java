@@ -54,6 +54,28 @@ public class BookingServiceImpl implements BookingService {
         return basePrice;
     }
 
+    /**
+     * Xác định branchId của một đơn Booking:
+     * - Nếu đơn có vé: lấy theo chi nhánh của phòng chiếu thuộc suất chiếu.
+     * - Nếu đơn không có vé (đơn bán lẻ F&B tại quầy): lấy theo chi nhánh của nhân viên tạo đơn.
+     */
+    private Long resolveBookingBranchId(Booking booking) {
+        if (booking.getTickets() != null && !booking.getTickets().isEmpty()) {
+            Ticket firstTicket = booking.getTickets().get(0);
+            if (firstTicket.getShowtime() != null
+                    && firstTicket.getShowtime().getHall() != null
+                    && firstTicket.getShowtime().getHall().getBranch() != null) {
+                return firstTicket.getShowtime().getHall().getBranch().getBranchId();
+            }
+        }
+        if (booking.getAccount() != null
+                && booking.getAccount().getStaff() != null
+                && booking.getAccount().getStaff().getBranch() != null) {
+            return booking.getAccount().getStaff().getBranch().getBranchId();
+        }
+        return null;
+    }
+
     // Hàm lấy danh sách ghế của Hall trong 1 showtime (bao gồm các ghế đã bị khóa, giá tiền của từng ghế)
     @Override
     @Transactional(readOnly = true)
@@ -451,7 +473,7 @@ public class BookingServiceImpl implements BookingService {
             bookingFnbRepository.deleteAll(fnbList);
         }
 
-        // FE-10.1: Gửi thông báo hủy đơn đặt vé
+        // Gửi thông báo hủy đơn đặt vé
         notificationService.sendBookingCancelledAlert(booking);
 
         paymentRepository.findByBooking_BookingId(bookingId).ifPresent(paymentRepository::delete);
@@ -462,11 +484,26 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional(readOnly = true)
     public List<BookDetailsResponse> getAllBookings(String keyword, BookingStatus status) {
+        return getAllBookings(keyword, status, null);
+    }
+
+    // Danh sách bookings thuộc chi nhánh của Staff (bao gồm đơn đặt vé có suất chiếu thuộc chi nhánh & đơn do nhân viên chi nhánh tạo)
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookDetailsResponse> getAllBookings(String keyword, BookingStatus status, Long staffBranchId) {
         List<Booking> allBookings = bookingRepository.findAllByOrderByCreatedAtDesc();
         List<BookDetailsResponse> result = new ArrayList<>();
 
         for (Booking b : allBookings) {
-            // Lọc theo trạng thái nếu có chọn
+            // 1. Lọc theo chi nhánh của Staff đang quản lý
+            if (staffBranchId != null) {
+                Long bookingBranchId = resolveBookingBranchId(b);
+                if (bookingBranchId == null || !staffBranchId.equals(bookingBranchId)) {
+                    continue;
+                }
+            }
+
+            // 2. Lọc theo trạng thái nếu có chọn
             if (status != null && b.getStatus() != status) {
                 continue;
             }
@@ -483,18 +520,23 @@ public class BookingServiceImpl implements BookingService {
                 if (b.getAccount().getCustomer() != null) {
                     customerName = b.getAccount().getCustomer().getFullName();
                     customerPhone = b.getAccount().getCustomer().getPhone();
+                } else if (b.getAccount().getStaff() != null) {
+                    customerName = "Khách tại quầy (NV: " + b.getAccount().getStaff().getFullName() + ")";
+                    customerPhone = b.getAccount().getStaff().getPhone() != null ? b.getAccount().getStaff().getPhone() : "---";
                 }
             }
 
-            // Lấy tên phim
-            String movieTitle = (b.getTickets() != null && !b.getTickets().isEmpty()) ? b.getTickets().get(0).getShowtime().getMovie().getTitle() : "---";
+            // Lấy tên phim (hoặc ghi chú đơn bán lẻ bắp nước)
+            String movieTitle = (!isRetail)
+                    ? b.getTickets().get(0).getShowtime().getMovie().getTitle()
+                    : "Bán lẻ Bắp nước (Tại quầy)";
 
-            // Tìm kiếm theo từ khóa (Mã đơn, Tên khách, SĐT hoặc Tên phim)
+            // 3. Tìm kiếm theo từ khóa (Mã đơn, Tên khách, SĐT hoặc Tên phim)
             if (keyword != null && !keyword.trim().isEmpty()) {
-                keyword = keyword.trim().toLowerCase();
-                boolean matchId = String.valueOf(b.getBookingId()).contains(keyword);
-                boolean matchCustomer = customerName.toLowerCase().contains(keyword) || customerPhone.contains(keyword);
-                boolean matchMovie = movieTitle.toLowerCase().contains(keyword);
+                String kw = keyword.trim().toLowerCase();
+                boolean matchId = String.valueOf(b.getBookingId()).contains(kw);
+                boolean matchCustomer = customerName.toLowerCase().contains(kw) || customerPhone.toLowerCase().contains(kw);
+                boolean matchMovie = movieTitle.toLowerCase().contains(kw);
 
                 // Nếu không khớp bất kỳ thông tin nào -> bỏ qua
                 if (!matchId && !matchCustomer && !matchMovie) {
@@ -515,18 +557,37 @@ public class BookingServiceImpl implements BookingService {
         return result;
     }
 
-    // Lấy chi tiết booking (Dùng cho staff)
     @Override
     @Transactional(readOnly = true)
     public BookDetailsResponse getBookingDetail(Long bookingId) {
+        return getBookingDetail(bookingId, null);
+    }
+
+    // Lấy chi tiết booking (Dùng cho staff, có kiểm tra chi nhánh)
+    @Override
+    @Transactional(readOnly = true)
+    public BookDetailsResponse getBookingDetail(Long bookingId, Long staffBranchId) {
         Booking b = bookingRepository.findById(bookingId).orElseThrow(BookingNotFoundException::new);
+
+        if (staffBranchId != null) {
+            Long bookingBranchId = resolveBookingBranchId(b);
+            if (bookingBranchId == null || !staffBranchId.equals(bookingBranchId)) {
+                throw new AppException("Đơn hàng này không thuộc chi nhánh của bạn!");
+            }
+        }
 
         String name = b.getAccount() != null ? b.getAccount().getUsername() : "Khách vãng lai";
         String phone = "---";
-        if (b.getAccount() != null && b.getAccount().getCustomer() != null) {
-            name = b.getAccount().getCustomer().getFullName();
-            phone = b.getAccount().getCustomer().getPhone();
+        if (b.getAccount() != null) {
+            if (b.getAccount().getCustomer() != null) {
+                name = b.getAccount().getCustomer().getFullName();
+                phone = b.getAccount().getCustomer().getPhone();
+            } else if (b.getAccount().getStaff() != null) {
+                name = "Khách tại quầy (NV: " + b.getAccount().getStaff().getFullName() + ")";
+                phone = b.getAccount().getStaff().getPhone() != null ? b.getAccount().getStaff().getPhone() : "---";
+            }
         }
+
         String movie = (b.getTickets() != null && !b.getTickets().isEmpty()) ? b.getTickets().get(0).getShowtime().getMovie().getTitle() : "---";
         String hall = (b.getTickets() != null && !b.getTickets().isEmpty()) ? b.getTickets().get(0).getShowtime().getHall().getHallName() : "---";
         LocalDateTime time = (b.getTickets() != null && !b.getTickets().isEmpty()) ? b.getTickets().get(0).getShowtime().getStartTime() : null;
@@ -556,11 +617,9 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException("Không tìm thấy đơn hàng"));
 
-        Long bookingBranchId = (booking.getTickets() == null || booking.getTickets().isEmpty())
-                ? staffBranchId
-                : booking.getTickets().get(0).getShowtime().getHall().getBranch().getBranchId();
+        Long bookingBranchId = resolveBookingBranchId(booking);
 
-        if (!bookingBranchId.equals(staffBranchId)) {
+        if (bookingBranchId == null || !bookingBranchId.equals(staffBranchId)) {
             throw new AppException("Đơn hàng này không thuộc chi nhánh của bạn!");
         }
 
@@ -589,11 +648,9 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new AppException("Không tìm thấy đơn hàng"));
 
-        Long bookingBranchId = (booking.getTickets() == null || booking.getTickets().isEmpty())
-                ? staffBranchId
-                : booking.getTickets().get(0).getShowtime().getHall().getBranch().getBranchId();
+        Long bookingBranchId = resolveBookingBranchId(booking);
 
-        if (!bookingBranchId.equals(staffBranchId)) {
+        if (bookingBranchId == null || !bookingBranchId.equals(staffBranchId)) {
             throw new AppException("Đơn hàng này không thuộc chi nhánh của bạn!");
         }
 
@@ -601,7 +658,8 @@ public class BookingServiceImpl implements BookingService {
             throw new AppException("Chỉ có thể hủy đơn đã thanh toán thành công!");
         }
 
-        boolean isUsed = booking.getTickets().stream().anyMatch(t -> t.getStatus() == TicketStatus.CHECKED_IN);
+        boolean isUsed = booking.getTickets() != null
+                && booking.getTickets().stream().anyMatch(t -> t.getStatus() == TicketStatus.CHECKED_IN);
         if (isUsed) {
             throw new AppException("Đơn hàng này đã có vé được soát. Tuyệt đối không thể hủy!");
         }
@@ -638,10 +696,9 @@ public class BookingServiceImpl implements BookingService {
 
         List<BookingHistoryResponse> responses = new ArrayList<>();
 
-        for(Booking b : bookings){
-
+        for (Booking b : bookings) {
             // Nếu lọc theo Status mà status của booking này khác với status muốn lọc thì continue
-            if(status!=null && b.getStatus()!=status){
+            if (status != null && b.getStatus() != status) {
                 continue;
             }
 
@@ -651,23 +708,23 @@ public class BookingServiceImpl implements BookingService {
             List<String> seatList = new ArrayList<>();
 
             // Check xem tickets của booking có null hay empty không
-            if(tickets!=null && !tickets.isEmpty()){
+            if (tickets != null && !tickets.isEmpty()) {
                 movieTitle = b.getTickets().get(0).getShowtime().getMovie().getTitle();
                 showtime = b.getTickets().get(0).getShowtime().getStartTime();
                 // Duyệt qua ticket để lấy tên các ghế (seatRow + seatNumber)
-                for(Ticket ticket : b.getTickets()){
+                for (Ticket ticket : b.getTickets()) {
                     seatList.add(ticket.getSeat().getRowCode()+ticket.getSeat().getNumber());
                 }
             }
 
             // Nếu người dùng nhập vào ô tìm kiếm -> có keyword
-            if(keyword!=null && !keyword.trim().isEmpty()){
+            if (keyword!=null && !keyword.trim().isEmpty()) {
                 keyword = keyword.trim().toLowerCase();
                 boolean isMatchMovieTitle = movieTitle.toLowerCase().contains(keyword);
                 boolean isMatchBookingId = String.valueOf(b.getBookingId()).contains(keyword);
 
                 // Nếu keyword không contains cả movieTitle và bookingId -> chuyển tới phần tử kế
-                if(!isMatchMovieTitle && !isMatchBookingId){
+                if (!isMatchMovieTitle && !isMatchBookingId) {
                     continue;
                 }
             }
