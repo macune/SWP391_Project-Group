@@ -4,7 +4,7 @@ import fu.cinema.dto.request.BranchRequest;
 import fu.cinema.entity.Account;
 import fu.cinema.entity.Branch;
 import fu.cinema.entity.Staff;
-import fu.cinema.repository.AccountRepository;
+import fu.cinema.service.AccountService;
 import fu.cinema.service.BranchService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class ManagerBranchController {
 
     private final BranchService branchService;
-    private final AccountRepository accountRepository;
+    private final AccountService accountService;
 
     /**
      * Hàm dùng chung để lấy ID chi nhánh của Manager đang đăng nhập hiện tại
@@ -35,8 +35,7 @@ public class ManagerBranchController {
         }
 
         String username = authentication.getName();
-        Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản: " + username));
+        Account account = accountService.getAccountByUsername(username);
 
         Staff staff = account.getStaff();
         if (staff == null || staff.getBranch() == null) {

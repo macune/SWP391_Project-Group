@@ -1,8 +1,5 @@
 package fu.cinema.controller.manager;
 
-import fu.cinema.dto.request.FnBItemRequest;
-import fu.cinema.dto.response.FnBItemResponse;
-import fu.cinema.enums.FnBCategory;
 import fu.cinema.dto.request.StaffRequest;
 import fu.cinema.exception.AppException;
 import fu.cinema.service.FnBItemService;
@@ -19,16 +16,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/manager")
 @RequiredArgsConstructor
-public class ManagerController {
+public class ManagerStaffController {
 
     private final FnBItemService fnbItemService;
     private final StaffService staffService;
     private final ManagerService managerService;
 
-
-    // ==========================================
-    // 6. QUẢN LÝ NHÂN VIÊN CHI NHÁNH (STAFF)
-    // ==========================================
+    // QUẢN LÝ NHÂN VIÊN CHI NHÁNH (STAFF)
 
     // Hiển thị danh sách nhân viên
     @GetMapping("/staffs")

@@ -3,7 +3,7 @@ package fu.cinema.controller.staff;
 import fu.cinema.dto.response.BookDetailsResponse;
 import fu.cinema.entity.Account;
 import fu.cinema.enums.BookingStatus;
-import fu.cinema.repository.AccountRepository;
+import fu.cinema.service.AccountService;
 import fu.cinema.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -20,10 +20,10 @@ import java.util.List;
 public class StaffListBookingController {
 
     private final BookingService bookingService;
-    private final AccountRepository accountRepository;
+    private final AccountService accountService;
 
     private Account getCurrentStaffAccount(Authentication auth) {
-        return accountRepository.findByUsername(auth.getName()).orElseThrow();
+        return accountService.getAccountByUsername(auth.getName());
     }
 
     // 1. DANH SÁCH ĐƠN ĐẶT VÉ
