@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/customer")
@@ -39,13 +38,9 @@ public class CustomerMovieController {
         model.addAttribute("ageRatings", AgeRating.values());
         model.addAttribute("topMovies", movieService.getTop5HighestRevenueMovies());
 
-        List<MovieResponse> allShowingMovies = movieService.getMoviesByStatus("NOW_SHOWING");
-        List<MovieResponse> filteredMovies = allShowingMovies.stream()
-                .filter(m -> keyword == null || keyword.trim().isEmpty() || m.getTitle().toLowerCase().contains(keyword.toLowerCase().trim()))
-                .filter(m -> genre == null || genre.isEmpty() || m.getGenre().equals(genre))
-                .filter(m -> language == null || language.isEmpty() || m.getLanguage().equals(language))
-                .filter(m -> ageRating == null || ageRating.isEmpty() || m.getAgeRating().equals(ageRating))
-                .collect(Collectors.toList());
+        // Gọi thẳng Service xử lý lọc thay vì tự xử lý Stream trong Controller
+        List<MovieResponse> filteredMovies = movieService.getFilteredMovies(
+                "NOW_SHOWING", keyword, genre, language, ageRating);
 
         model.addAttribute("movies", filteredMovies);
         model.addAttribute("keyword", keyword);
@@ -59,24 +54,26 @@ public class CustomerMovieController {
         return "customer/list-movies";
     }
 
-    @GetMapping("/movie-detail/{id}")
+    @GetMapping("/movies/{id}")
     public String customerMovieDetail(
-            @PathVariable("id") Long movieId,
+            @PathVariable Long id,
             @RequestParam(value = "branchId", required = false) Long branchId,
-            @RequestParam(value = "date", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(value = "date", required = false) LocalDate date,
             @RequestParam(value = "timeSlot", required = false) String timeSlot,
             Model model) {
-        try {
-            model.addAttribute("movie", movieService.getMovieDetail(movieId));
-            model.addAttribute("branches", branchService.getAllBranches());
-            model.addAttribute("showtimes", movieService.getShowtimes(movieId, branchId, date, timeSlot));
 
-            model.addAttribute("selectedBranchId", branchId);
-            model.addAttribute("selectedDate", date);
-            model.addAttribute("selectedTimeSlot", timeSlot);
-        } catch (IllegalArgumentException e) {
-            return "redirect:/customer/list-movies";
+        if (date == null) {
+            date = LocalDate.now();
         }
+
+        model.addAttribute("movie", movieService.getMovieDetail(id));
+        model.addAttribute("branches", branchService.getAllBranches());
+        model.addAttribute("showtimes", movieService.getShowtimes(id, branchId, date, timeSlot));
+
+        model.addAttribute("selectedBranchId", branchId);
+        model.addAttribute("selectedDate", date);
+        model.addAttribute("selectedTimeSlot", timeSlot);
+
         return "customer/movie-detail";
     }
 }

@@ -58,4 +58,6 @@ public interface TicketService {
      * Xác nhận soát vé cho khách vào phòng chiếu (Chuyển trạng thái BOOKED -> CHECKED_IN).
      */
     fu.cinema.dto.response.TicketValidationResponse confirmTicketCheckIn(Long ticketId, String staffUsername);
+
+    List<TicketResponse> getMyActiveTickets(String username);
 }

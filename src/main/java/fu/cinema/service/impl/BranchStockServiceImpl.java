@@ -2,6 +2,7 @@ package fu.cinema.service.impl;
 
 import fu.cinema.dto.request.BranchStockRequest;
 import fu.cinema.dto.response.BranchStockResponse;
+import fu.cinema.dto.response.FnBItemResponse;
 import fu.cinema.entity.*;
 import fu.cinema.repository.*;
 import fu.cinema.service.BranchStockService;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -115,4 +117,32 @@ public class BranchStockServiceImpl implements BranchStockService {
                 .toList();
     }
 
+    @Override
+    public Map<Long, Integer> getStockQuantityMap(Long branchId) {
+        java.util.Map<Long, Integer> map = new java.util.HashMap<>();
+        branchStockRepository.findByBranch_BranchId(branchId).forEach(stock -> {
+            map.put(stock.getItem().getItemId(), stock.getQuantity() != null ? stock.getQuantity() : 0);
+        });
+        return map;
+    }
+
+    @Override
+    public List<FnBItemResponse> getAvailableFnBItemsForBranch(Long branchId) {
+        List<Long> availableItemIds = branchStockRepository.findByBranch_BranchId(branchId).stream()
+                .map(stock -> stock.getItem().getItemId())
+                .toList();
+
+        return fnbItemRepository.findAll().stream()
+                .filter(FnBItem::getIsAvailable)
+                .filter(item -> availableItemIds.contains(item.getItemId()))
+                .map(item -> fu.cinema.dto.response.FnBItemResponse.builder()
+                        .id(item.getItemId())
+                        .name(item.getName())
+                        .category(item.getCategory())
+                        .price(item.getPrice())
+                        .imageUrl(item.getImageUrl())
+                        .isAvailable(item.getIsAvailable())
+                        .build())
+                .toList();
+    }
 }

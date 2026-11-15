@@ -1,6 +1,5 @@
 package fu.cinema.dto.request;
 
-import com.fasterxml.jackson.core.JsonToken;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +24,7 @@ public class PromotionRequest {
     @Min(value = 0, message = "Phần trăm giảm không được âm")
     private Integer discountPercentage;
 
+    @Builder.Default
     private String discountType = "PERCENTAGE";
 
     @NotNull(message = "Vui lòng nhập số tiền giảm tối đa")
@@ -39,6 +39,4 @@ public class PromotionRequest {
     private LocalDateTime expiryDate;
 
     private Boolean isActive;
-
-
 }

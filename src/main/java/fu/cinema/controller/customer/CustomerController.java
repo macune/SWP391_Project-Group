@@ -46,11 +46,7 @@ public class CustomerController {
     public String myBookings(Authentication authentication, Model model) {
         model.addAttribute("sectionTitle", "Vé của tôi (Lịch sử đặt vé)");
         if (authentication != null) {
-            List<TicketResponse> allTickets = ticketService.getMyTickets(authentication.getName());
-            List<TicketResponse> activeTickets = allTickets.stream()
-                    .filter(t -> t.getStatus() != TicketStatus.CANCELLED)
-                    .collect(Collectors.toList());
-            model.addAttribute("tickets", activeTickets);
+            model.addAttribute("tickets", ticketService.getMyActiveTickets(authentication.getName()));
         }
         return "customer/my-tickets";
     }

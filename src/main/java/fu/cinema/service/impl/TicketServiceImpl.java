@@ -215,6 +215,16 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<TicketResponse> getMyActiveTickets(String username) {
+        return ticketRepository.findAllByCustomerUsernameWithDetails(username)
+                .stream()
+                .filter(t -> t.getStatus() != TicketStatus.CANCELLED)
+                .map(ticketMapper::toTicketResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public fu.cinema.dto.response.TicketValidationResponse validateTicketByQr(String qrCode, String staffUsername) {
         if (qrCode == null || qrCode.isBlank()) {
             return fu.cinema.dto.response.TicketValidationResponse.builder()
@@ -348,4 +358,6 @@ public class TicketServiceImpl implements TicketService {
         }
         throw new AppException(ErrorCode.TICKET_ACCESS_DENIED);
     }
+
+
 }

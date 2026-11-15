@@ -81,14 +81,18 @@ public class StaffListBookingController {
         }
     }
 
-    // 3. XỬ LÝ XÓA ĐƠN RÁC (CHỜ THANH TOÁN)
+    // 3. XỬ LÝ XÓA ĐƠN RÁC (CHỜ THANH TOÁN) - ĐÃ BỔ SUNG CHECK NULL AN TOÀN
     @PostMapping("/bookings/{id}/hard-delete")
     public String deletePendingBooking(@PathVariable("id") Long bookingId,
                                        Authentication auth,
                                        RedirectAttributes redirectAttributes) {
         try {
-            Long branchId = getCurrentStaffAccount(auth).getStaff().getBranch().getBranchId();
-            bookingService.hardDeletePendingBooking(bookingId, branchId);
+            Branch currentBranch = getCurrentStaffBranch(auth);
+            if (currentBranch == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản của bạn chưa được gán chi nhánh!");
+                return "redirect:/staff/bookings";
+            }
+            bookingService.hardDeletePendingBooking(bookingId, currentBranch.getBranchId());
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa vĩnh viễn đơn hàng rác (chờ thanh toán)!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -96,14 +100,18 @@ public class StaffListBookingController {
         return "redirect:/staff/bookings";
     }
 
-    // 4. XỬ LÝ HỦY ĐƠN ĐÃ XÁC NHẬN
+    // 4. XỬ LÝ HỦY ĐƠN ĐÃ XÁC NHẬN - ĐÃ BỔ SUNG CHECK NULL AN TOÀN
     @PostMapping("/bookings/{id}/cancel-confirmed")
     public String cancelConfirmedBooking(@PathVariable("id") Long bookingId,
                                          Authentication auth,
                                          RedirectAttributes redirectAttributes) {
         try {
-            Long branchId = getCurrentStaffAccount(auth).getStaff().getBranch().getBranchId();
-            bookingService.cancelConfirmedBooking(bookingId, branchId);
+            Branch currentBranch = getCurrentStaffBranch(auth);
+            if (currentBranch == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Tài khoản của bạn chưa được gán chi nhánh!");
+                return "redirect:/staff/bookings";
+            }
+            bookingService.cancelConfirmedBooking(bookingId, currentBranch.getBranchId());
             redirectAttributes.addFlashAttribute("successMessage", "Hủy đơn thành công! Đã giải phóng ghế, trừ doanh thu và hoàn bắp nước vào kho.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());

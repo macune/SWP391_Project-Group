@@ -18,7 +18,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class ManagerStaffController {
 
-    private final FnBItemService fnbItemService;
     private final StaffService staffService;
     private final ManagerService managerService;
 

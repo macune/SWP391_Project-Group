@@ -1,6 +1,7 @@
 package fu.cinema.entity;
 
 import fu.cinema.enums.ShowtimeStatus;
+import fu.cinema.enums.TicketStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -48,4 +49,11 @@ public class Showtime {
     @OneToMany(mappedBy = "showtime", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Ticket> tickets = new ArrayList<>();
+
+    public long getBookedTicketsCount() {
+        if (tickets == null) return 0;
+        return tickets.stream()
+                .filter(t -> t.getStatus() != null && t.getStatus() != TicketStatus.CANCELLED)
+                .count();
+    }
 }

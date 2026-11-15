@@ -1,6 +1,7 @@
 package fu.cinema.service;
 
 import fu.cinema.dto.response.MovieResponse;
+import fu.cinema.dto.response.MovieScheduleResponse;
 import fu.cinema.dto.response.ShowtimeResponse;
 
 import java.time.LocalDate;
@@ -14,4 +15,8 @@ public interface PublicMovieService {
     List<ShowtimeResponse> getShowtimes(Long movieId, Long branchId, LocalDate date, String timeSlot);
 
     List<MovieResponse> getTop5HighestRevenueMovies();
+
+    List<MovieResponse> getFilteredMovies(String statusName, String keyword, String genre, String language, String ageRating);
+
+    List<MovieScheduleResponse> getTodayMovieSchedules(Long branchId);
 }

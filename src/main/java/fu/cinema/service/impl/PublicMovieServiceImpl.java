@@ -1,6 +1,7 @@
 package fu.cinema.service.impl;
 
 import fu.cinema.dto.response.MovieResponse;
+import fu.cinema.dto.response.MovieScheduleResponse;
 import fu.cinema.dto.response.ShowtimeResponse;
 import fu.cinema.entity.Movie;
 import fu.cinema.entity.Seat;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -93,31 +95,61 @@ public class PublicMovieServiceImpl implements PublicMovieService {
         return mapToMovieResponse(movie);
     }
 
+    // 1. NGHIỆP VỤ LỌC PHIM ĐA TIÊU CHÍ (ĐẨY TỪ CUSTOMER MOVIE CONTROLLER XUỐNG)
+    @Override
+    public List<MovieResponse> getFilteredMovies(String statusName, String keyword, String genre, String language, String ageRating) {
+        List<MovieResponse> allMovies = getMoviesByStatus(statusName);
+        return allMovies.stream()
+                .filter(m -> keyword == null || keyword.trim().isEmpty() || m.getTitle().toLowerCase().contains(keyword.toLowerCase().trim()))
+                .filter(m -> genre == null || genre.isEmpty() || (m.getGenre() != null && m.getGenre().equals(genre)))
+                .filter(m -> language == null || language.isEmpty() || (m.getLanguage() != null && m.getLanguage().equals(language)))
+                .filter(m -> ageRating == null || ageRating.isEmpty() || (m.getAgeRating() != null && m.getAgeRating().equals(ageRating)))
+                .collect(Collectors.toList());
+    }
+
+    // 2. NGHIỆP VỤ LẤY LỊCH CHIẾU HÔM NAY CHO STAFF (ĐẨY TỪ STAFF MOVIE CONTROLLER XUỐNG)
+    @Override
+    public List<MovieScheduleResponse> getTodayMovieSchedules(Long branchId) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
+        List<MovieResponse> nowShowingMovies = getMoviesByStatus("NOW_SHOWING");
+        List<MovieScheduleResponse> movieSchedules = new ArrayList<>();
+
+        for (MovieResponse movie : nowShowingMovies) {
+            List<ShowtimeResponse> allShowtimes = getShowtimes(movie.getMovieId(), branchId, today, null);
+            List<ShowtimeResponse> futureShowtimes = allShowtimes.stream()
+                    .filter(st -> !st.getStartTime().isBefore(now))
+                    .collect(Collectors.toList());
+
+            if (!futureShowtimes.isEmpty()) {
+                movieSchedules.add(new MovieScheduleResponse(movie, futureShowtimes));
+            }
+        }
+        return movieSchedules;
+    }
+
     private MovieResponse mapToMovieResponse(Movie movie) {
-            return MovieResponse.builder()
-                    .movieId(movie.getMovieId())
-                    .title(movie.getTitle())
-                    .description(movie.getDescription())
-                    .duration(movie.getDuration())
-                    .releaseDate(movie.getReleaseDate())
-                    .language(movie.getLanguage())
-                    .genre(movie.getGenre())
-                    .ageRating(movie.getAgeRating())
-                    .posterUrl(movie.getPosterUrl())
-                    .trailerUrl(movie.getTrailerUrl())
-                    .status(movie.getStatus())
-                    .build();
+        return MovieResponse.builder()
+                .movieId(movie.getMovieId())
+                .title(movie.getTitle())
+                .description(movie.getDescription())
+                .duration(movie.getDuration())
+                .releaseDate(movie.getReleaseDate())
+                .language(movie.getLanguage())
+                .genre(movie.getGenre())
+                .ageRating(movie.getAgeRating())
+                .posterUrl(movie.getPosterUrl())
+                .trailerUrl(movie.getTrailerUrl())
+                .status(movie.getStatus())
+                .build();
     }
 
     private ShowtimeResponse mapToShowtimeResponse(Showtime s) {
-        // 1. Lấy danh sách tất cả ghế trong phòng để loại bỏ ghế bị HỎNG (BROKEN)
         List<Seat> allSeats = seatRepository.findByHallHallIdOrderByRowCodeAscNumberAsc(s.getHall().getHallId());
-
-        // Đếm tổng số ghế thực tế còn hoạt động tốt
         int activeSeats = (int) allSeats.stream()
                 .filter(seat -> seat.getStatus() == SeatStatus.ACTIVE)
                 .count();
-        // 2. Đếm số vé đã được đặt (BOOKED), đã check-in (CHECKED_IN) hoặc đang bị khóa tạm thời (LOCKED)
+
         List<TicketStatus> occupiedStatuses = List.of(
                 TicketStatus.BOOKED,
                 TicketStatus.LOCKED,
@@ -125,15 +157,15 @@ public class PublicMovieServiceImpl implements PublicMovieService {
         );
         List<Long> bookedSeatIds = ticketRepository.findBookedSeatIdsByShowtimeId(s.getShowtimeId(), occupiedStatuses);
         int bookedTickets = (bookedSeatIds != null) ? bookedSeatIds.size() : 0;
-        // 3. Ghế còn trống = Ghế hoạt động - Ghế đã đặt/khóa (không để âm)
         int availableSeats = Math.max(0, activeSeats - bookedTickets);
+
         return ShowtimeResponse.builder()
                 .showtimeId(s.getShowtimeId())
                 .movieId(s.getMovie().getMovieId())
                 .movieTitle(s.getMovie().getTitle())
                 .hallId(s.getHall().getHallId())
                 .hallName(s.getHall().getHallName())
-                .hallCapacity(activeSeats) // Hoặc s.getHall().getCapacity() tuỳ bạn muốn hiện tổng ghế khả dụng hay tổng sức chứa phòng
+                .hallCapacity(activeSeats)
                 .availableSeats(availableSeats)
                 .branchId(s.getHall().getBranch().getBranchId())
                 .branchName(s.getHall().getBranch().getBranchName())
