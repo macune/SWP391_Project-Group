@@ -54,11 +54,6 @@ public class BookingServiceImpl implements BookingService {
         return basePrice;
     }
 
-    /**
-     * Xác định branchId của một đơn Booking:
-     * - Nếu đơn có vé: lấy theo chi nhánh của phòng chiếu thuộc suất chiếu.
-     * - Nếu đơn không có vé (đơn bán lẻ F&B tại quầy): lấy theo chi nhánh của nhân viên tạo đơn.
-     */
     private Long resolveBookingBranchId(Booking booking) {
         if (booking.getTickets() != null && !booking.getTickets().isEmpty()) {
             Ticket firstTicket = booking.getTickets().get(0);
@@ -160,7 +155,6 @@ public class BookingServiceImpl implements BookingService {
 
         List<Seat> seatsToLock = seatRepository.findAllById(request.getSeatIds());
 
-        // BẮT ĐẦU RÀNG BUỘC SWEETBOX
         List<Seat> sweetboxSeats = seatsToLock.stream()
                 .filter(seat -> seat.getType() == SeatType.SWEETBOX)
                 .toList();
@@ -208,7 +202,6 @@ public class BookingServiceImpl implements BookingService {
                 }
             }
         }
-        // KẾT THÚC RÀNG BUỘC SWEETBOX NÂNG CẤP
 
         // Tính tiền cho mỗi ghế (giá base + giá tùy loại ghế)
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -366,9 +359,7 @@ public class BookingServiceImpl implements BookingService {
             throw new AppException(("Mã khuyến mãi này đã hết hạn sử dụng."));
         }
 
-        // =================================================================
-        // CHỐT CHẶN THÉP: KIỂM TRA LỊCH SỬ DÙNG MÃ CỦA USER
-        // =================================================================
+        //KIỂM TRA LỊCH SỬ DÙNG MÃ CỦA USER
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         if (username != null && !username.equals("anonymousUser")) {
@@ -396,7 +387,6 @@ public class BookingServiceImpl implements BookingService {
         } else {
             throw new AppException("Vui lòng đăng nhập để sử dụng mã khuyến mãi!");
         }
-        // =================================================================
 
         // TÍNH LẠI CHÍNH XÁC TỔNG TIỀN VÉ GỐC
         BigDecimal ticketTotal = BigDecimal.ZERO;

@@ -19,8 +19,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -225,9 +228,9 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public fu.cinema.dto.response.TicketValidationResponse validateTicketByQr(String qrCode, String staffUsername) {
+    public TicketValidationResponse validateTicketByQr(String qrCode, String staffUsername) {
         if (qrCode == null || qrCode.isBlank()) {
-            return fu.cinema.dto.response.TicketValidationResponse.builder()
+            return TicketValidationResponse.builder()
                     .validForCheckIn(false)
                     .validationState("NOT_FOUND")
                     .message("Vui lòng quét hoặc nhập mã định danh QR của vé.")
@@ -235,10 +238,10 @@ public class TicketServiceImpl implements TicketService {
         }
 
         String normalizedCode = qrCode.trim();
-        java.util.Optional<Ticket> ticketOpt = ticketRepository.findByQrCodeWithFullDetails(normalizedCode);
+        Optional<Ticket> ticketOpt = ticketRepository.findByQrCodeWithFullDetails(normalizedCode);
 
         if (ticketOpt.isEmpty()) {
-            return fu.cinema.dto.response.TicketValidationResponse.builder()
+            return TicketValidationResponse.builder()
                     .validForCheckIn(false)
                     .validationState("NOT_FOUND")
                     .message("Không tìm thấy vé nào khớp với mã QR: " + normalizedCode)
@@ -251,7 +254,7 @@ public class TicketServiceImpl implements TicketService {
         // Kiểm tra xem vé có thuộc đúng chi nhánh mà nhân viên đang làm việc hay không
         Long staffBranchId = getStaffBranchId(staffUsername);
         if (staffBranchId != null && !staffBranchId.equals(ticketResponse.getBranchId())) {
-            return fu.cinema.dto.response.TicketValidationResponse.builder()
+            return TicketValidationResponse.builder()
                     .validForCheckIn(false)
                     .validationState("WRONG_BRANCH")
                     .message("Cảnh báo: Vé này thuộc chi nhánh [" + ticketResponse.getBranchName() + "], không thuộc rạp hiện tại!")
@@ -261,7 +264,7 @@ public class TicketServiceImpl implements TicketService {
 
         // Kiểm tra trạng thái vé
         if (ticket.getStatus() == TicketStatus.BOOKED) {
-            return fu.cinema.dto.response.TicketValidationResponse.builder()
+            return TicketValidationResponse.builder()
                     .validForCheckIn(true)
                     .validationState("VALID")
                     .message("Vé hợp lệ (Chưa sử dụng). Nhân viên có thể xác nhận cho khách vào phòng và in vé.")
@@ -269,23 +272,23 @@ public class TicketServiceImpl implements TicketService {
                     .build();
         } else if (ticket.getStatus() == TicketStatus.CHECKED_IN) {
             String usedTime = ticket.getCheckedInAt() != null
-                    ? ticket.getCheckedInAt().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss - dd/MM/yyyy"))
+                    ? ticket.getCheckedInAt().format(DateTimeFormatter.ofPattern("HH:mm:ss - dd/MM/yyyy"))
                     : "trước đó";
-            return fu.cinema.dto.response.TicketValidationResponse.builder()
+            return TicketValidationResponse.builder()
                     .validForCheckIn(false)
                     .validationState("ALREADY_USED")
                     .message("CẢNH BÁO: Vé này ĐÃ ĐƯỢC SỬ DỤNG lúc " + usedTime + "!")
                     .ticket(ticketResponse)
                     .build();
         } else if (ticket.getStatus() == TicketStatus.LOCKED) {
-            return fu.cinema.dto.response.TicketValidationResponse.builder()
+            return TicketValidationResponse.builder()
                     .validForCheckIn(false)
                     .validationState("UNPAID")
                     .message("Vé này đang ở trạng thái giữ chỗ (Chưa hoàn tất thanh toán).")
                     .ticket(ticketResponse)
                     .build();
         } else {
-            return fu.cinema.dto.response.TicketValidationResponse.builder()
+            return TicketValidationResponse.builder()
                     .validForCheckIn(false)
                     .validationState("CANCELLED")
                     .message("Vé này đã bị hủy, không có giá trị vào phòng chiếu.")
@@ -296,7 +299,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
-    public fu.cinema.dto.response.TicketValidationResponse confirmTicketCheckIn(Long ticketId, String staffUsername) {
+    public TicketValidationResponse confirmTicketCheckIn(Long ticketId, String staffUsername) {
         Ticket ticket = ticketRepository.findByIdWithFullDetails(ticketId)
                 .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_FOUND));
 
@@ -315,11 +318,11 @@ public class TicketServiceImpl implements TicketService {
         }
 
         ticket.setStatus(TicketStatus.CHECKED_IN);
-        ticket.setCheckedInAt(java.time.LocalDateTime.now());
+        ticket.setCheckedInAt(LocalDateTime.now());
         ticketRepository.save(ticket);
 
         TicketResponse updatedResponse = ticketMapper.toTicketResponse(ticket);
-        return fu.cinema.dto.response.TicketValidationResponse.builder()
+        return TicketValidationResponse.builder()
                 .validForCheckIn(false)
                 .validationState("CHECKED_IN_SUCCESS")
                 .message("Soát vé thành công! Đã ghi nhận khách vào phòng chiếu.")
@@ -338,11 +341,6 @@ public class TicketServiceImpl implements TicketService {
                 .orElse(null);
     }
 
-    /**
-     * Kiểm tra quyền truy cập vé:
-     * - Chủ sở hữu đơn đặt vé (Customer) được phép xem.
-     * - Nhân viên (STAFF), Quản lý (MANAGER) hoặc Quản trị viên (ADMIN) được phép xem để hỗ trợ tại quầy.
-     */
     private void validateTicketAccess(Booking booking, String currentUsername) {
         if (currentUsername == null || currentUsername.isBlank()) {
             throw new AppException(ErrorCode.TICKET_ACCESS_DENIED);

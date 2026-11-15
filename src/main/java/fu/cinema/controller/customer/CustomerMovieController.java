@@ -54,7 +54,7 @@ public class CustomerMovieController {
         return "customer/list-movies";
     }
 
-    @GetMapping("/movies/{id}")
+    @GetMapping("/movie-detail/{id}")
     public String customerMovieDetail(
             @PathVariable Long id,
             @RequestParam(value = "branchId", required = false) Long branchId,
