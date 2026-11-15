@@ -122,7 +122,12 @@ public class MovieServiceImpl implements MovieService {
 
         return movieRepository.existsByTitleIgnoreCase(title != null ? title.trim() : "");
     }
-
+    public boolean checkDuplicateTitleForEdit(String title, Long currentMovieId) {
+        if (title == null || title.trim().isEmpty()) {
+            return false;
+        }
+        return movieRepository.existsByTitleIgnoreCaseAndMovieIdNot(title.trim(), currentMovieId);
+    }
 
     private MovieResponse toResponse(Movie movie) {
         return MovieResponse.builder()

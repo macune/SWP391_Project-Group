@@ -18,4 +18,5 @@ public interface MovieService {
     void deleteMovie(Long id);
 
     boolean checkDuplicateTitle(String title);
+    public boolean checkDuplicateTitleForEdit(String title, Long currentMovieId);
 }
