@@ -29,7 +29,7 @@ public class BranchStockController {
         throw new RuntimeException("Yêu cầu đăng nhập");
     }
 
-    // 1. Hiển thị màn hình Quản lý kho
+    // Hiển thị màn hình Quản lý kho
     @GetMapping
     public String viewInventory(Model model) {
         Long managerBranchId = getManagerBranchId();
@@ -40,7 +40,7 @@ public class BranchStockController {
         //danh sách món F&B đang mở bán
         model.addAttribute("fnbItems", branchStockService.getAvailableFnBItems());
 
-        // Khởi tạo form rỗng
+
         if (!model.containsAttribute("stockRequest")) {
             BranchStockRequest request = new BranchStockRequest();
             request.setBranchId(managerBranchId);
@@ -54,7 +54,7 @@ public class BranchStockController {
     @PostMapping("/import")
     public String importStock(@ModelAttribute("stockRequest") BranchStockRequest request, RedirectAttributes redirectAttributes) {
         try {
-            // Bảo mật: Ép cứng ID rạp bằng thông tin Manager đang đăng nhập
+
             request.setBranchId(getManagerBranchId());
 
             branchStockService.importStock(request);
@@ -65,7 +65,7 @@ public class BranchStockController {
         return "redirect:/manager/inventory";
     }
 
-    //Cập nhật/Kiểm kê lại số lượng hàng thực tế
+    //Cập nhật lại số lượng hàng thực tế
     @PostMapping("/update/{id}")
     public String updateStock(@PathVariable Long id, @RequestParam Integer quantity, RedirectAttributes redirectAttributes) {
         try {

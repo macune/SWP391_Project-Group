@@ -24,13 +24,13 @@ public class BranchStockServiceImpl implements BranchStockService {
     private final AccountRepository accountRepository;
     private final StaffRepository staffRepository;
 
-    // Lấy danh sách tồn kho của rạp, chỉ hiển thị các món đang được phép bán (isAvailable = true)
+    // LẤY DANH SÁCH KHO
     @Override
     public List<BranchStockResponse> getStockByBranch(Long branchId) {
         List<BranchStock> stocks = branchStockRepository.findByBranch_BranchId(branchId);
 
         return stocks.stream()
-                .filter(stock -> stock.getItem().getIsAvailable()) // Bỏ qua các món Admin đã ngừng bán
+                .filter(stock -> stock.getItem().getIsAvailable())
                 .map(stock -> BranchStockResponse.builder()
                         .id(stock.getId())
                         .branchId(stock.getBranch().getBranchId())
@@ -47,7 +47,7 @@ public class BranchStockServiceImpl implements BranchStockService {
                 .toList();
     }
 
-    // Nhập thêm hàng vào kho (Cộng dồn nếu món đã có sẵn, hoặc tạo mới nếu chưa có)
+    // NHẬP KHO
     @Override
     @Transactional
     public void importStock(BranchStockRequest request) {
@@ -55,7 +55,7 @@ public class BranchStockServiceImpl implements BranchStockService {
                 .findByBranch_BranchIdAndItem_ItemId(request.getBranchId(), request.getItemId())
                 .orElse(null);
 
-        //Đảm bảo món F&B vẫn đang được Admin cho phép bán
+        // Kiểm tra xem món F&B này có đang bị Admin khóa không
         FnBItem itemToCheck = fnbItemRepository.findById(request.getItemId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy món Bắp/Nước"));
 
@@ -68,7 +68,7 @@ public class BranchStockServiceImpl implements BranchStockService {
             stock.setLastUpdated(LocalDateTime.now());
             branchStockRepository.save(stock);
         }
-        //Tạo bản ghi tồn kho mới khi chưa có món ăn
+
         else {
             Branch branch = branchRepository.findById(request.getBranchId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chi nhánh"));
@@ -83,7 +83,7 @@ public class BranchStockServiceImpl implements BranchStockService {
         }
     }
 
-    // Ghi đè số lượng tồn kho thực tế
+    // KIỂM KÊ KHO
     @Override
     @Transactional
     public void updateStock(Long id, Integer newQuantity) {
@@ -95,7 +95,7 @@ public class BranchStockServiceImpl implements BranchStockService {
         branchStockRepository.save(stock);
     }
 
-    // Tìm ID chi nhánh dựa vào username của Manager đang đăng nhập
+    // LẤY ID RẠP TỪ QUẢN LÝ
     @Override
     @Transactional(readOnly = true)
     public Long getCurrentManagerBranchId(String username) {
@@ -108,7 +108,7 @@ public class BranchStockServiceImpl implements BranchStockService {
         return manager.getBranch().getBranchId();
     }
 
-    // Lấy danh sách tất cả các món F&B đang được phép bán
+    // LẤY MENU TỔNG
     @Override
     @Transactional(readOnly = true)
     public List<FnBItem> getAvailableFnBItems() {
@@ -117,21 +117,26 @@ public class BranchStockServiceImpl implements BranchStockService {
                 .toList();
     }
 
+    // SỔ TRA CỨU SỐ LƯỢNG (Dùng cho POS)
     @Override
     public Map<Long, Integer> getStockQuantityMap(Long branchId) {
         java.util.Map<Long, Integer> map = new java.util.HashMap<>();
+
         branchStockRepository.findByBranch_BranchId(branchId).forEach(stock -> {
             map.put(stock.getItem().getItemId(), stock.getQuantity() != null ? stock.getQuantity() : 0);
         });
         return map;
     }
 
+    // 7. LẤY MENU POS
     @Override
     public List<FnBItemResponse> getAvailableFnBItemsForBranch(Long branchId) {
+        // Lấy danh sách Mã số (ID) của những món đang nằm trong kho rạp
         List<Long> availableItemIds = branchStockRepository.findByBranch_BranchId(branchId).stream()
                 .map(stock -> stock.getItem().getItemId())
                 .toList();
 
+        //  Menu tổng
         return fnbItemRepository.findAll().stream()
                 .filter(FnBItem::getIsAvailable)
                 .filter(item -> availableItemIds.contains(item.getItemId()))

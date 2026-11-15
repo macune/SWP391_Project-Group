@@ -762,11 +762,14 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public Long getOrCreatePendingRetailBooking(String staffUsername) {
+        // Xác định danh tính nhân viên đang trực quầy
         Account staffAcc = accountRepository.findByUsername(staffUsername)
                 .orElseThrow(() -> new AppException("Tài khoản không tồn tại"));
 
+        // Lấy toàn bộ lịch sử tạo đơn của nhân viên này
         List<Booking> staffBookings = bookingRepository.findByAccount_AccountIdOrderByCreatedAtDesc(staffAcc.getAccountId());
 
+        // Rút ra tờ hóa đơn bán lẻ (không có vé) đang bị bỏ dở (PENDING) gần đây nhất
         Booking retailBooking = staffBookings.stream()
                 .filter(b -> b.getStatus() == BookingStatus.PENDING && (b.getTickets() == null || b.getTickets().isEmpty()))
                 .findFirst()
