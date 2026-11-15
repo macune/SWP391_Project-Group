@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -121,11 +122,12 @@ public class BranchStockServiceImpl implements BranchStockService {
     // SỔ TRA CỨU SỐ LƯỢNG (Dùng cho POS)
     @Override
     public Map<Long, Integer> getStockQuantityMap(Long branchId) {
-        java.util.Map<Long, Integer> map = new java.util.HashMap<>();
+        Map<Long, Integer> map = new HashMap<>();
 
         branchStockRepository.findByBranch_BranchId(branchId).forEach(stock -> {
             map.put(stock.getItem().getItemId(), stock.getQuantity() != null ? stock.getQuantity() : 0);
         });
+
         return map;
     }
 
@@ -141,7 +143,7 @@ public class BranchStockServiceImpl implements BranchStockService {
         return fnbItemRepository.findAll().stream()
                 .filter(FnBItem::getIsAvailable)
                 .filter(item -> availableItemIds.contains(item.getItemId()))
-                .map(item -> fu.cinema.dto.response.FnBItemResponse.builder()
+                .map(item -> FnBItemResponse.builder()
                         .id(item.getItemId())
                         .name(item.getName())
                         .category(item.getCategory())
