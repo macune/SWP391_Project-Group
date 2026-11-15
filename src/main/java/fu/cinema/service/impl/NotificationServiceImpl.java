@@ -37,9 +37,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private static final DateTimeFormatter DATE_TIME_FMT = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy");
 
-    // =========================================================================
-    // FE-10.1: BOOKING NOTIFICATIONS
-    // =========================================================================
+    //BOOKING NOTIFICATIONS
     @Override
     @Transactional
     public void sendBookingConfirmedAlert(Booking booking) {
@@ -68,9 +66,7 @@ public class NotificationServiceImpl implements NotificationService {
                 NotificationType.BOOKING, booking.getBookingId(), vars, null);
     }
 
-    // =========================================================================
-    // FE-10.2: PAYMENT NOTIFICATIONS
-    // =========================================================================
+    //PAYMENT NOTIFICATIONS
     @Override
     @Transactional
     public void sendPaymentSuccessAlert(Booking booking, PaymentMethod method, String transactionNo) {
@@ -96,9 +92,7 @@ public class NotificationServiceImpl implements NotificationService {
         });
     }
 
-    // =========================================================================
-    // FE-10.3: SHOWTIME NOTIFICATIONS & JOB-03 (REMINDERS)
-    // =========================================================================
+    //SHOWTIME NOTIFICATIONS
     @Override
     @Transactional
     public void sendShowtimeChangedAlert(Showtime showtime, String oldScheduleInfo, List<Booking> affectedBookings) {
@@ -132,10 +126,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    /**
-     * JOB-03: Send Showtime Reminders (Chạy định kỳ 5 phút = 300.000ms)
-     * Quét tất cả các đơn đặt vé CONFIRMED có suất chiếu bắt đầu trong vòng 2 giờ tới
-     */
+    //Send Showtime Reminders (Chạy định kỳ 5 phút = 300.000ms)
     @Override
     @Scheduled(fixedRate = 300000)
     @Transactional
@@ -175,9 +166,7 @@ public class NotificationServiceImpl implements NotificationService {
         return count;
     }
 
-    // =========================================================================
-    // FE-10.4: PROMOTION NOTIFICATIONS & JOB-04 (SCHEDULED NOTIFICATIONS)
-    // =========================================================================
+    //PROMOTION NOTIFICATIONS
     @Override
     @Transactional
     public void handleNewPromotionNotification(PromotionResponse promotion) {
@@ -267,7 +256,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     * JOB-04: Process Scheduled Notifications (Chạy định kỳ 5 phút = 300.000ms)
+     * Process Scheduled Notifications (Chạy định kỳ 5 phút = 300.000ms)
      * Quét tất cả thông báo có trạng thái SCHEDULED đã đến hạn gửi (scheduledAt <= now)
      */
     @Override
@@ -334,6 +323,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public long countUnreadNotifications(String username) {
+        return notificationRepository.countByRecipient_UsernameAndIsReadFalseAndStatus(
+                username, NotificationStatus.SENT);
+    }
+
+    @Override
     @Transactional
     public void markAsRead(Long notificationId, String username) {
         notificationRepository.findById(notificationId).ifPresent(n -> {
@@ -357,9 +353,7 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepository.saveAll(unreadList);
     }
 
-    // =========================================================================
-    // ADMIN FE-10.5: QUẢN TRỊ LỊCH SỬ, TEMPLATE & CẤU HÌNH EMAIL SMTP
-    // =========================================================================
+    //QUẢN TRỊ LỊCH SỬ, TEMPLATE & CẤU HÌNH EMAIL SMTP
     @Override
     @Transactional(readOnly = true)
     public List<Notification> getAllNotificationsForAdmin(NotificationType type, NotificationStatus status, String keyword) {
@@ -378,6 +372,24 @@ public class NotificationServiceImpl implements NotificationService {
                     return title.contains(kw) || msg.contains(kw) || email.contains(kw) || user.contains(kw);
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countByStatus(NotificationStatus status) {
+        return notificationRepository.countByStatus(status);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Promotion> getAllPromotions() {
+        return promotionRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Account> getActiveAccounts() {
+        return accountRepository.findByStatusIn(List.of(AccountStatus.ACTIVE));
     }
 
     @Override
@@ -441,9 +453,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    // =========================================================================
     // HÀM NỘI BỘ: RENDER TEMPLATE & GỬI MAIL BẤT ĐỒNG BỘ (@Async)
-    // =========================================================================
     private void createAndDispatchFromTemplate(Account recipient, String templateCode,
                                                NotificationType fallbackType, Long referenceId,
                                                Map<String, String> vars, LocalDateTime scheduledAt) {
@@ -451,7 +461,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         Optional<EmailConfig.TemplateItem> optTpl = emailConfig.findTemplateByCode(templateCode);
         if (optTpl.isPresent() && !Boolean.TRUE.equals(optTpl.get().getActive())) {
-            return; // Mẫu này đang bị Admin tắt
+            return;
         }
 
         String subject = optTpl.map(EmailConfig.TemplateItem::getSubject).orElse("[CineFlow] Thông báo hệ thống");

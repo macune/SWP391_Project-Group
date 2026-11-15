@@ -262,7 +262,7 @@ async function lookupTicketByQrCode(qrCode) {
     }
 }
 
-// Gọi API xác nhận Check-in cho khách vào phòng chiếu
+// Gọi API xác nhận Check-in cho khách vào phòng chiếu (Tại trang /staff/check-in)
 async function confirmCustomerCheckIn() {
     if (!currentValidatedTicket || !currentValidatedTicket.ticketId) return;
 
@@ -287,6 +287,7 @@ async function confirmCustomerCheckIn() {
 function formatDateTimeVN(isoStr, onlyTime = false, onlyDate = false) {
     if (!isoStr) return '--';
     const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return '--';
     const pad = (n) => String(n).padStart(2, '0');
     const timePart = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     const datePart = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
@@ -380,7 +381,6 @@ function renderTicketValidationResult(data) {
         btnCheckIn.disabled = !data.validForCheckIn;
     }
     if (btnPrint) {
-        // Cho phép in vé đối với vé hợp lệ (BOOKED) hoặc vừa/đã soát vé (CHECKED_IN)
         btnPrint.disabled = !(t.status === 'BOOKED' || t.status === 'CHECKED_IN');
     }
 
@@ -412,12 +412,82 @@ function populatePrintableTicketStub(t) {
     }
 }
 
-// In vé vật lý tại quầy/cổng soát vé
+// In vé vật lý tại quầy/cổng soát vé (/staff/check-in)
 function printPhysicalTicket() {
     if (!currentValidatedTicket) {
         alert('Chưa có thông tin vé để in!');
         return;
     }
     populatePrintableTicketStub(currentValidatedTicket);
+    window.print();
+}
+
+// ---------------------------------------------------------
+// MODULE: SOÁT VÉ & IN VÉ VẬT LÝ TẠI TRANG /staff/bookings/{id}
+// ---------------------------------------------------------
+
+// Xác nhận soát vé (BOOKED -> CHECKED_IN) trực tiếp tại trang Chi tiết đơn đặt vé
+async function checkInTicketFromBookingDetail(buttonEl) {
+    const ticketId = buttonEl.getAttribute('data-ticket-id');
+    if (!ticketId) return;
+
+    buttonEl.disabled = true;
+    const alertBox = document.getElementById('booking-detail-checkin-alert');
+
+    try {
+        const response = await fetch(`/staff/api/tickets/${ticketId}/check-in`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        playScanBeep(response.ok);
+
+        if (alertBox) {
+            alertBox.className = response.ok
+                ? 'alert alert-success d-flex align-items-center fw-semibold shadow-sm mb-3 no-print'
+                : 'alert alert-danger d-flex align-items-center fw-semibold shadow-sm mb-3 no-print';
+            alertBox.innerHTML = `<i class="fa-solid ${response.ok ? 'fa-circle-check' : 'fa-triangle-exclamation'} me-2"></i><span>${data.message}</span>`;
+        }
+
+        if (response.ok && data.ticket) {
+            const badgeEl = document.getElementById(`ticket-status-badge-${ticketId}`);
+            if (badgeEl) {
+                badgeEl.className = 'badge bg-secondary px-3 py-2';
+                badgeEl.innerHTML = '<i class="fa-solid fa-user-check me-1"></i>ĐÃ SOÁT VÉ (CHECKED_IN)';
+            }
+            const checkedInTimeEl = document.getElementById(`ticket-checkedin-at-${ticketId}`);
+            if (checkedInTimeEl && data.ticket.checkedInAt) {
+                checkedInTimeEl.innerText = formatDateTimeVN(data.ticket.checkedInAt);
+            }
+        } else {
+            buttonEl.disabled = false;
+        }
+    } catch (error) {
+        console.error('Lỗi xác nhận soát vé:', error);
+        alert('Không thể kết nối máy chủ để xác nhận soát vé. Vui lòng thử lại.');
+        buttonEl.disabled = false;
+    }
+}
+
+// In vé vật lý cho từng vé tại trang Chi tiết đơn đặt vé (/staff/bookings/{id})
+function printTicketFromBookingDetail(buttonEl) {
+    const ticketObj = {
+        ticketId: buttonEl.getAttribute('data-ticket-id'),
+        bookingId: buttonEl.getAttribute('data-booking-id'),
+        branchName: buttonEl.getAttribute('data-branch-name'),
+        branchAddress: buttonEl.getAttribute('data-branch-address'),
+        movieTitle: buttonEl.getAttribute('data-movie-title'),
+        ageRating: buttonEl.getAttribute('data-age-rating'),
+        duration: buttonEl.getAttribute('data-duration'),
+        startTime: buttonEl.getAttribute('data-start-time'),
+        endTime: buttonEl.getAttribute('data-end-time'),
+        hallName: buttonEl.getAttribute('data-hall-name'),
+        seatLabel: buttonEl.getAttribute('data-seat-label'),
+        seatTypeDisplay: buttonEl.getAttribute('data-seat-type'),
+        price: parseFloat(buttonEl.getAttribute('data-price') || '0'),
+        qrCode: buttonEl.getAttribute('data-qr-code'),
+        qrCodeBase64: buttonEl.getAttribute('data-qr-base64')
+    };
+
+    populatePrintableTicketStub(ticketObj);
     window.print();
 }

@@ -2,7 +2,7 @@ package fu.cinema.controller.staff;
 
 import fu.cinema.dto.response.MovieResponse;
 import fu.cinema.entity.Account;
-import fu.cinema.repository.AccountRepository;
+import fu.cinema.service.AccountService;
 import fu.cinema.service.PublicMovieService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,15 +25,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StaffMovieController {
 
-    private final AccountRepository accountRepository;
-    private final PublicMovieService movieService; // Tái sử dụng Service y hệt Customer
+    private final AccountService accountService;
+    private final PublicMovieService movieService;
 
     @GetMapping("/today")
     public String viewMoviesToday(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Account staffAcc = accountRepository.findByUsername(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
-
+        Account staffAcc = accountService.getAccountByUsername(auth.getName());
         Long branchId = staffAcc.getStaff().getBranch().getBranchId();
         LocalDate today = LocalDate.now();
         LocalDateTime now = LocalDateTime.now();

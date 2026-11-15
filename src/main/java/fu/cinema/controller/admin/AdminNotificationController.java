@@ -2,12 +2,8 @@ package fu.cinema.controller.admin;
 
 import fu.cinema.config.EmailConfig;
 import fu.cinema.entity.Notification;
-import fu.cinema.enums.AccountStatus;
 import fu.cinema.enums.NotificationStatus;
 import fu.cinema.enums.NotificationType;
-import fu.cinema.repository.AccountRepository;
-import fu.cinema.repository.NotificationRepository;
-import fu.cinema.repository.PromotionRepository;
 import fu.cinema.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -27,11 +23,7 @@ import java.util.Map;
 public class AdminNotificationController {
 
     private final NotificationService notificationService;
-    private final NotificationRepository notificationRepository;
-    private final PromotionRepository promotionRepository;
-    private final AccountRepository accountRepository;
 
-    // Giao diện All-in-One 3 Tabs
     @GetMapping("/admin/notifications")
     @PreAuthorize("hasRole('ADMIN')")
     public String viewNotificationManagement(
@@ -49,8 +41,8 @@ public class AdminNotificationController {
         model.addAttribute("notifications", history);
         model.addAttribute("templates", templates);
         model.addAttribute("emailConfig", emailConfig);
-        model.addAttribute("promotions", promotionRepository.findAll());
-        model.addAttribute("accounts", accountRepository.findByStatusIn(List.of(AccountStatus.ACTIVE)));
+        model.addAttribute("promotions", notificationService.getAllPromotions());
+        model.addAttribute("accounts", notificationService.getActiveAccounts());
 
         model.addAttribute("selectedType", type);
         model.addAttribute("selectedStatus", status);
@@ -58,10 +50,9 @@ public class AdminNotificationController {
         model.addAttribute("types", NotificationType.values());
         model.addAttribute("statuses", NotificationStatus.values());
 
-        // Thống kê nhanh trên đầu trang
-        model.addAttribute("totalSent", notificationRepository.countByStatus(NotificationStatus.SENT));
-        model.addAttribute("totalScheduled", notificationRepository.countByStatus(NotificationStatus.SCHEDULED));
-        model.addAttribute("totalFailed", notificationRepository.countByStatus(NotificationStatus.FAILED));
+        model.addAttribute("totalSent", notificationService.countByStatus(NotificationStatus.SENT));
+        model.addAttribute("totalScheduled", notificationService.countByStatus(NotificationStatus.SCHEDULED));
+        model.addAttribute("totalFailed", notificationService.countByStatus(NotificationStatus.FAILED));
 
         return "admin/notification-management";
     }

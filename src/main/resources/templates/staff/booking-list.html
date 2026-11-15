@@ -14,10 +14,16 @@
 <body>
 
 <div id="page-content" class="container-fluid py-3">
-    <div class="d-flex align-items-center mb-4 pb-2 border-bottom border-cine">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom border-cine">
         <h4 class="fw-bold mb-0 text-cine-primary">
             <i class="fa-solid fa-receipt me-2"></i>Quản Lý Đơn Đặt Vé (Staff)
         </h4>
+        <div th:if="${currentBranch != null}">
+            <span class="badge bg-cine-primary px-3 py-2 fs-6">
+                <i class="fa-solid fa-location-dot me-1"></i>
+                <span th:text="${currentBranch.branchName}">Chi nhánh</span>
+            </span>
+        </div>
     </div>
 
     <!-- Thông báo kết quả thao tác -->
@@ -36,7 +42,7 @@
             <div class="col-md-5">
                 <div class="input-group">
                     <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" name="keyword" class="form-control" placeholder="Tìm theo mã đơn, tên khách, SĐT..." th:value="${keyword}">
+                    <input type="text" name="keyword" class="form-control" placeholder="Tìm theo mã đơn, tên khách, SĐT, tên phim..." th:value="${keyword}">
                 </div>
             </div>
             <div class="col-md-4">
@@ -66,6 +72,7 @@
                 <tr>
                     <th class="py-3">Mã đơn</th>
                     <th>Người đặt</th>
+                    <th>Phim / Nội dung</th>
                     <th>Tổng tiền</th>
                     <th>Trạng thái</th>
                     <th>Hành động</th>
@@ -73,11 +80,12 @@
                 </thead>
                 <tbody>
                 <tr th:if="${#lists.isEmpty(bookings)}">
-                    <td colspan="5" class="text-muted py-4">Không tìm thấy đơn hàng nào.</td>
+                    <td colspan="6" class="text-muted py-4">Không tìm thấy đơn hàng nào thuộc chi nhánh hiện tại.</td>
                 </tr>
                 <tr th:each="b : ${bookings}">
                     <td class="fw-bold">#<span th:text="${b.bookingId}"></span></td>
                     <td th:text="${b.customerName != null ? b.customerName : 'Khách lẻ'}"></td>
+                    <td class="fw-semibold text-cine-primary" th:text="${b.movieTitle}"></td>
                     <td class="fw-bold text-danger" th:text="${#numbers.formatDecimal(b.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
                     <td>
                         <span th:if="${b.status.name() == 'PENDING'}" class="badge bg-warning text-dark px-3 py-2">Chờ thanh toán</span>

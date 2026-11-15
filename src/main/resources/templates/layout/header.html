@@ -66,16 +66,6 @@
                         </span>
                     </a>
 
-                    <!-- Chuông thông báo cho ADMIN (Link về trang quản trị thông báo) -->
-                    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/notifications}" class="btn btn-outline-cine btn-sm position-relative px-2" title="Quản trị thông báo">
-                        <i class="fa-solid fa-bell"></i>
-                        <span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
-                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                              th:text="${unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}">
-                            0
-                        </span>
-                    </a>
-
                     <span class="text-light small fw-medium">
                         <i class="fa-regular fa-circle-user me-1 text-cine-primary"></i>
                         <span sec:authentication="name" class="text-cine-pastel">Tài khoản</span>

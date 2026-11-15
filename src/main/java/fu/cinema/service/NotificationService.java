@@ -2,6 +2,7 @@ package fu.cinema.service;
 
 import fu.cinema.config.EmailConfig;
 import fu.cinema.dto.response.PromotionResponse;
+import fu.cinema.entity.Account;
 import fu.cinema.entity.Booking;
 import fu.cinema.entity.Notification;
 import fu.cinema.entity.Promotion;
@@ -15,34 +16,38 @@ import java.util.List;
 
 public interface NotificationService {
 
-    // FE-10.1: Booking Notifications
+    //Booking Notifications
     void sendBookingConfirmedAlert(Booking booking);
     void sendBookingCancelledAlert(Booking booking);
     void sendBookingStatusUpdatedAlert(Booking booking);
 
-    // FE-10.2: Payment Notifications
+    //Payment Notifications
     void sendPaymentSuccessAlert(Booking booking, PaymentMethod method, String transactionNo);
     void sendPaymentFailedAlert(Long bookingId, String reason);
 
-    // FE-10.3: Showtime Notifications
+    //Showtime Notifications
     void sendShowtimeChangedAlert(Showtime showtime, String oldScheduleInfo, List<Booking> affectedBookings);
     void sendShowtimeCancelledAlert(Showtime showtime, List<Booking> affectedBookings);
     int processShowtimeRemindersJob(); // JOB-03
 
-    // FE-10.4: Promotion Notifications & Scheduled Job
+    //Promotion Notifications & Scheduled Job
     void handleNewPromotionNotification(PromotionResponse promotion);
     int broadcastPromotionAlert(Long promotionId, LocalDateTime scheduledAt);
     int createCustomNotification(String recipientUsername, NotificationType type, String title, String message,
                                  boolean sendEmail, LocalDateTime scheduledAt);
     int processScheduledNotificationsJob(); // JOB-04
 
-    // Customer Screen #24 (UC-46: Receive Notifications)
+    //Customer
     List<Notification> getCustomerNotifications(String username, NotificationType type, Boolean unreadOnly);
+    long countUnreadNotifications(String username);
     void markAsRead(Long notificationId, String username);
     void markAllAsRead(String username);
 
-    // Admin FE-10.5: Email & Notification Management (UC-43)
+    //Email & Notification Management
     List<Notification> getAllNotificationsForAdmin(NotificationType type, NotificationStatus status, String keyword);
+    long countByStatus(NotificationStatus status);
+    List<Promotion> getAllPromotions();
+    List<Account> getActiveAccounts();
     List<EmailConfig.TemplateItem> getAllTemplates();
     void updateTemplate(Long templateId, String subject, String inAppTemplate, String emailHtmlTemplate,
                         boolean emailEnabled, boolean active);
