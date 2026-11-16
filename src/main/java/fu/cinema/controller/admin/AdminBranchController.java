@@ -37,7 +37,7 @@ public class AdminBranchController {
             redirectAttributes.addFlashAttribute("addBranchError",
                     bindingResult.getAllErrors().getFirst().getDefaultMessage());
             redirectAttributes.addFlashAttribute("newBranch", request);
-            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.newBranch", bindingResult);
+            redirectAttributes.addFlashAttribute("newBranch", bindingResult);
             redirectAttributes.addFlashAttribute("openAddModal", true);
             return "redirect:/admin/branches";
         }
