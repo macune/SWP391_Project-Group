@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -63,11 +64,13 @@ public class BranchStockServiceImpl implements BranchStockService {
             throw new RuntimeException("Lỗi: Món này đã bị Admin ngừng bán, không thể nhập thêm vào kho!");
         }
 
+        //Món này đã có sẵn trong rạp
         if (stock != null) {
             stock.setQuantity(stock.getQuantity() + request.getQuantityToAdd());
             stock.setLastUpdated(LocalDateTime.now());
             branchStockRepository.save(stock);
         }
+        //Món này rạp chưa từng nhập bao giờ
 
         else {
             Branch branch = branchRepository.findById(request.getBranchId())
@@ -92,7 +95,7 @@ public class BranchStockServiceImpl implements BranchStockService {
 
         stock.setQuantity(newQuantity);
         stock.setLastUpdated(LocalDateTime.now());
-        branchStockRepository.save(stock);
+        branchStockRepository.save(stock); // Lưu thẳng số mới, xóa sổ con số cũ
     }
 
     // LẤY ID RẠP TỪ QUẢN LÝ
@@ -120,15 +123,16 @@ public class BranchStockServiceImpl implements BranchStockService {
     // SỔ TRA CỨU SỐ LƯỢNG (Dùng cho POS)
     @Override
     public Map<Long, Integer> getStockQuantityMap(Long branchId) {
-        java.util.Map<Long, Integer> map = new java.util.HashMap<>();
+        Map<Long, Integer> map = new HashMap<>();
 
         branchStockRepository.findByBranch_BranchId(branchId).forEach(stock -> {
             map.put(stock.getItem().getItemId(), stock.getQuantity() != null ? stock.getQuantity() : 0);
         });
+
         return map;
     }
 
-    // 7. LẤY MENU POS
+    // 7. LẤY MENU POS CHO RẠP
     @Override
     public List<FnBItemResponse> getAvailableFnBItemsForBranch(Long branchId) {
         // Lấy danh sách Mã số (ID) của những món đang nằm trong kho rạp
@@ -140,7 +144,7 @@ public class BranchStockServiceImpl implements BranchStockService {
         return fnbItemRepository.findAll().stream()
                 .filter(FnBItem::getIsAvailable)
                 .filter(item -> availableItemIds.contains(item.getItemId()))
-                .map(item -> fu.cinema.dto.response.FnBItemResponse.builder()
+                .map(item -> FnBItemResponse.builder()
                         .id(item.getItemId())
                         .name(item.getName())
                         .category(item.getCategory())

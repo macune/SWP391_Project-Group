@@ -13,7 +13,8 @@ import java.util.List;
 
 @Repository
 public interface MovieRepository extends JpaRepository<Movie, Long> {
-
+    // Tìm xem có phim nào trùng tên MÀ KHÁC ID với phim hiện tại không
+    boolean existsByTitleIgnoreCaseAndMovieIdNot(String title, Long movieId);
     boolean existsByTitleIgnoreCase(String title);
     List<Movie> findByTitleContainingIgnoreCase(String keyword);
     List<Movie> findByStatus(MovieStatus status);

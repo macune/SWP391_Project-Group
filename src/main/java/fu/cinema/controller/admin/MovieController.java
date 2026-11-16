@@ -22,7 +22,7 @@ public class MovieController {
     @GetMapping
     public String listMovies(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
         model.addAttribute("movies", movieService.getAllMovies(keyword));
-        model.addAttribute("keyword", keyword); // Giữ lại từ khóa trên ô tìm kiếm
+        model.addAttribute("keyword", keyword);
         return "admin/list-movies";
     }
 
@@ -77,7 +77,21 @@ public class MovieController {
 
     // 5. LƯU DỮ LIỆU SAU KHI SỬA
     @PostMapping("/edit/{id}")
-    public String processEditMovie(@PathVariable("id") Long id, @ModelAttribute("movieRequest") MovieRequest request) {
+    public String processEditMovie(@PathVariable("id") Long id,
+                                   @ModelAttribute("movieRequest") MovieRequest request,
+                                   @RequestParam(required = false, name = "confirmDuplicate") Boolean confirmDuplicate,
+                                   Model model) {
+
+        // Kiểm tra trùng tên nhưng PHẢI BỎ QUA ID của chính bộ phim đang sửa
+        if (!Boolean.TRUE.equals(confirmDuplicate) && movieService.checkDuplicateTitleForEdit(request.getTitle(), id)) {
+
+            model.addAttribute("duplicateWarning", "Tên phim '" + request.getTitle() + "' đã bị trùng với một phim khác trong hệ thống! Bạn có chắc chắn muốn đổi sang tên này không?");
+            model.addAttribute("movieRequest", request);
+            model.addAttribute("movieId", id);
+
+            return "admin/edit-movie";
+        }
+
         movieService.updateMovie(id, request);
         return "redirect:/admin/movies?success=true";
     }
