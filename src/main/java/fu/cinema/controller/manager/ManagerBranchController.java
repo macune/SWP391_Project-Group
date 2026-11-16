@@ -26,9 +26,7 @@ public class ManagerBranchController {
     private final BranchService branchService;
     private final AccountService accountService;
 
-    /**
-     * Hàm dùng chung để lấy ID chi nhánh của Manager đang đăng nhập hiện tại
-     */
+    //Hàm dùng chung để lấy ID chi nhánh của Manager đang đăng nhập hiện tại
     private Branch getCurrentManagerBranch(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new IllegalArgumentException("Bạn chưa đăng nhập!");

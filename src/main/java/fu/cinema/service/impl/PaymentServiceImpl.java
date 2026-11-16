@@ -128,6 +128,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Nếu chữ ký khớp, kiểm tra mã phản hồi vnp_ResponseCode
         // Chuẩn VNPay: "00" nghĩa là Giao dịch thành công, tiền đã trừ.
+        //System.out.println("Mã phản hồi VNPay (vnp_ResponseCode): " + params.get("vnp_ResponseCode"));
         if ("00".equals(params.get("vnp_ResponseCode"))) {
             return PaymentCallbackResponse.builder().success(true).bookingId(bookingId)
                     .transactionNo(transactionNo).message("Thanh toán thành công.").build();
