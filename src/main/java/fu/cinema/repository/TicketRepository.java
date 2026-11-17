@@ -76,7 +76,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             Pageable pageable
     );
 
-    Page<Ticket> findByBooking_Account_UsernameAndStatusNotOrderByBooking_BookingTimeDesc(String username, TicketStatus excludedStatus, Pageable pageable);
+    @Query("SELECT DISTINCT t.seat.seatId FROM Ticket t WHERE t.seat.seatId IN :seatIds")
+    List<Long> findBookedSeatIdsInList(@Param("seatIds") List<Long> seatIds);
 
     boolean existsByShowtime_Hall_Branch_BranchId(Long branchId);
 }

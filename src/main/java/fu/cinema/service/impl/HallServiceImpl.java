@@ -14,6 +14,7 @@ import fu.cinema.exception.AppException;
 import fu.cinema.repository.BranchRepository;
 import fu.cinema.repository.HallRepository;
 import fu.cinema.repository.SeatRepository;
+import fu.cinema.repository.TicketRepository;
 import fu.cinema.service.HallService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class HallServiceImpl implements HallService {
     private final HallRepository hallRepository;
     private final BranchRepository branchRepository;
     private final SeatRepository seatRepository;
+    private final TicketRepository ticketRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -151,6 +153,22 @@ public class HallServiceImpl implements HallService {
         seatsToDelete.addAll(seatMap.values());
 
         if (!seatsToDelete.isEmpty()) {
+            // Lấy danh sách ID của các ghế nằm ngoài kích thước mới
+            List<Long> seatIdsToDelete = seatsToDelete.stream()
+                    .map(Seat::getSeatId)
+                    .toList();
+            // Kiểm tra xem có ghế nào đã có vé/đơn hàng hay không
+            List<Long> bookedSeatIds = ticketRepository.findBookedSeatIdsInList(seatIdsToDelete);
+            if (!bookedSeatIds.isEmpty()) {
+                // Lọc ra nhãn tên các ghế bị vi phạm (VD: H1, H2, G12...)
+                List<String> bookedLabels = seatsToDelete.stream()
+                        .filter(s -> bookedSeatIds.contains(s.getSeatId()))
+                        .map(s -> s.getRowCode() + s.getNumber())
+                        .sorted()
+                        .toList();
+                throw new IllegalArgumentException("Không thể giảm kích thước phòng chiếu vì các ghế sau đã phát sinh vé/đơn hàng: "
+                        + String.join(", ", bookedLabels) + ". Vui lòng kiểm tra lại!");
+            }
             seatRepository.deleteAll(seatsToDelete);
             seatRepository.flush();
         }
@@ -222,9 +240,7 @@ public class HallServiceImpl implements HallService {
             }
         }
 
-        // ====================================================================
-        // CHỐT CHẶN BACKEND: KIỂM TRA SƠ ĐỒ GHẾ ĐÔI LÚC TẠO/CẬP NHẬT
-        // ====================================================================
+        //KIỂM TRA SƠ ĐỒ GHẾ ĐÔI LÚC TẠO/CẬP NHẬT
         List<Seat> sweetboxes = updatedSeats.stream()
                 .filter(s -> s.getType() == SeatType.SWEETBOX && s.getStatus() != SeatStatus.BROKEN)
                 .toList();
@@ -252,7 +268,6 @@ public class HallServiceImpl implements HallService {
                 }
             }
         }
-        // ====================================================================
 
         seatRepository.saveAll(seats);
 
